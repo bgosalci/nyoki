@@ -195,10 +195,14 @@ TypeScript, deployed to Vercel.
   one pass over `tileProducts()` rather than a query per tile. A child holding
   nothing is left out - a tile leading to an empty page is a dead end.
 - Tile photos are square, like the product shots themselves: a landscape crop
-  slices a card across the middle. The band's own photo is the opposite - a
-  wide crop at a fixed height, so the band keeps its shape whatever the photo
-  is, and it hangs past the band's bottom edge on a wide screen. That overhang
-  is why the band is `relative z-10` and the section below carries `md:pt-32`.
+  slices a card across the middle. The band's photo is upright and small
+  enough to sit inside the band.
+- **The catalogue is shot on white with wildly uneven margins** - measured
+  across the imported photos, anything from none at all to 42% of the frame
+  each side. No single crop or zoom fixes that: the band's upright frame takes
+  the sides off and a gentle `scale-110` reaches the top and bottom, but white
+  will still show on the loosest shots. Trimming it properly means trimming
+  the stored images, not the CSS.
 - An unwritten category falls back to `categoryIntro`, a line built from its
   name, which also becomes the page's meta description. The shopkeeper's own
   description always wins.

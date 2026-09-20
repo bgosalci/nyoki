@@ -49,10 +49,8 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
 
   return (
     <>
-      {/* Raised above the section below so the photo can hang past the band's
-          bottom edge rather than being painted over by it. */}
-      <section className={`relative z-10 ${ui.shopBandQuiet}`}>
-        <div className="mx-auto grid max-w-shop gap-8 px-4 py-10 sm:px-6 md:grid-cols-[1fr_1fr] md:items-center md:py-12">
+      <section className={ui.shopBandQuiet}>
+        <div className="mx-auto grid max-w-shop gap-8 px-4 py-10 sm:px-6 md:grid-cols-[1fr_auto] md:items-center md:py-12">
           <div className="flex flex-col items-start gap-4">
             <nav aria-label="Breadcrumb">
               <ol className={`flex flex-wrap items-center gap-2 text-xs font-medium tracking-[0.1em] uppercase ${ui.shopMuted}`}>
@@ -80,24 +78,29 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
           </div>
 
           {cover ? (
-            // A wide crop at a fixed height, so the band stays the same shape
-            // whatever the photo is, and hangs below it on a wide screen.
-            <div className="relative h-52 w-full overflow-hidden rounded-lg bg-nyoki-soft-ash md:-mb-24 md:h-80">
+            // Upright rather than wide, and sized to sit inside the band. The
+            // catalogue is photographed square on white, with anything from no
+            // margin to nearly half the frame given over to it, so an upright
+            // crop takes the sides off - which is where that white is - without
+            // guessing at a zoom that would be wrong for most of them.
+            <div className="relative aspect-[3/4] h-52 overflow-hidden rounded-lg bg-nyoki-soft-ash md:h-64">
               <Image
                 src={cover.url}
                 alt=""
                 fill
-                sizes="(min-width: 768px) 45vw, 100vw"
+                sizes="(min-width: 768px) 12rem, 10rem"
                 priority
-                className="object-cover"
+                // A cover crop can only take the sides off; the small zoom
+                // reaches the top and bottom too. Kept gentle on purpose - a
+                // photo shot tight to the card has no margin to spare.
+                className="scale-110 object-cover"
               />
             </div>
           ) : null}
         </div>
       </section>
 
-      {/* Top padding clears the photo where it overhangs the band. */}
-      <div className="mx-auto flex max-w-shop flex-col gap-14 px-4 pt-12 pb-12 sm:px-6 md:pt-32">
+      <div className="mx-auto flex max-w-shop flex-col gap-14 px-4 py-12 sm:px-6">
         <CategoryTiles heading={`${pluralise(category.name)} by type`} tiles={inside} />
 
         <section>
