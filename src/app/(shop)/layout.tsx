@@ -49,13 +49,13 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
             <ul className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 md:justify-start">
               {groups.map((group) => (
                 <li key={group.slug}>
-                  <Link href={`/shop/${group.slug}`} className="text-base text-nyoki-navy hover:underline hover:underline-offset-4">
+                  <Link href={`/shop/${group.slug}`} className="text-lg text-nyoki-navy hover:underline hover:underline-offset-4">
                     {group.name}
                   </Link>
                 </li>
               ))}
               <li>
-                <Link href="/shop" className="text-base text-nyoki-navy hover:underline hover:underline-offset-4">
+                <Link href="/shop" className="text-lg text-nyoki-navy hover:underline hover:underline-offset-4">
                   Everything
                 </Link>
               </li>
