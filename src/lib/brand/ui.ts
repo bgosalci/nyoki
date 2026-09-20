@@ -65,6 +65,18 @@ export const ui = {
   badgeQuiet: "bg-nyoki-accent-beige text-nyoki-navy dark:bg-nyoki-ink dark:text-nyoki-beige",
   badgeDark: "bg-nyoki-ink text-nyoki-beige dark:bg-nyoki-beige dark:text-nyoki-ink",
   tableHead: "border-nyoki-light-slate dark:border-nyoki-navy",
+  // --- storefront. Deliberately light-only and square-cornered: the shop
+  // commits to one warm look, where the admin is a tool that follows the
+  // viewer's theme.
+  shopPage: "bg-nyoki-beige text-nyoki-navy",
+  shopSurface: "bg-nyoki-white text-nyoki-navy",
+  shopHeading: "text-nyoki-ink",
+  shopMuted: "text-nyoki-text-dark",
+  shopRule: "border-nyoki-light-slate",
+  shopButton: "bg-nyoki-navy text-nyoki-beige hover:opacity-90",
+  shopButtonOutline: "border border-nyoki-navy text-nyoki-navy hover:bg-nyoki-accent-beige",
+  shopBand: "bg-nyoki-sage text-nyoki-ink",
+  shopBadge: "bg-nyoki-accent-beige text-nyoki-navy",
   pill: "border border-nyoki-light-slate bg-nyoki-white text-nyoki-navy hover:border-nyoki-navy dark:border-nyoki-navy dark:bg-nyoki-navy dark:text-nyoki-beige dark:hover:border-nyoki-beige",
   pillActive: "border border-nyoki-navy bg-nyoki-navy text-nyoki-beige dark:border-nyoki-beige dark:bg-nyoki-beige dark:text-nyoki-navy",
   tableRow: "border-nyoki-accent-beige dark:border-nyoki-navy",

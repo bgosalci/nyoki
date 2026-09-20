@@ -95,6 +95,21 @@ TypeScript, deployed to Vercel.
 - The importer sets a category's parent only on creation; after changing
   categoryFor(), run `pnpm categories:regroup` (`--dry-run` first).
 
+## Storefront
+
+- Public pages live in the `(shop)` route group: `/`, `/shop`,
+  `/shop/[category]`, `/product/[slug]`. Only ACTIVE products are visible.
+- The shop is **light-only and square-cornered** - it commits to one warm look
+  (beige ground, Jost, radius 0) where the admin follows the viewer's theme and
+  uses rounded corners. Use the `shop*` recipes in `src/lib/brand/ui.ts`.
+- Prices always go through `toCardProduct`/`effectivePricePence` so a live sale
+  is what a shopper sees. A sale beats the was-price, because the sale is what
+  would actually be charged.
+- The "Need to know" panel is built by `productFacts` and hides itself when
+  nothing is filled in - most imported cards have no dimensions or care notes.
+- No cart yet: product pages say ordering is coming soon rather than showing a
+  button that does nothing.
+
 ## Admin chrome
 
 - The admin has a fixed top bar (`AdminTopBar`, h-14) and a fixed footer

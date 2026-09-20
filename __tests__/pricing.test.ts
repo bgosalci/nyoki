@@ -95,6 +95,18 @@ describe("activeSaleFor", () => {
 });
 
 describe("effectivePricePence", () => {
+  it("hands back the caller's own sale row, so its other fields survive", () => {
+    // The page needs the sale's name to show it; the pricing module only
+    // cares about type, value and dates, and must not narrow it away.
+    const named = { ...sale(), name: "Spring sale" };
+
+    const result = effectivePricePence(1000, [named], NOW);
+
+    expect(result.sale).toBe(named);
+    expect(result.sale?.name).toBe("Spring sale");
+  });
+
+
   it("returns the base price when no sale applies", () => {
     expect(effectivePricePence(1000, [], NOW)).toEqual({
       pricePence: 1000,

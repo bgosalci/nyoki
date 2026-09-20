@@ -18,14 +18,14 @@ export interface PricingSale {
   active: boolean;
 }
 
-export interface EffectivePrice {
+export interface EffectivePrice<T extends PricingSale = PricingSale> {
   /** What the customer pays. */
   pricePence: number;
   /** The undiscounted price, for showing struck through. */
   basePricePence: number;
   discountPence: number;
-  /** The sale that produced the discount, if any. */
-  sale: PricingSale | null;
+  /** The sale that produced the discount, if any - the caller's own row. */
+  sale: T | null;
 }
 
 /**
@@ -58,12 +58,12 @@ function isLive(sale: PricingSale, now: Date): boolean {
  * category plus a one-off on a single item, say. Rather than stacking them
  * (which compounds into surprise near-free orders), the best single one wins.
  */
-export function activeSaleFor(
-  sales: readonly PricingSale[],
+export function activeSaleFor<T extends PricingSale>(
+  sales: readonly T[],
   pricePence: number,
   now: Date,
-): PricingSale | null {
-  let best: PricingSale | null = null;
+): T | null {
+  let best: T | null = null;
   let bestDiscount = 0;
 
   for (const sale of sales) {
@@ -80,11 +80,11 @@ export function activeSaleFor(
 }
 
 /** What a product actually costs right now, given the sales it belongs to. */
-export function effectivePricePence(
+export function effectivePricePence<T extends PricingSale>(
   basePricePence: number,
-  sales: readonly PricingSale[],
+  sales: readonly T[],
   now: Date,
-): EffectivePrice {
+): EffectivePrice<T> {
   const sale = activeSaleFor(sales, basePricePence, now);
   const discountPence = sale ? discountPenceFor(basePricePence, sale) : 0;
 
