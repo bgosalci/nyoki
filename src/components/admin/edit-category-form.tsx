@@ -1,5 +1,8 @@
 "use client";
 
+import { useRef, useState } from "react";
+
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { ui } from "@/lib/brand/ui";
 import { CategoryForm, type CategoryOption } from "@/components/admin/category-form";
 import { deleteCategory, updateCategory } from "@/app/admin/(protected)/categories/actions";
@@ -15,6 +18,9 @@ export function EditCategoryForm({
   category: CategoryInput;
   categories: CategoryOption[];
 }) {
+  const [confirming, setConfirming] = useState(false);
+  const deleteForm = useRef<HTMLFormElement>(null);
+
   return (
     <div className="flex flex-col gap-8">
       <CategoryForm
@@ -25,23 +31,22 @@ export function EditCategoryForm({
         submitLabel="Save changes"
       />
 
-      <form
-        action={deleteCategory.bind(null, id)}
-        onSubmit={(event) => {
-          if (
-            !window.confirm(
-              "Delete this category? Its sub-categories move to the top level and its products are unlinked, not deleted.",
-            )
-          ) {
-            event.preventDefault();
-          }
-        }}
-        className={`border-t pt-6 ${ui.ruleOnPage}`}
-      >
-        <button type="submit" className="text-sm text-red-700 underline underline-offset-4 dark:text-red-300">
+      <form ref={deleteForm} action={deleteCategory.bind(null, id)} className={`border-t pt-6 ${ui.ruleOnPage}`}>
+        <button type="button" onClick={() => setConfirming(true)} className="text-sm text-red-700 underline underline-offset-4 dark:text-red-300">
           Delete this category
         </button>
       </form>
+      <ConfirmDialog
+        open={confirming}
+        title="Delete this category?"
+        description="Its sub-categories move to the top level and its products are unlinked, not deleted."
+        confirmLabel="Delete category"
+        onCancel={() => setConfirming(false)}
+        onConfirm={() => {
+          setConfirming(false);
+          deleteForm.current?.requestSubmit();
+        }}
+      />
     </div>
   );
 }

@@ -1,7 +1,9 @@
 "use client";
 
 import { ui } from "@/lib/brand/ui";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
+
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 
 export interface ProductImageItem {
   id: string;
@@ -42,6 +44,7 @@ export function ProductImages({
   );
 
   const ordered = [...images].sort((a, b) => a.position - b.position);
+  const [removing, setRemoving] = useState<ProductImageItem | null>(null);
 
   return (
     <section className="flex flex-col gap-4">
@@ -98,23 +101,27 @@ export function ProductImages({
                   </form>
                 </div>
 
-                <form
-                  action={actions.remove.bind(null, image.id)}
-                  onSubmit={(event) => {
-                    if (!window.confirm("Remove this photo? This cannot be undone.")) {
-                      event.preventDefault();
-                    }
-                  }}
-                >
-                  <button type="submit" className={buttonClass}>
-                    Remove
-                  </button>
-                </form>
+                <button type="button" onClick={() => setRemoving(image)} className={buttonClass}>
+                  Remove
+                </button>
               </div>
             </li>
           ))}
         </ul>
       )}
+
+      <form id="remove-photo" action={removing ? actions.remove.bind(null, removing.id) : undefined} hidden />
+      <ConfirmDialog
+        open={removing !== null}
+        title="Remove this photo?"
+        description={removing?.alt ? `"${removing.alt}" will be taken off the product. This cannot be undone.` : "It will be taken off the product. This cannot be undone."}
+        confirmLabel="Remove photo"
+        onCancel={() => setRemoving(null)}
+        onConfirm={() => {
+          (document.getElementById("remove-photo") as HTMLFormElement | null)?.requestSubmit();
+          setRemoving(null);
+        }}
+      />
 
       <form action={uploadAction} className="flex flex-col gap-3">
         {state.error ? (

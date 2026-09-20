@@ -119,6 +119,16 @@ TypeScript, deployed to Vercel.
   the URL as you type (debounced) or change a select, so the server component
   re-renders and the view stays bookmarkable. No Filter buttons.
 
+## Confirmations
+
+- Destructive actions confirm through `ConfirmDialog`, never `window.confirm`
+  (which cannot be styled and looks like the browser, not the shop). It wraps
+  the native `<dialog>`, so focus trapping, Escape and returning focus are the
+  browser's job. Cancel comes first so the safe choice takes focus, and the
+  confirming button says what it does - never "OK".
+- The pattern: a `type="button"` opens the dialog, and confirming calls
+  `requestSubmit()` on the real form, so the server action is unchanged.
+
 ## Accounts
 
 - `requireAdmin()` reads the account live from the database on every request:
