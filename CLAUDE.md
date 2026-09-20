@@ -43,6 +43,13 @@ TypeScript, deployed to Vercel.
 - Server-only tests need `@jest-environment node`; the pg driver needs Node
   crypto, which jsdom lacks.
 
+## CMS accounts
+
+`pnpm admin:create "<email>" "<name>" [OWNER|STAFF]` creates or updates an
+account. It upserts, so re-running resets the password - that is the password
+reset path until Settings grows account management. Pass `-C <project path>` to
+run it from another directory.
+
 ## Git
 
 Remote is the **personal** account: `https://github.com/bgosalci/nyoki` over
