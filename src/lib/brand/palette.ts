@@ -30,7 +30,18 @@ export const neutral = {
   white: "#ffffff",
 } as const;
 
-export type PaletteSource = "logo-svg" | "logo-pixels" | "moth-svg" | "colour-palette.css";
+/**
+ * Dark-mode neutrals. Not drawn from the logo - the brand has no dark ground -
+ * but the near-blacks the theme board's own dark mode renders in. The brand
+ * ink is a saturated blue-purple and reads as blue when used as a ground.
+ */
+export const night = {
+  ground: "#171b21",
+  panel: "#1f242c",
+  rule: "#313842",
+} as const;
+
+export type PaletteSource = "logo-svg" | "logo-pixels" | "moth-svg" | "colour-palette.css" | "theme-board";
 
 export type PaletteRole = "brand" | "text" | "surface" | "decorative";
 
@@ -56,6 +67,9 @@ export const palette: readonly PaletteEntry[] = [
   { name: "Blue grey", token: "nyoki-blue-grey", hex: neutral.blueGrey, role: "surface", source: "colour-palette.css", note: "Strong surface. Navy on it is large text only." },
   { name: "Text dark", token: "nyoki-text-dark", hex: neutral.textDark, role: "text", source: "colour-palette.css", note: "Body copy where navy would feel too cool." },
   { name: "White", token: "nyoki-white", hex: neutral.white, role: "surface", source: "colour-palette.css", note: "Product photography ground." },
+  { name: "Night", token: "nyoki-night", hex: night.ground, role: "surface", source: "theme-board", note: "Dark-mode page ground." },
+  { name: "Night panel", token: "nyoki-night-panel", hex: night.panel, role: "surface", source: "theme-board", note: "Dark-mode panels and cards." },
+  { name: "Night rule", token: "nyoki-night-rule", hex: night.rule, role: "surface", source: "theme-board", note: "Dark-mode borders and lifted controls." },
 ];
 
 /** Colours that may decorate but never carry text. */
@@ -88,6 +102,11 @@ export const APPROVED_TEXT_PAIRINGS: readonly Pairing[] = [
   { text: neutral.white, surface: brand.ink, use: "Footer, dark bands" },
   { text: neutral.beige, surface: brand.navy, use: "Primary button, warmer" },
   { text: neutral.beige, surface: brand.ink, use: "Footer copy" },
+  { text: neutral.beige, surface: night.ground, use: "Text on the dark page" },
+  { text: neutral.blueGrey, surface: night.ground, use: "Muted text on the dark page" },
+  { text: neutral.beige, surface: night.panel, use: "Text on a dark panel" },
+  { text: neutral.blueGrey, surface: night.panel, use: "Muted text on a dark panel" },
+  { text: neutral.beige, surface: night.rule, use: "Text on a lifted dark control" },
   { text: neutral.accentBeige, surface: brand.navy, use: "Secondary text on a navy panel" },
   { text: neutral.accentBeige, surface: brand.ink, use: "Secondary text on a dark band" },
   { text: neutral.blueGrey, surface: brand.ink, use: "Muted text on the dark page" },

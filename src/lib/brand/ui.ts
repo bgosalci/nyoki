@@ -1,4 +1,4 @@
-import { brand, neutral } from "@/lib/brand/palette";
+import { brand, neutral, night } from "@/lib/brand/palette";
 
 /**
  * The CMS's colour recipes, in one place so the brand tests can check every
@@ -21,15 +21,15 @@ export interface Surface {
 export const surfaces: Record<string, Surface> = {
   page: {
     light: { bg: neutral.white, text: brand.navy, muted: neutral.textDark },
-    dark: { bg: brand.ink, text: neutral.beige, muted: neutral.blueGrey },
+    dark: { bg: night.ground, text: neutral.beige, muted: neutral.blueGrey },
   },
   panel: {
     light: { bg: neutral.white, text: brand.navy, muted: neutral.textDark },
-    dark: { bg: brand.navy, text: neutral.beige, muted: neutral.accentBeige },
+    dark: { bg: night.panel, text: neutral.beige, muted: neutral.blueGrey },
   },
   card: {
     light: { bg: neutral.accentBeige, text: brand.navy, muted: neutral.textDark },
-    dark: { bg: brand.navy, text: neutral.beige, muted: neutral.accentBeige },
+    dark: { bg: night.panel, text: neutral.beige, muted: neutral.blueGrey },
   },
   band: {
     light: { bg: brand.sage, text: brand.ink, muted: brand.ink },
@@ -37,34 +37,34 @@ export const surfaces: Record<string, Surface> = {
   },
   primary: {
     light: { bg: brand.navy, text: neutral.beige, muted: neutral.beige },
-    dark: { bg: neutral.beige, text: brand.navy, muted: neutral.textDark },
+    dark: { bg: brand.navy, text: neutral.beige, muted: neutral.beige },
   },
 };
 
 /** Tailwind class recipes. Every token here is checked to exist by the brand tests. */
 export const ui = {
-  page: "bg-nyoki-white text-nyoki-navy dark:bg-nyoki-ink dark:text-nyoki-beige",
-  panel: "bg-nyoki-white text-nyoki-navy dark:bg-nyoki-navy dark:text-nyoki-beige",
-  card: "bg-nyoki-accent-beige text-nyoki-navy dark:bg-nyoki-navy dark:text-nyoki-beige",
+  page: "bg-nyoki-white text-nyoki-navy dark:bg-nyoki-night dark:text-nyoki-beige",
+  panel: "bg-nyoki-white text-nyoki-navy dark:bg-nyoki-night-panel dark:text-nyoki-beige",
+  card: "bg-nyoki-accent-beige text-nyoki-navy dark:bg-nyoki-night-panel dark:text-nyoki-beige",
   mutedOnPage: "text-nyoki-text-dark dark:text-nyoki-blue-grey",
-  mutedOnPanel: "text-nyoki-text-dark dark:text-nyoki-accent-beige",
+  mutedOnPanel: "text-nyoki-text-dark dark:text-nyoki-blue-grey",
   heading: "text-nyoki-ink dark:text-nyoki-beige",
-  rule: "border-nyoki-light-slate dark:border-nyoki-ink",
-  ruleOnPage: "border-nyoki-light-slate dark:border-nyoki-navy",
+  rule: "border-nyoki-light-slate dark:border-nyoki-night-rule",
+  ruleOnPage: "border-nyoki-light-slate dark:border-nyoki-night-rule",
   link: "text-nyoki-navy underline underline-offset-4 dark:text-nyoki-beige",
   navItem:
-    "text-nyoki-text-dark hover:bg-nyoki-beige dark:text-nyoki-accent-beige dark:hover:bg-nyoki-ink",
-  navActive: "bg-nyoki-accent-beige text-nyoki-navy font-medium dark:bg-nyoki-ink dark:text-nyoki-beige",
+    "text-nyoki-text-dark hover:bg-nyoki-beige dark:text-nyoki-blue-grey dark:hover:bg-nyoki-night-rule",
+  navActive: "bg-nyoki-accent-beige text-nyoki-navy font-medium dark:bg-nyoki-night-rule dark:text-nyoki-beige",
   buttonPrimary:
-    "bg-nyoki-navy text-nyoki-beige hover:opacity-90 disabled:opacity-60 dark:bg-nyoki-beige dark:text-nyoki-navy",
+    "bg-nyoki-navy text-nyoki-beige hover:opacity-90 disabled:opacity-60 dark:bg-nyoki-navy dark:text-nyoki-beige",
   buttonSecondary:
-    "border border-nyoki-navy text-nyoki-navy hover:bg-nyoki-accent-beige dark:border-nyoki-beige dark:text-nyoki-beige dark:hover:bg-nyoki-ink",
+    "border border-nyoki-navy text-nyoki-navy hover:bg-nyoki-accent-beige dark:border-nyoki-night-rule dark:text-nyoki-beige dark:hover:bg-nyoki-night-rule",
   input:
-    "bg-nyoki-white text-nyoki-navy border-nyoki-light-slate focus:border-nyoki-navy dark:bg-nyoki-ink dark:text-nyoki-beige dark:border-nyoki-navy dark:focus:border-nyoki-beige",
+    "bg-nyoki-white text-nyoki-navy border-nyoki-light-slate focus:border-nyoki-navy dark:bg-nyoki-night dark:text-nyoki-beige dark:border-nyoki-night-rule dark:focus:border-nyoki-beige",
   badgeSale: "bg-nyoki-sage text-nyoki-ink",
-  badgeQuiet: "bg-nyoki-accent-beige text-nyoki-navy dark:bg-nyoki-ink dark:text-nyoki-beige",
-  badgeDark: "bg-nyoki-ink text-nyoki-beige dark:bg-nyoki-beige dark:text-nyoki-ink",
-  tableHead: "border-nyoki-light-slate dark:border-nyoki-navy",
+  badgeQuiet: "bg-nyoki-accent-beige text-nyoki-navy dark:bg-nyoki-night-rule dark:text-nyoki-beige",
+  badgeDark: "bg-nyoki-ink text-nyoki-beige dark:bg-nyoki-night-rule dark:text-nyoki-beige",
+  tableHead: "border-nyoki-light-slate dark:border-nyoki-night-rule",
   // --- storefront. Deliberately light-only: the shop commits to one warm
   // look, where the admin is a tool that follows the viewer's theme. Radii
   // come from the theme board: cards 8px, buttons 4px, tags 3px, bands 6px.
@@ -82,7 +82,7 @@ export const ui = {
   shopBadgeMade: "rounded-[3px] bg-nyoki-accent-beige text-nyoki-navy",
   shopBadgeOne: "rounded-[3px] bg-nyoki-ink text-nyoki-beige",
   shopCard: "overflow-hidden rounded-lg border border-nyoki-light-slate bg-nyoki-white",
-  pill: "border border-nyoki-light-slate bg-nyoki-white text-nyoki-navy hover:border-nyoki-navy dark:border-nyoki-navy dark:bg-nyoki-navy dark:text-nyoki-beige dark:hover:border-nyoki-beige",
-  pillActive: "border border-nyoki-navy bg-nyoki-navy text-nyoki-beige dark:border-nyoki-beige dark:bg-nyoki-beige dark:text-nyoki-navy",
-  tableRow: "border-nyoki-accent-beige dark:border-nyoki-navy",
+  pill: "border border-nyoki-light-slate bg-nyoki-white text-nyoki-navy hover:border-nyoki-navy dark:border-nyoki-night-rule dark:bg-nyoki-night dark:text-nyoki-blue-grey dark:hover:border-nyoki-beige dark:hover:text-nyoki-beige",
+  pillActive: "border border-nyoki-navy bg-nyoki-navy text-nyoki-beige dark:border-nyoki-navy dark:bg-nyoki-navy dark:text-nyoki-beige",
+  tableRow: "border-nyoki-accent-beige dark:border-nyoki-night-rule",
 } as const;

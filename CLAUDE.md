@@ -48,6 +48,11 @@ TypeScript, deployed to Vercel.
 - The CMS uses the class recipes in `src/lib/brand/ui.ts`; the brand tests
   check every recipe against the approved pairings. Do not add ad-hoc colour
   classes to admin components.
+- **Dark mode uses the night neutrals**, not the brand ink: ink is a saturated
+  blue-purple and reads as blue when used as a ground. Ground `nyoki-night`,
+  panels `nyoki-night-panel`, borders and lifted controls `nyoki-night-rule`,
+  text beige, muted blue-grey. Navy is a mid tone - a border or a raised
+  control in the dark, never a surface. Tests enforce both rules.
 - Colours are owned by `src/lib/brand/palette.ts` and its tests. The Tailwind
   tokens (`--color-nyoki-*` in globals.css) are pinned to it by a test, so
   change the module first. Every value traces to a file in `public/brand/` or

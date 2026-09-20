@@ -22,6 +22,9 @@
   --color-nyoki-blue-grey: #bfc9ca;
   --color-nyoki-text-dark: #4a4a4a;
   --color-nyoki-white: #ffffff;
+  --color-nyoki-night: #171b21;
+  --color-nyoki-night-panel: #1f242c;
+  --color-nyoki-night-rule: #313842;
 
   /* Storefront content width. Tailwind turns a --container-* token into the
      matching max-w-* utility, so max-w-shop exists only while this does. */
@@ -37,7 +40,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0b063c;
+    --background: #171b21;
     --foreground: #f5f3ef;
   }
 }

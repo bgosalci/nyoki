@@ -1,6 +1,7 @@
 import { AA_LARGE_TEXT, AA_TEXT, contrastRatio } from "@/lib/brand/contrast";
 import {
   APPROVED_LARGE_TEXT_PAIRINGS,
+  night,
   APPROVED_TEXT_PAIRINGS,
   DECORATIVE,
   brand,
@@ -37,9 +38,22 @@ describe("brand colours come from the logo files, not a guess", () => {
     });
   });
 
+  it("carries the night neutrals the theme board's dark mode already used", () => {
+    // Ink is a saturated blue-purple and reads as blue when used as a dark
+    // ground. These are the near-blacks the board itself renders in.
+    expect(night).toEqual({ ground: "#171b21", panel: "#1f242c", rule: "#313842" });
+  });
+
+  it("reads light text on both night surfaces", () => {
+    for (const bg of [night.ground, night.panel]) {
+      expect(contrastRatio(neutral.beige, bg)).toBeGreaterThanOrEqual(AA_TEXT);
+      expect(contrastRatio(neutral.blueGrey, bg)).toBeGreaterThanOrEqual(AA_TEXT);
+    }
+  });
+
   it("records where every colour came from", () => {
     for (const entry of palette) {
-      expect(entry.source).toMatch(/^(logo-svg|logo-pixels|moth-svg|colour-palette\.css)$/);
+      expect(entry.source).toMatch(/^(logo-svg|logo-pixels|moth-svg|colour-palette\.css|theme-board)$/);
       expect(entry.hex).toMatch(/^#[0-9a-f]{6}$/);
     }
   });

@@ -32,9 +32,42 @@ describe("CMS class recipes", () => {
     expect(ui.buttonPrimary).toMatch(/\btext-nyoki-beige\b/);
   });
 
-  it("the page ground is white in light and ink in dark", () => {
+  it("the page ground is white in light and near-black in dark", () => {
     expect(ui.page).toMatch(/\bbg-nyoki-white\b/);
-    expect(ui.page).toMatch(/\bdark:bg-nyoki-ink\b/);
+    expect(ui.page).toMatch(/\bdark:bg-nyoki-night\b/);
+  });
+
+  it("never grounds a dark surface in the mid-tone navy", () => {
+    // #4a5667 sits in the middle of the range. As a dark-mode background it
+    // reads as washed out beside the ink page rather than as dark. It earns
+    // its place there as a border, and as a raised control that is meant to
+    // stand off the page - nothing else.
+    const raised = ["buttonPrimary", "navActive", "pillActive", "badgeQuiet", "badgeDark"];
+
+    for (const [name, classes] of Object.entries(ui)) {
+      if (raised.includes(name)) continue;
+      expect({ name, classes }).toMatchObject({ name });
+      expect(classes).not.toMatch(/\bdark:bg-nyoki-navy\b/);
+    }
+  });
+
+  it("pairs every dark surface with light text", () => {
+    expect(ui.page).toMatch(/dark:bg-nyoki-night\b/);
+    expect(ui.page).toMatch(/dark:text-nyoki-beige/);
+    expect(ui.panel).toMatch(/dark:bg-nyoki-night-panel/);
+    expect(ui.card).toMatch(/dark:bg-nyoki-night-panel/);
+  });
+
+  it("never grounds a dark surface in the brand ink, which reads as blue", () => {
+    for (const [name, classes] of Object.entries(ui)) {
+      expect({ name, classes }).toMatchObject({ name });
+      expect(classes).not.toMatch(/\bdark:bg-nyoki-ink\b/);
+    }
+  });
+
+  it("draws dark rules in something visible against ink", () => {
+    // An ink border on an ink ground is no border at all.
+    expect(ui.rule).toMatch(/dark:border-nyoki-night-rule/);
   });
 
   it("nothing ever puts white or navy text on sage", () => {
