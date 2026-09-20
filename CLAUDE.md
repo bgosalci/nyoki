@@ -99,6 +99,10 @@ TypeScript, deployed to Vercel.
 
 - Public pages live in the `(shop)` route group: `/`, `/shop`,
   `/shop/[category]`, `/product/[slug]`. Only ACTIVE products are visible.
+- The header is two tiers split by a sage rule: utility links (Shop, About us)
+  and the logo above it, product departments below. The top row is a three
+  column grid whose empty right column is reserved for search, account and
+  basket - it keeps the logo centred until those exist.
 - The shop is **light-only and square-cornered** - it commits to one warm look
   (beige ground, Jost, radius 0) where the admin follows the viewer's theme and
   uses rounded corners. Use the `shop*` recipes in `src/lib/brand/ui.ts`.
