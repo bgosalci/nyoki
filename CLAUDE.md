@@ -109,6 +109,12 @@ TypeScript, deployed to Vercel.
   `--pinned-height` and each `Th` sticks just beneath it. A table must not sit
   in an overflow container, or its header would stick to that instead of the
   page.
+- The products list filters by category with rows of pills (`CategoryPills`,
+  server-rendered links): groups, then the chosen group's types, down to the
+  selection. The slug lives in the URL as `category`; the page resolves it to
+  the category plus its descendants with `subtreeIds`. Anything shared between
+  the client form and server pills - `filterHref` - lives in a plain module
+  under `src/lib`, never in a "use client" file.
 - Filtering is live: the products filter is a client component that writes to
   the URL as you type (debounced) or change a select, so the server component
   re-renders and the view stays bookmarkable. No Filter buttons.

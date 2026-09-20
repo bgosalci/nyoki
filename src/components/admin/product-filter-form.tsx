@@ -4,18 +4,12 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { inputClass } from "@/components/admin/field";
+import { filterHref } from "@/lib/products/filter-href";
 import { ui } from "@/lib/brand/ui";
 
 /** How long to wait after the last keystroke before searching. */
 const PAUSE_MS = 250;
 
-export function filterHref(pathname: string, { q, status }: { q: string; status: string }): string {
-  const params = new URLSearchParams();
-  if (q) params.set("q", q);
-  if (status) params.set("status", status);
-  const query = params.toString();
-  return query ? `${pathname}?${query}` : pathname;
-}
 
 /**
  * Live filtering for the products list. The state lives in the URL, so the
@@ -23,7 +17,8 @@ export function filterHref(pathname: string, { q, status }: { q: string; status:
  * be bookmarked. Typing waits for a pause; a status change or Enter applies
  * straight away.
  */
-export function ProductFilterForm({ initialQ, initialStatus }: { initialQ: string; initialStatus: string }) {
+/** The chosen category is carried through untouched; the pills own changing it. */
+export function ProductFilterForm({ initialQ, initialStatus, category }: { initialQ: string; initialStatus: string; category: string }) {
   const router = useRouter();
   const pathname = usePathname();
 
@@ -32,7 +27,7 @@ export function ProductFilterForm({ initialQ, initialStatus }: { initialQ: strin
   const skipFirst = useRef(true);
 
   const apply = (next: { q: string; status: string }) => {
-    router.replace(filterHref(pathname, next), { scroll: false });
+    router.replace(filterHref(pathname, { ...next, category }), { scroll: false });
   };
 
   useEffect(() => {

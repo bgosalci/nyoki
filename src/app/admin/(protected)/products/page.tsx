@@ -5,6 +5,8 @@ import { PINNED_BLOCK_CLASS, Th } from "@/components/admin/th";
 import Link from "next/link";
 
 import { db } from "@/lib/db";
+import { CategoryPills } from "@/components/admin/category-pills";
+import { subtreeIds } from "@/lib/products/category-pills";
 import { parseProductFilter, productWhere } from "@/lib/products/filter";
 import { formatPence } from "@/lib/money";
 
@@ -20,11 +22,25 @@ export default async function ProductsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const filter = parseProductFilter(await searchParams);
-  const filtering = filter.q !== null || filter.status !== null;
+  const filtering = filter.q !== null || filter.status !== null || filter.category !== null;
+
+  const [categories, links] = await Promise.all([
+    db.category.findMany({ orderBy: [{ position: "asc" }, { name: "asc" }], select: { id: true, slug: true, name: true, parentId: true } }),
+    db.categoryProduct.groupBy({ by: ["categoryId"], _count: { productId: true } }),
+  ]);
+
+  // A group's count is its whole subtree, since products link to the types beneath it.
+  const direct = new Map(links.map((link) => [link.categoryId, link._count.productId]));
+  const counts = Object.fromEntries(
+    categories.map((category) => [category.id, subtreeIds(categories, category.id).reduce((n, id) => n + (direct.get(id) ?? 0), 0)]),
+  );
+
+  const selectedCategory = filter.category ? categories.find((c) => c.slug === filter.category) : undefined;
+  const categoryIds = selectedCategory ? subtreeIds(categories, selectedCategory.id) : [];
 
   const [products, total] = await Promise.all([
     db.product.findMany({
-      where: productWhere(filter),
+      where: productWhere(filter, categoryIds),
       orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
       include: { images: { orderBy: { position: "asc" }, take: 1 } },
     }),
@@ -45,7 +61,8 @@ export default async function ProductsPage({
         </Link>
       </div>
 
-      <ProductFilterForm initialQ={filter.q ?? ""} initialStatus={filter.status ?? ""} />
+      <ProductFilterForm initialQ={filter.q ?? ""} initialStatus={filter.status ?? ""} category={filter.category ?? ""} />
+      <CategoryPills categories={categories} counts={counts} selected={selectedCategory?.slug ?? null} q={filter.q ?? ""} status={filter.status ?? ""} />
 
       <p className={`mt-4 text-sm ${ui.mutedOnPage}`}>
         {filtering ? `${products.length} of ${total} products` : `${total} products`}

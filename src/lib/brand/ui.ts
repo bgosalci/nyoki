@@ -65,5 +65,7 @@ export const ui = {
   badgeQuiet: "bg-nyoki-accent-beige text-nyoki-navy dark:bg-nyoki-ink dark:text-nyoki-beige",
   badgeDark: "bg-nyoki-ink text-nyoki-beige dark:bg-nyoki-beige dark:text-nyoki-ink",
   tableHead: "border-nyoki-light-slate dark:border-nyoki-navy",
+  pill: "border border-nyoki-light-slate bg-nyoki-white text-nyoki-navy hover:border-nyoki-navy dark:border-nyoki-navy dark:bg-nyoki-navy dark:text-nyoki-beige dark:hover:border-nyoki-beige",
+  pillActive: "border border-nyoki-navy bg-nyoki-navy text-nyoki-beige dark:border-nyoki-beige dark:bg-nyoki-beige dark:text-nyoki-navy",
   tableRow: "border-nyoki-accent-beige dark:border-nyoki-navy",
 } as const;

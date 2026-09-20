@@ -1,7 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-import { ProductFilterForm, filterHref } from "@/components/admin/product-filter-form";
+import { ProductFilterForm } from "@/components/admin/product-filter-form";
+import { filterHref } from "@/lib/products/filter-href";
 
 const replace = jest.fn();
 jest.mock("next/navigation", () => ({
@@ -11,15 +12,19 @@ jest.mock("next/navigation", () => ({
 
 describe("filterHref", () => {
   it("drops empty values so the bare list has a clean address", () => {
-    expect(filterHref("/admin/products", { q: "", status: "" })).toBe("/admin/products");
+    expect(filterHref("/admin/products", { q: "", status: "", category: "" })).toBe("/admin/products");
   });
 
   it("puts the search and status in the query string", () => {
-    expect(filterHref("/admin/products", { q: "mug", status: "ACTIVE" })).toBe("/admin/products?q=mug&status=ACTIVE");
+    expect(filterHref("/admin/products", { q: "mug", status: "ACTIVE", category: "" })).toBe("/admin/products?q=mug&status=ACTIVE");
   });
 
   it("encodes what needs encoding", () => {
-    expect(filterHref("/admin/products", { q: "tom's & jerry", status: "" })).toBe("/admin/products?q=tom%27s+%26+jerry");
+    expect(filterHref("/admin/products", { q: "tom's & jerry", status: "", category: "" })).toBe("/admin/products?q=tom%27s+%26+jerry");
+  });
+
+  it("keeps the category in the address", () => {
+    expect(filterHref("/admin/products", { q: "", status: "", category: "birthday-card" })).toBe("/admin/products?category=birthday-card");
   });
 });
 
@@ -35,7 +40,7 @@ describe("ProductFilterForm", () => {
 
   function setup(props: Partial<React.ComponentProps<typeof ProductFilterForm>> = {}) {
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    render(<ProductFilterForm initialQ="" initialStatus="" {...props} />);
+    render(<ProductFilterForm initialQ="" initialStatus="" category="" {...props} />);
     return user;
   }
 
@@ -80,6 +85,15 @@ describe("ProductFilterForm", () => {
     await user.type(screen.getByLabelText(/find/i), "vest{Enter}");
 
     expect(replace).toHaveBeenCalledWith("/admin/products?q=vest", { scroll: false });
+  });
+
+  it("carries a chosen category through when you type", async () => {
+    const user = setup({ category: "cards" });
+
+    await user.type(screen.getByLabelText(/find/i), "dad");
+    jest.advanceTimersByTime(300);
+
+    expect(replace).toHaveBeenCalledWith("/admin/products?q=dad&category=cards", { scroll: false });
   });
 
   it("has no Filter button, since filtering is live", () => {
