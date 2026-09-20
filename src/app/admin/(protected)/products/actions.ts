@@ -7,19 +7,8 @@ import type { ProductFormState } from "@/components/admin/product-form";
 import { requireAdmin } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
 import { validateProductInput } from "@/lib/products/validate";
+import { isUniqueViolationOn } from "@/lib/db-errors";
 import { uniqueSlug } from "@/lib/slug";
-
-/** Postgres unique-violation, surfaced by Prisma as P2002. */
-const UNIQUE_VIOLATION = "P2002";
-
-function isUniqueViolation(error: unknown): error is { code: string; meta?: { target?: string[] } } {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code: unknown }).code === UNIQUE_VIOLATION
-  );
-}
 
 /**
  * Slugs already in use that could collide with `base`.
@@ -62,7 +51,7 @@ export async function createProduct(
     });
     id = created.id;
   } catch (error) {
-    if (isUniqueViolation(error) && error.meta?.target?.includes("sku")) {
+    if (isUniqueViolationOn(error, { table: "products", column: "sku" })) {
       return { errors: { sku: "Another product already uses that code." } };
     }
     throw error;
@@ -101,7 +90,7 @@ export async function updateProduct(
       }),
     ]);
   } catch (error) {
-    if (isUniqueViolation(error) && error.meta?.target?.includes("sku")) {
+    if (isUniqueViolationOn(error, { table: "products", column: "sku" })) {
       return { errors: { sku: "Another product already uses that code." } };
     }
     throw error;

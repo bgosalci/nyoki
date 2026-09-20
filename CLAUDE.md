@@ -82,6 +82,16 @@ TypeScript, deployed to Vercel.
   images are always looked up scoped to that product id, so a forged image id
   cannot touch another product's photos.
 
+## Accounts
+
+- Settings lets anyone change their own password and lets an OWNER add or
+  remove accounts. `removalBlockedBecause()` in `src/lib/admin/removal.ts` is
+  the rule: no removing yourself, no removing the last owner, staff remove
+  nobody. It runs on the server for every removal.
+- A new account's password is generated and returned to the owner once; it is
+  never stored in plain text and never shown again.
+- Passwords are never trimmed - a leading space is a legitimate character.
+
 ## CMS accounts
 
 `pnpm admin:create "<email>" "<name>" [OWNER|STAFF]` creates or updates an
