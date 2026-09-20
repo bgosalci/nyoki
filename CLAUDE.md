@@ -263,6 +263,29 @@ TypeScript, deployed to Vercel.
   never stored in plain text and never shown again.
 - Passwords are never trimmed - a leading space is a legitimate character.
 
+## Shopper accounts
+
+- Customer sessions are **kept apart from CMS sessions on purpose**: a
+  different cookie, and a `kind: "customer"` claim both verifiers insist on.
+  Both are signed with the same `AUTH_SECRET`, so a valid signature proves
+  only that we issued a token, not what for - without the claim a shopper's
+  cookie would verify as staff. Tests check the rejection both ways.
+- `currentCustomer()` reads the row live, like `requireAdmin()` does. A null
+  `passwordHash` means the account has been closed back to a guest record and
+  its sessions stop working.
+- A `Customer` with no `passwordHash` is a guest row from checkout, not an
+  account. Registering against that email gives it a password rather than
+  creating a second identity, so guest orders stay attached.
+- The password floor is **eight** for shoppers against the CMS's twelve, and
+  no composition rules - a shopper account holds an order history, a staff
+  account holds the shop.
+- **Known gaps, all for want of sending email:** registration says plainly
+  when an address is taken (an enumeration vector, but the alternative needs
+  email we cannot send and strands anyone who forgot they had an account);
+  there is no password reset; and changing a password does not invalidate
+  sessions elsewhere, which needs a "valid from" column on the customer and
+  an `iat` check.
+
 ## CMS accounts
 
 `pnpm admin:create "<email>" "<name>" [OWNER|STAFF]` creates or updates an

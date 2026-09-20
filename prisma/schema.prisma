@@ -236,10 +236,16 @@ model DiscountCode {
 // ---------------------------------------------------------------------------
 
 model Customer {
-  id               String  @id @default(cuid())
-  email            String  @unique
-  name             String?
-  phone            String?
+  id    String  @id @default(cuid())
+  email String  @unique
+  name  String?
+  phone String?
+
+  // Null for a customer who has never set one: a guest checkout creates the
+  // row, and an account is something they may add later against the same
+  // email rather than a second identity.
+  passwordHash String? @map("password_hash")
+
   stripeCustomerId String? @unique @map("stripe_customer_id")
   marketingOptIn   Boolean @default(false) @map("marketing_opt_in")
 

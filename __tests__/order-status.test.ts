@@ -1,6 +1,7 @@
 import { ui } from "@/lib/brand/ui";
 import {
   ORDER_STATUSES,
+  customerOrderStatusLabel,
   formatOrderDate,
   isAwaitingFulfilment,
   orderStatusBadge,
@@ -31,6 +32,24 @@ describe("order statuses", () => {
 
     for (const status of ORDER_STATUSES.filter((s) => s !== "PAID")) {
       expect(orderStatusBadge(status)).toBe(ui.badgeQuiet);
+    }
+  });
+});
+
+describe("what a shopper is told", () => {
+  it("describes the order from their side, not the shop's", () => {
+    // "To send" is the shop's job list. A customer wants to know what is
+    // happening to their order.
+    expect(customerOrderStatusLabel("PENDING")).toBe("Not paid");
+    expect(customerOrderStatusLabel("PAID")).toBe("Being made");
+    expect(customerOrderStatusLabel("FULFILLED")).toBe("On its way");
+    expect(customerOrderStatusLabel("CANCELLED")).toBe("Cancelled");
+    expect(customerOrderStatusLabel("REFUNDED")).toBe("Refunded");
+  });
+
+  it("has something to say about every status the database can hold", () => {
+    for (const status of ORDER_STATUSES) {
+      expect(customerOrderStatusLabel(status)).toEqual(expect.any(String));
     }
   });
 });

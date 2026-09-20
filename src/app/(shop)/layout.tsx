@@ -4,6 +4,7 @@ import Link from "next/link";
 import { DepartmentNav } from "@/components/shop/department-nav";
 import { HeaderIcons } from "@/components/shop/header-icons";
 import { TopNav } from "@/components/shop/top-nav";
+import { currentCustomer } from "@/lib/account/dal";
 import { db } from "@/lib/db";
 import { ui } from "@/lib/brand/ui";
 
@@ -15,6 +16,11 @@ import { ui } from "@/lib/brand/ui";
  * shopping above it, the departments themselves below.
  */
 export default async function ShopLayout({ children }: { children: React.ReactNode }) {
+  // Only whether somebody is signed in, so the header can point its account
+  // icon at the right place. The pages inside the account do their own
+  // checking; this is decoration.
+  const signedIn = (await currentCustomer()) !== null;
+
   const groups = await db.category.findMany({
     where: { parentId: null },
     orderBy: { name: "asc" },
@@ -43,7 +49,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
               />
             </Link>
 
-            <HeaderIcons />
+            <HeaderIcons signedIn={signedIn} />
           </div>
         </div>
 

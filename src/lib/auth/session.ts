@@ -69,7 +69,12 @@ export async function verifySessionToken(
       currentDate: options.now,
     });
 
-    const { userId, email, role } = payload as unknown as SessionPayload;
+    const { userId, email, role, kind } = payload as unknown as SessionPayload & { kind?: string };
+
+    // A shopper's token is signed with this same secret, so the signature
+    // alone proves nothing about who it was issued for. It carries kind
+    // "customer"; a staff token carries none.
+    if (kind !== undefined) return null;
     if (typeof userId !== "string" || typeof email !== "string") return null;
     if (role !== "OWNER" && role !== "STAFF") return null;
 

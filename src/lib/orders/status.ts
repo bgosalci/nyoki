@@ -33,6 +33,24 @@ export function isAwaitingFulfilment(status: OrderStatus): boolean {
   return status === "PAID";
 }
 
+/**
+ * The same order described to the person who placed it.
+ *
+ * "To send" is the shop's job list; a shopper wants to know what is happening
+ * to their order, not what is on somebody else's.
+ */
+const CUSTOMER_LABELS: Record<OrderStatus, string> = {
+  PENDING: "Not paid",
+  PAID: "Being made",
+  FULFILLED: "On its way",
+  CANCELLED: "Cancelled",
+  REFUNDED: "Refunded",
+};
+
+export function customerOrderStatusLabel(status: OrderStatus): string {
+  return CUSTOMER_LABELS[status];
+}
+
 /** Sage draws the eye, and exactly one status has earned it. */
 export function orderStatusBadge(status: OrderStatus): string {
   return isAwaitingFulfilment(status) ? ui.badgeSale : ui.badgeQuiet;
