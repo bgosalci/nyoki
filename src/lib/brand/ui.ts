@@ -82,6 +82,9 @@ export const ui = {
   shopButton: "rounded bg-nyoki-navy text-nyoki-beige hover:opacity-90",
   shopButtonOutline: "rounded border border-nyoki-navy text-nyoki-navy hover:bg-nyoki-accent-beige",
   shopBand: "rounded-md bg-nyoki-sage text-nyoki-ink",
+  // The softer of the two bands. A category page opens on one, and sage on
+  // every one of them would shout; this sits a shade off the page ground.
+  shopBandQuiet: "bg-nyoki-accent-beige text-nyoki-navy",
   shopBadge: "rounded-[3px] bg-nyoki-accent-beige text-nyoki-navy",
   // The three product badges, as drawn on the theme board.
   shopBadgeSale: "rounded-[3px] bg-nyoki-sage text-nyoki-ink",

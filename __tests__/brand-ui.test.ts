@@ -81,6 +81,23 @@ describe("CMS class recipes", () => {
     expect(ui.rule).toMatch(/dark:border-nyoki-night-rule/);
   });
 
+  it("puts the text of every recipe that sets both onto an approved ground", () => {
+    for (const [name, classes] of Object.entries(ui)) {
+      const bg = /(?:^|\s|:)bg-(nyoki-[a-z-]+)/.exec(classes)?.[1];
+      const text = /(?:^|\s|:)text-(nyoki-[a-z-]+)/.exec(classes)?.[1];
+      if (!bg || !text) continue;
+
+      expect({ name, pairing: `${hexOfToken.get(text)} on ${hexOfToken.get(bg)}` }).toMatchObject({ name });
+      expect(approved).toContain(`${hexOfToken.get(text)} on ${hexOfToken.get(bg)}`);
+    }
+  });
+
+  it("gives the storefront a quiet band as well as the sage one", () => {
+    // A category page opens on a band; sage on every one of them would shout.
+    expect(ui.shopBandQuiet).toMatch(/\bbg-nyoki-accent-beige\b/);
+    expect(ui.shopBandQuiet).toMatch(/\btext-nyoki-navy\b/);
+  });
+
   it("nothing ever puts white or navy text on sage", () => {
     for (const classes of Object.values(ui)) {
       const onSage = /\bbg-nyoki-sage\b/.test(classes);

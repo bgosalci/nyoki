@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { ProductGrid } from "@/components/shop/product-grid";
+import { PromiseStrip } from "@/components/shop/promise-strip";
 import { ui } from "@/lib/brand/ui";
 import { db } from "@/lib/db";
 import { activeProducts, toCards } from "@/lib/storefront/queries";
@@ -52,13 +53,7 @@ export default async function HomePage() {
         ) : null}
       </section>
 
-      <section className={`border-y ${ui.shopRule} bg-nyoki-sage text-nyoki-ink`}>
-        <ul className="mx-auto grid max-w-shop gap-4 px-4 py-8 text-center text-sm sm:grid-cols-3 sm:px-6">
-          <li>Every piece touched by human hands</li>
-          <li>Eco-friendly, organic and recyclable</li>
-          <li>Materials sourced in the UK</li>
-        </ul>
-      </section>
+      <PromiseStrip />
 
       <section className="mx-auto max-w-shop px-4 py-14 sm:px-6">
         <h2 className={`text-2xl tracking-tight ${ui.shopHeading}`}>Have a look around</h2>

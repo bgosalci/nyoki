@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { toCardProduct, type CardProduct, type CardSource } from "@/lib/storefront/card";
+import type { TileProduct } from "@/lib/storefront/tiles";
 
 /** Everything a card needs, in one shape, for every storefront query. */
 export const CARD_SELECT = {
@@ -29,4 +30,24 @@ export async function activeProducts(where = {}, take?: number) {
     take,
     select: CARD_SELECT,
   });
+}
+
+/**
+ * Every active product as a tile ingredient: which categories it sits in, and
+ * one photo. One query for a whole page of tiles, rather than one per tile.
+ */
+export async function tileProducts(): Promise<TileProduct[]> {
+  const rows = await db.product.findMany({
+    where: { status: "ACTIVE" },
+    orderBy: { createdAt: "desc" },
+    select: {
+      categories: { select: { categoryId: true } },
+      images: { orderBy: { position: "asc" }, take: 1, select: { url: true, alt: true } },
+    },
+  });
+
+  return rows.map((row) => ({
+    categoryIds: row.categories.map((link) => link.categoryId),
+    image: row.images[0] ?? null,
+  }));
 }

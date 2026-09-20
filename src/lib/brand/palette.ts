@@ -98,6 +98,7 @@ export const APPROVED_TEXT_PAIRINGS: readonly Pairing[] = [
   { text: brand.ink, surface: brand.sageLight, use: "Text on a sage-light band" },
   { text: brand.ink, surface: neutral.beige, use: "Headlines" },
   { text: brand.ink, surface: neutral.white, use: "Headlines" },
+  { text: brand.ink, surface: neutral.accentBeige, use: "Headlines on a quiet band" },
   { text: neutral.white, surface: brand.navy, use: "Primary button" },
   { text: neutral.white, surface: brand.ink, use: "Footer, dark bands" },
   { text: neutral.beige, surface: brand.navy, use: "Primary button, warmer" },
