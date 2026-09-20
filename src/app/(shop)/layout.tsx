@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { DepartmentNav } from "@/components/shop/department-nav";
+import { HeaderIcons } from "@/components/shop/header-icons";
 import { TopNav } from "@/components/shop/top-nav";
 import { db } from "@/lib/db";
 import { ui } from "@/lib/brand/ui";
@@ -16,7 +18,11 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
   const groups = await db.category.findMany({
     where: { parentId: null },
     orderBy: { name: "asc" },
-    select: { slug: true, name: true },
+    select: {
+      slug: true,
+      name: true,
+      children: { orderBy: { name: "asc" }, select: { slug: true, name: true } },
+    },
   });
 
   return (
@@ -37,30 +43,13 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
               />
             </Link>
 
-            {/* Reserved for search, account and basket once they exist. Keeping
-                the column holds the logo centred in the meantime. */}
-            <div aria-hidden="true" />
+            <HeaderIcons />
           </div>
         </div>
 
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="border-t border-nyoki-sage" />
-          <nav aria-label="Departments" className="py-3">
-            <ul className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 md:justify-start">
-              {groups.map((group) => (
-                <li key={group.slug}>
-                  <Link href={`/shop/${group.slug}`} className="text-lg text-nyoki-navy hover:underline hover:underline-offset-4">
-                    {group.name}
-                  </Link>
-                </li>
-              ))}
-              <li>
-                <Link href="/shop" className="text-lg text-nyoki-navy hover:underline hover:underline-offset-4">
-                  Everything
-                </Link>
-              </li>
-            </ul>
-          </nav>
+          <DepartmentNav groups={groups} />
         </div>
       </header>
 
