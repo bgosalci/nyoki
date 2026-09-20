@@ -43,6 +43,17 @@ TypeScript, deployed to Vercel.
 - Server-only tests need `@jest-environment node`; the pg driver needs Node
   crypto, which jsdom lacks.
 
+## Sales
+
+- A batch sale is one `Sale` row joined to many products through the picker
+  on the sale form (`src/components/admin/sale-form.tsx`). Every product is
+  always rendered and only non-matching rows are hidden, so a selection
+  survives being filtered out of view.
+- Percentages are whole numbers only; 12.5% produces sub-penny discounts.
+- Sales are **deleted**, products are **archived**: nothing snapshots a sale,
+  and an order records the price actually paid, not which sale produced it.
+- Updating a sale replaces its product set inside one transaction.
+
 ## Product photos
 
 - The upload format is decided by **sniffing the first bytes**, never by the

@@ -1,0 +1,259 @@
+"use client";
+
+import Link from "next/link";
+import { useActionState, useMemo, useState } from "react";
+
+import { Field, inputClass } from "@/components/admin/field";
+import { formatPence } from "@/lib/money";
+import type { SaleErrors, SaleInput } from "@/lib/sales/validate";
+
+export interface SaleFormState {
+  errors: SaleErrors;
+}
+
+export type SaleFormAction = (
+  state: SaleFormState,
+  formData: FormData,
+) => Promise<SaleFormState>;
+
+export interface SaleFormProduct {
+  id: string;
+  name: string;
+  pricePence: number;
+}
+
+const EMPTY: SaleFormState = { errors: {} };
+
+/** A Date as the value a datetime-local input expects, in local time. */
+function localDateTime(date: Date | null | undefined): string {
+  if (!date) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function amountValue(sale: SaleInput | undefined): string {
+  if (!sale) return "";
+  if (sale.type === "PERCENTAGE") return String(sale.value);
+  return formatPence(sale.value).replace("£", "").replaceAll(",", "");
+}
+
+/**
+ * The sale form, including the product picker that makes a batch sale a batch.
+ *
+ * The picker is controlled state: every product is always rendered so a
+ * selection survives being filtered out of view, and only the non-matching
+ * rows are hidden. A hidden checked box still submits.
+ */
+export function SaleForm({
+  action,
+  products,
+  sale,
+  initialState = EMPTY,
+  submitLabel = "Save sale",
+}: {
+  action: SaleFormAction;
+  products: SaleFormProduct[];
+  sale?: SaleInput;
+  initialState?: SaleFormState;
+  submitLabel?: string;
+}) {
+  const [state, formAction, isPending] = useActionState(action, initialState);
+  const errors = state.errors;
+
+  const [selected, setSelected] = useState<Set<string>>(
+    () => new Set(sale?.productIds ?? []),
+  );
+  const [query, setQuery] = useState("");
+
+  const visibleIds = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (needle.length === 0) return new Set(products.map((p) => p.id));
+    return new Set(
+      products.filter((p) => p.name.toLowerCase().includes(needle)).map((p) => p.id),
+    );
+  }, [products, query]);
+
+  function toggle(id: string, checked: boolean) {
+    setSelected((current) => {
+      const next = new Set(current);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }
+
+  return (
+    <form action={formAction} className="flex max-w-2xl flex-col gap-8">
+      <section className="flex flex-col gap-5">
+        <Field label="Name" name="name" error={errors.name} hint="Only you see this.">
+          {(props) => (
+            <input {...props} type="text" defaultValue={sale?.name ?? ""} className={inputClass} />
+          )}
+        </Field>
+
+        <fieldset className="flex flex-col gap-2">
+          <legend className="text-sm font-medium">Kind of discount</legend>
+          <div className="flex flex-wrap gap-5">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="radio"
+                name="type"
+                value="PERCENTAGE"
+                defaultChecked={(sale?.type ?? "PERCENTAGE") === "PERCENTAGE"}
+              />
+              Percent off
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="radio"
+                name="type"
+                value="FIXED_AMOUNT"
+                defaultChecked={sale?.type === "FIXED_AMOUNT"}
+              />
+              Pounds off
+            </label>
+          </div>
+          {errors.type ? (
+            <p className="text-xs text-red-600 dark:text-red-400">{errors.type}</p>
+          ) : null}
+        </fieldset>
+
+        <Field
+          label="Amount"
+          name="value"
+          error={errors.value}
+          hint="A whole percent (like 20), or pounds and pence (like 5.00)."
+        >
+          {(props) => (
+            <input
+              {...props}
+              type="text"
+              inputMode="decimal"
+              defaultValue={amountValue(sale)}
+              className={inputClass}
+            />
+          )}
+        </Field>
+      </section>
+
+      <section className="grid gap-5 sm:grid-cols-2">
+        <Field label="Starts" name="startsAt" error={errors.startsAt}>
+          {(props) => (
+            <input
+              {...props}
+              type="datetime-local"
+              defaultValue={localDateTime(sale?.startsAt)}
+              className={inputClass}
+            />
+          )}
+        </Field>
+
+        <Field
+          label="Ends"
+          name="endsAt"
+          error={errors.endsAt}
+          hint="Leave blank to run until you switch it off."
+        >
+          {(props) => (
+            <input
+              {...props}
+              type="datetime-local"
+              defaultValue={localDateTime(sale?.endsAt)}
+              className={inputClass}
+            />
+          )}
+        </Field>
+
+        <label className="flex items-center gap-2.5 text-sm sm:col-span-2">
+          <input
+            type="checkbox"
+            name="active"
+            defaultChecked={sale?.active ?? true}
+            className="size-4"
+          />
+          Live — untick to pause the sale without deleting it
+        </label>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <h2 className="text-sm font-semibold">Products in this sale</h2>
+          <p className="text-xs text-black/60 dark:text-white/60">
+            {selected.size} of {products.length} selected
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <label htmlFor="sale-product-search" className="sr-only">
+            Find products
+          </label>
+          <input
+            id="sale-product-search"
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Find products…"
+            className={`${inputClass} min-w-48 flex-1`}
+          />
+          <button
+            type="button"
+            onClick={() => setSelected(new Set(products.map((p) => p.id)))}
+            className="rounded-md border border-black/15 px-3 py-2 text-xs hover:bg-black/[0.04] dark:border-white/15 dark:hover:bg-white/5"
+          >
+            Select all
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelected(new Set())}
+            className="rounded-md border border-black/15 px-3 py-2 text-xs hover:bg-black/[0.04] dark:border-white/15 dark:hover:bg-white/5"
+          >
+            Clear
+          </button>
+        </div>
+
+        {errors.productIds ? (
+          <p className="text-xs text-red-600 dark:text-red-400">{errors.productIds}</p>
+        ) : null}
+
+        <ul className="max-h-80 divide-y divide-black/5 overflow-y-auto rounded-md border border-black/10 dark:divide-white/5 dark:border-white/10">
+          {products.map((product) => (
+            <li key={product.id} hidden={!visibleIds.has(product.id)}>
+              <label className="flex cursor-pointer items-center justify-between gap-3 px-3 py-2 text-sm hover:bg-black/[0.03] dark:hover:bg-white/5">
+                <span className="flex items-center gap-2.5">
+                  <input
+                    type="checkbox"
+                    name="productIds"
+                    value={product.id}
+                    checked={selected.has(product.id)}
+                    onChange={(event) => toggle(product.id, event.target.checked)}
+                    className="size-4"
+                  />
+                  {product.name}
+                </span>
+                <span className="tabular-nums text-black/60 dark:text-white/60">
+                  {formatPence(product.pricePence)}
+                </span>
+              </label>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <div className="flex items-center gap-3 border-t border-black/10 pt-6 dark:border-white/10">
+        <button
+          type="submit"
+          disabled={isPending}
+          className="rounded-md bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60 dark:bg-white dark:text-neutral-900"
+        >
+          {isPending ? "Saving…" : submitLabel}
+        </button>
+        <Link
+          href="/admin/sales"
+          className="text-sm text-black/60 underline underline-offset-4 dark:text-white/60"
+        >
+          Cancel
+        </Link>
+      </div>
+    </form>
+  );
+}
