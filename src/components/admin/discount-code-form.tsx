@@ -131,7 +131,7 @@ export function DiscountCodeForm({
         </Field>
 
         <label className="flex items-center gap-2.5 text-sm sm:col-span-2">
-          <input type="checkbox" name="active" defaultChecked={code?.active ?? true} className="size-4" />
+          <input type="checkbox" name="active" defaultChecked={code?.active ?? true} className={`size-4 ${ui.checkbox}`} />
           Live — untick to switch the code off without deleting it
         </label>
       </section>

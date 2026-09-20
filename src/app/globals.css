@@ -5,6 +5,11 @@
      "page" surface in src/lib/brand/ui.ts. */
   --background: #ffffff;
   --foreground: #4a5667;
+
+  /* Both themes are supported, so the browser draws its own controls -
+     checkboxes, scrollbars, date pickers - to match the one in use. Without
+     this a checkbox stays a white box on the dark admin. */
+  color-scheme: light dark;
 }
 
 /* Nyoki brand tokens. The values are owned by src/lib/brand/palette.ts and its

@@ -226,7 +226,7 @@ export function ProductForm({
             type="checkbox"
             name="oneOfAKind"
             defaultChecked={product?.oneOfAKind ?? false}
-            className="size-4"
+            className={`size-4 ${ui.checkbox}`}
           />
           One of a kind — stock is always one
         </label>
@@ -236,7 +236,7 @@ export function ProductForm({
             type="checkbox"
             name="madeToOrder"
             defaultChecked={product?.madeToOrder ?? false}
-            className="size-4"
+            className={`size-4 ${ui.checkbox}`}
           />
           Made to order
         </label>
@@ -263,7 +263,7 @@ export function ProductForm({
             type="checkbox"
             name="featured"
             defaultChecked={product?.featured ?? false}
-            className="size-4"
+            className={`size-4 ${ui.checkbox}`}
           />
           Feature on the front page
         </label>
@@ -288,7 +288,7 @@ export function ProductForm({
                     name="categoryIds"
                     value={row.id}
                     defaultChecked={inCategories.has(row.id)}
-                    className="size-4"
+                    className={`size-4 ${ui.checkbox}`}
                   />
                   {row.name}
                 </label>

@@ -33,6 +33,10 @@ describe("parsePercentToTenths", () => {
     expect(parsePercentToTenths("1.25")).toBeNull();
   });
 
+  it("reads a percentage larger than a hundred, which is a real thing to type", () => {
+    expect(parsePercentToTenths("1010")).toBe(10100);
+  });
+
   it("refuses what is not a percentage at all", () => {
     expect(parsePercentToTenths("")).toBeNull();
     expect(parsePercentToTenths("ten")).toBeNull();
@@ -170,6 +174,13 @@ describe("validateRepriceInput", () => {
     const result = validateRepriceInput({ ...fields, mode: "SET", unit: "PERCENT", value: "10" });
 
     expect(result.ok === false && result.errors.unit).toBeTruthy();
+  });
+
+  it("allows a tenfold rise, and refuses figures past it as a slip of the keyboard", () => {
+    expect(validateRepriceInput({ ...fields, value: "1000" })).toMatchObject({ ok: true });
+
+    const result = validateRepriceInput({ ...fields, value: "1010" });
+    expect(result.ok === false && result.errors.value).toMatch(/1,?000/);
   });
 
   it("refuses a mode, unit or rounding it does not know", () => {

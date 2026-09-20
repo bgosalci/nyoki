@@ -25,6 +25,12 @@ describe("Tailwind brand tokens", () => {
     expect(css).toMatch(/--container-shop:\s*86rem;/);
   });
 
+  it("tells the browser the page has both themes, so native controls follow", () => {
+    // Without color-scheme, a checkbox, a scrollbar and a date picker all stay
+    // in the browser's light styling - a white checkbox on the dark admin.
+    expect(css).toMatch(/color-scheme:\s*light dark;/);
+  });
+
   it("declares no nyoki token that the palette does not know", () => {
     const declared = [...css.matchAll(/--color-(nyoki-[a-z-]+):/g)].map((m) => m[1]);
     const known = palette.map((entry) => entry.token);

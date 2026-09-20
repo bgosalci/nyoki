@@ -19,7 +19,7 @@ describe("CMS surfaces", () => {
 describe("CMS class recipes", () => {
   it("every recipe references only brand tokens that exist", () => {
     for (const [name, classes] of Object.entries(ui)) {
-      const tokens = [...classes.matchAll(/(?:bg|text|border)-(nyoki-[a-z-]+)/g)].map((m) => m[1]);
+      const tokens = [...classes.matchAll(/(?:bg|text|border|accent)-(nyoki-[a-z-]+)/g)].map((m) => m[1]);
       expect({ name, tokens }).toMatchObject({ tokens: expect.any(Array) });
       for (const token of tokens) {
         expect(hexOfToken.has(token)).toBe(true);
@@ -49,6 +49,10 @@ describe("CMS class recipes", () => {
       expect({ name, classes }).toMatchObject({ name });
       expect(classes).not.toMatch(/\bdark:bg-nyoki-navy\b/);
     }
+  });
+
+  it("ticks a checkbox in the brand's own colour", () => {
+    expect(ui.checkbox).toMatch(/\baccent-nyoki-navy\b/);
   });
 
   it("dims the page behind a modal with a neutral scrim, never a brand tint", () => {

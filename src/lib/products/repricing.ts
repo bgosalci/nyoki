@@ -39,9 +39,14 @@ const STEP: Record<RepriceRounding, number> = {
   POUND: 100,
 };
 
-// Up to three digits and at most one decimal place. Deliberately no exponent
-// and no sign: "1e3" and "-5" are typing mistakes, not percentages.
-const PERCENT = /^(\d{1,3})(?:\.(\d))?\s*%?$/;
+// Digits with at most one decimal place. Deliberately no exponent and no sign:
+// "1e3" and "-5" are typing mistakes, not percentages. How big a percentage is
+// sensible is a separate question, answered in validation with a message that
+// says so - refusing "1010" as unreadable would be a lie.
+const PERCENT = /^(\d{1,6})(?:\.(\d))?\s*%?$/;
+
+/** A tenfold rise. Past this it is far likelier to be a slip than an intention. */
+const MAX_PERCENT_TENTHS = 10_000;
 
 /**
  * Parse a typed percentage into tenths of a percent.
@@ -159,6 +164,8 @@ export function validateRepriceInput(fields: RepriceFields): RepriceValidation {
       errors.value = mode === "SET" ? "A price has to be more than nothing." : "That would not change anything.";
     } else if (mode === "DECREASE" && unit === "PERCENT" && value > 1000) {
       errors.value = "A reduction cannot be more than 100%.";
+    } else if (unit === "PERCENT" && value > MAX_PERCENT_TENTHS) {
+      errors.value = "That is over 1,000% - check the figure.";
     }
   }
 

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 
 import { AdminFooter } from "@/components/admin/admin-footer";
 import { AdminTopBar } from "@/components/admin/admin-top-bar";
@@ -33,7 +33,21 @@ describe("AdminTopBar", () => {
     const banner = screen.getByRole("banner");
     expect(banner).toHaveClass("fixed");
     expect(banner).toHaveTextContent("Products");
-    expect(banner).toHaveTextContent("Nyoki");
+  });
+
+  it("carries the Nyoki mark, which is the shop's name in the shop's own hand", () => {
+    pathname = "/admin/products";
+    render(<AdminTopBar />);
+
+    const banner = screen.getByRole("banner");
+    expect(within(banner).getByAltText(/nyoki/i)).toBeInTheDocument();
+  });
+
+  it("takes the mark home to the overview", () => {
+    pathname = "/admin/products";
+    render(<AdminTopBar />);
+
+    expect(within(screen.getByRole("banner")).getByRole("link")).toHaveAttribute("href", "/admin");
   });
 });
 

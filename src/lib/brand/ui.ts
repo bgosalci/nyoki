@@ -68,6 +68,9 @@ export const ui = {
   // The dim behind a modal. Plain black, because every brand colour we have is
   // a tint: ink especially (#0b063c) lays a blue-purple wash over the page.
   scrim: "backdrop:bg-black/50",
+  // The browser draws the box itself (see color-scheme in globals.css); this
+  // is only the fill of the tick.
+  checkbox: "accent-nyoki-navy",
   // --- storefront. Deliberately light-only: the shop commits to one warm
   // look, where the admin is a tool that follows the viewer's theme. Radii
   // come from the theme board: cards 8px, buttons 4px, tags 3px, bands 6px.

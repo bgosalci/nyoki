@@ -170,7 +170,7 @@ export function SaleForm({
             type="checkbox"
             name="active"
             defaultChecked={sale?.active ?? true}
-            className="size-4"
+            className={`size-4 ${ui.checkbox}`}
           />
           Live — untick to pause the sale without deleting it
         </label>
@@ -227,7 +227,7 @@ export function SaleForm({
                     value={product.id}
                     checked={selected.has(product.id)}
                     onChange={(event) => toggle(product.id, event.target.checked)}
-                    className="size-4"
+                    className={`size-4 ${ui.checkbox}`}
                   />
                   {product.name}
                 </span>

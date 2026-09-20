@@ -116,7 +116,7 @@ export function ProductTable({
                   aria-label="Select all"
                   checked={allChosen}
                   onChange={() => setSelected(allChosen ? new Set() : new Set(rows.map((row) => row.id)))}
-                  className="size-4 align-middle"
+                  className={`size-4 align-middle ${ui.checkbox}`}
                 />
               </Th>
               <Th srOnly>Photo</Th>
@@ -135,7 +135,7 @@ export function ProductTable({
                     aria-label={row.name}
                     checked={selected.has(row.id)}
                     onChange={() => toggle(row.id)}
-                    className="size-4 align-middle"
+                    className={`size-4 align-middle ${ui.checkbox}`}
                   />
                 </td>
                 <td className="py-2 pr-3">
