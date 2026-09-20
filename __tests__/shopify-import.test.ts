@@ -176,6 +176,8 @@ describe("categoryFor", () => {
     ["Collar", "Accessories"],
     // a cardigan is not a card
     ["Boys Cardigan", "Clothes"],
+    ["Baby Boys Dungarees", "Clothes"],
+    ["Boys Shorts", "Clothes"],
   ])("puts %s under %s", (type, parent) => {
     expect(categoryFor(type)).toEqual({ name: type, parent });
   });

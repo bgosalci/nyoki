@@ -152,7 +152,7 @@ export function htmlToText(html: string): string | null {
 const GROUPS: [RegExp, string][] = [
   [/\bcards?\b|new baby (boy|girl)/i, "Cards"],
   [/brooch|hair|clip|band|necklace|bracelet|earring|bag|purse|scarf|collar/i, "Accessories"],
-  [/hat|bootie|vest|cardigan|dress|skirt|coat|jacket|blanket|romper|bib|jumper|top\b|shoe/i, "Clothes"],
+  [/hat|bootie|vest|cardigan|dress|skirt|coat|jacket|dungaree|shorts|trouser|blanket|romper|bib|jumper|top\b|shoe/i, "Clothes"],
 ];
 
 export function categoryFor(type: string): ImportedCategory | null {
