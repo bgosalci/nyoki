@@ -60,6 +60,12 @@ TypeScript, deployed to Vercel.
 - Text goes only in an approved pairing (`APPROVED_TEXT_PAIRINGS`). **White on
   sage and navy on sage both fail WCAG AA**; on sage the text colour is ink.
   Sage-light is the wordmark script and is decorative only.
+- The page declares `color-scheme: light dark`, which is what makes the
+  browser draw its own controls - checkboxes, scrollbars, date pickers - in
+  the theme in use. Without it a checkbox is a white box on the dark admin.
+- A modal dims the page with `ui.scrim`, which is plain black. Every brand
+  colour is a tint; ink especially (#0b063c) lays a blue-purple wash over
+  whatever is behind it rather than dimming it.
 - `pnpm brand:board` regenerates docs/brand/theme-board.html from the module.
   Never edit the board by hand.
 
@@ -82,6 +88,31 @@ TypeScript, deployed to Vercel.
 - Deleting a product is safe for order history - a line snapshots the name,
   price and code it sold at, and its product reference is SetNull rather than
   cascading - but it also removes the photos from storage, so it asks first.
+
+- **Bulk price changes** live in `src/lib/products/repricing.ts`, which is
+  pure. Percentages are carried as TENTHS of a percent, so 12.5% is exact -
+  unlike a sale, where a fractional percentage would produce sub-penny
+  discounts off every basket, the result here is rounded once and stored.
+- Nothing records what a price used to be, so a bulk change cannot be undone.
+  The dialog answers that by previewing every change first, and it sends the
+  figures that were typed, never the prices it worked out: the action
+  recalculates from the database rows.
+- Two rules the module enforces: a bulk change never produces a free product
+  (the floor is a penny), and a was-price the new price has caught up with is
+  cleared, since the product form rejects that combination anyway.
+
+## Orders
+
+- `/admin/orders` lists orders; an order has no page of its own yet, because
+  there is nothing to do on one until checkout exists. The list is capped at
+  the most recent 200 and says so - orders grow without limit where the
+  catalogue does not.
+- Statuses are named for what is left to do (`To send`), not for what the
+  payment did (`PAID`), and only a paid order counts as waiting on us.
+- Order dates spell their month names out in `src/lib/orders/status.ts`
+  rather than taking them from Intl: the en-GB abbreviation moves with the
+  runtime's ICU data (recent versions render September as "Sept"), and a date
+  must not read differently on Vercel than it does locally.
 
 ## Sales
 
@@ -171,6 +202,10 @@ TypeScript, deployed to Vercel.
 - List thumbnails go through `next/image` (`ProductThumbnail`). The imported
   catalogue has photos up to ~4,900px wide, so a plain `<img>` would download
   the full original for a 44px square, 240-odd times on one page.
+- The categories list collapses per group, remembered per browser. What a
+  shut parent hides - everything beneath it however deep, whether or not
+  those rows are themselves open - is `visibleBranches` in
+  `src/lib/categories/collapse.ts`, not the component.
 - Filtering is live: the products filter is a client component that writes to
   the URL as you type (debounced) or change a select, so the server component
   re-renders and the view stays bookmarkable. No Filter buttons.
