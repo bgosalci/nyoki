@@ -77,6 +77,11 @@ export const ui = {
   shopButtonOutline: "border border-nyoki-navy text-nyoki-navy hover:bg-nyoki-accent-beige",
   shopBand: "bg-nyoki-sage text-nyoki-ink",
   shopBadge: "bg-nyoki-accent-beige text-nyoki-navy",
+  // The three product badges, as drawn on the theme board.
+  shopBadgeSale: "bg-nyoki-sage text-nyoki-ink",
+  shopBadgeMade: "bg-nyoki-accent-beige text-nyoki-navy",
+  shopBadgeOne: "bg-nyoki-ink text-nyoki-beige",
+  shopCard: "border border-nyoki-light-slate bg-nyoki-white",
   pill: "border border-nyoki-light-slate bg-nyoki-white text-nyoki-navy hover:border-nyoki-navy dark:border-nyoki-navy dark:bg-nyoki-navy dark:text-nyoki-beige dark:hover:border-nyoki-beige",
   pillActive: "border border-nyoki-navy bg-nyoki-navy text-nyoki-beige dark:border-nyoki-beige dark:bg-nyoki-beige dark:text-nyoki-navy",
   tableRow: "border-nyoki-accent-beige dark:border-nyoki-navy",

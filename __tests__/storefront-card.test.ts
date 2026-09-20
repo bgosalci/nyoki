@@ -46,11 +46,11 @@ describe("toCardProduct", () => {
   });
 
   it("badges the saving on a percentage sale", () => {
-    expect(toCardProduct(product({ sales: [sale(20)] }), NOW).badges).toContain("20% off");
+    expect(toCardProduct(product({ sales: [sale(20)] }), NOW).badges).toContainEqual({ label: "20% off", tone: "sale" });
   });
 
   it("badges a fixed-amount sale by its amount", () => {
-    expect(toCardProduct(product({ sales: [sale(150, "FIXED_AMOUNT")] }), NOW).badges).toContain("£1.50 off");
+    expect(toCardProduct(product({ sales: [sale(150, "FIXED_AMOUNT")] }), NOW).badges).toContainEqual({ label: "£1.50 off", tone: "sale" });
   });
 
   it("falls back to the was-price when there is no sale", () => {
@@ -72,19 +72,25 @@ describe("toCardProduct", () => {
     const card = toCardProduct(product({ sales: [past] }), NOW);
 
     expect(card.pricePence).toBe(650);
-    expect(card.badges).not.toContain("20% off");
+    expect(card.badges).toEqual([]);
   });
 
   it("badges a one-of-a-kind piece", () => {
-    expect(toCardProduct(product({ oneOfAKind: true }), NOW).badges).toContain("One of a kind");
+    expect(toCardProduct(product({ oneOfAKind: true }), NOW).badges).toContainEqual({ label: "One of a kind", tone: "one" });
   });
 
   it("badges made to order with its lead time", () => {
-    expect(toCardProduct(product({ madeToOrder: true, leadTimeDays: 14 }), NOW).badges).toContain("Made to order · 14 days");
+    expect(toCardProduct(product({ madeToOrder: true, leadTimeDays: 14 }), NOW).badges).toContainEqual({ label: "Made to order · 14 days", tone: "made" });
   });
 
   it("badges made to order without a lead time too", () => {
-    expect(toCardProduct(product({ madeToOrder: true }), NOW).badges).toContain("Made to order");
+    expect(toCardProduct(product({ madeToOrder: true }), NOW).badges).toContainEqual({ label: "Made to order", tone: "made" });
+  });
+
+  it("orders the badges as the theme board does: saving, then how it is made", () => {
+    const card = toCardProduct(product({ sales: [sale(20)], madeToOrder: true, leadTimeDays: 14, oneOfAKind: true }), NOW);
+
+    expect(card.badges.map((b) => b.tone)).toEqual(["sale", "made", "one"]);
   });
 
   it("takes the first photo, or none", () => {

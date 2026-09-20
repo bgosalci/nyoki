@@ -7,7 +7,7 @@ const base = {
   name: "Handmade Easter Bunny Card",
   pricePence: 650,
   wasPence: null,
-  badges: [],
+  badges: [] as { label: string; tone: "sale" | "made" | "one" }[],
   image: { url: "/uploads/a.jpg", alt: "Front of the card" },
 };
 
@@ -35,11 +35,39 @@ describe("ProductCard", () => {
     expect(screen.getByText(/was/i)).toHaveClass("sr-only");
   });
 
-  it("shows each badge", () => {
-    render(<ProductCard product={{ ...base, badges: ["20% off", "One of a kind"] }} />);
+  it("shows each badge, coloured by what it says", () => {
+    render(
+      <ProductCard
+        product={{
+          ...base,
+          badges: [
+            { label: "20% off", tone: "sale" },
+            { label: "Made to order", tone: "made" },
+            { label: "One of a kind", tone: "one" },
+          ],
+        }}
+      />,
+    );
 
-    expect(screen.getByText("20% off")).toBeInTheDocument();
-    expect(screen.getByText("One of a kind")).toBeInTheDocument();
+    expect(screen.getByText("20% off").className).toMatch(/bg-nyoki-sage/);
+    expect(screen.getByText("Made to order").className).toMatch(/bg-nyoki-accent-beige/);
+    expect(screen.getByText("One of a kind").className).toMatch(/bg-nyoki-ink/);
+  });
+
+  it("puts the badges after the price, as the theme board has them", () => {
+    render(<ProductCard product={{ ...base, badges: [{ label: "20% off", tone: "sale" }] }} />);
+
+    const price = screen.getByText("£6.50");
+    const badge = screen.getByText("20% off");
+    expect(price.compareDocumentPosition(badge) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("is a white panel with a border, not a bare image", () => {
+    render(<ProductCard product={base} />);
+
+    const card = screen.getByRole("link", { name: /handmade easter bunny card/i });
+    expect(card.className).toMatch(/bg-nyoki-white/);
+    expect(card.className).toMatch(/border/);
   });
 
   it("gives the photo an empty alt, since the name is in the same link", () => {

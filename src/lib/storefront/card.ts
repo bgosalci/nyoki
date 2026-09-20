@@ -6,6 +6,14 @@ export interface CardImage {
   alt: string | null;
 }
 
+export type BadgeTone = "sale" | "made" | "one";
+
+export interface CardBadge {
+  label: string;
+  /** Decides the badge's colours; see the theme board's component samples. */
+  tone: BadgeTone;
+}
+
 export interface CardProduct {
   href: string;
   name: string;
@@ -13,7 +21,7 @@ export interface CardProduct {
   pricePence: number;
   /** Struck through beside it, or null when there is nothing to compare. */
   wasPence: number | null;
-  badges: string[];
+  badges: CardBadge[];
   image: CardImage | null;
 }
 
@@ -29,8 +37,11 @@ export interface CardSource {
   sales: PricingSale[];
 }
 
-function saleBadge(sale: PricingSale): string {
-  return sale.type === "PERCENTAGE" ? `${sale.value}% off` : `${formatPence(sale.value)} off`;
+function saleBadge(sale: PricingSale): CardBadge {
+  return {
+    label: sale.type === "PERCENTAGE" ? `${sale.value}% off` : `${formatPence(sale.value)} off`,
+    tone: "sale",
+  };
 }
 
 /**
@@ -42,12 +53,16 @@ function saleBadge(sale: PricingSale): string {
 export function toCardProduct(product: CardSource, now: Date): CardProduct {
   const { pricePence, sale } = effectivePricePence(product.pricePence, product.sales, now);
 
-  const badges: string[] = [];
+  // Ordered as the theme board has them: the saving first, then how it is made.
+  const badges: CardBadge[] = [];
   if (sale) badges.push(saleBadge(sale));
-  if (product.oneOfAKind) badges.push("One of a kind");
   if (product.madeToOrder) {
-    badges.push(product.leadTimeDays ? `Made to order · ${product.leadTimeDays} days` : "Made to order");
+    badges.push({
+      label: product.leadTimeDays ? `Made to order · ${product.leadTimeDays} days` : "Made to order",
+      tone: "made",
+    });
   }
+  if (product.oneOfAKind) badges.push({ label: "One of a kind", tone: "one" });
 
   return {
     href: `/product/${product.slug}`,
