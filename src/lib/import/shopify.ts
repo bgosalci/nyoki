@@ -248,6 +248,24 @@ export function parseShopifyExport(csvText: string): ImportReport {
       if (variant.pricePence === pricePence) variant.pricePence = null;
     }
 
+    // Shopify stamps one SKU on every size of a product. That code belongs to
+    // the product, not the sizes, and a per-variant unique constraint would
+    // refuse it. Distinct per-size codes stay where they are; a stray repeat
+    // among them is kept only on its first occurrence.
+    let productSku: string | null = null;
+    const skus = variants.map((variant) => variant.sku).filter((sku): sku is string => sku !== null);
+    if (variants.length > 0 && skus.length === variants.length && new Set(skus).size === 1) {
+      productSku = skus[0];
+      for (const variant of variants) variant.sku = null;
+    } else {
+      const seen = new Set<string>();
+      for (const variant of variants) {
+        if (variant.sku === null) continue;
+        if (seen.has(variant.sku)) variant.sku = null;
+        else seen.add(variant.sku);
+      }
+    }
+
     const compareRaw = pence(col(first, "Variant Compare At Price"));
     const compareAtPence = compareRaw !== null && compareRaw > pricePence ? compareRaw : null;
 
@@ -264,7 +282,7 @@ export function parseShopifyExport(csvText: string): ImportReport {
       status,
       pricePence,
       compareAtPence,
-      sku: variants.length === 0 ? blank(col(first, "Variant SKU")) : null,
+      sku: variants.length === 0 ? blank(col(first, "Variant SKU")) : productSku,
       stock: variants.length === 0 ? integer(col(first, "Variant Inventory Qty")) : 0,
       weightGrams: grams(col(first, "Variant Grams")),
       variants,

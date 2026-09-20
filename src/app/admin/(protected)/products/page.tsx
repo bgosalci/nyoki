@@ -31,6 +31,7 @@ export default async function ProductsPage({
 
   return (
     <>
+      <div className={`sticky top-14 z-20 -mx-6 -mt-6 px-6 pt-6 pb-4 md:-mx-10 md:-mt-10 md:px-10 md:pt-10 ${ui.page}`}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold tracking-tight">Products</h1>
 
@@ -80,6 +81,7 @@ export default async function ProductsPage({
       <p className={`mt-4 text-sm ${ui.mutedOnPage}`}>
         {filtering ? `${products.length} of ${total} products` : `${total} products`}
       </p>
+      </div>
 
       {products.length === 0 && !filtering ? (
         <div className={`mt-8 rounded-lg border border-dashed p-10 text-center ${ui.ruleOnPage}`}>

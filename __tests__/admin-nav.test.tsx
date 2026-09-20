@@ -1,4 +1,4 @@
-import { isCurrent } from "@/components/admin/admin-nav";
+import { isCurrent } from "@/lib/admin/nav";
 
 describe("isCurrent", () => {
   it("marks the overview current only on an exact match", () => {

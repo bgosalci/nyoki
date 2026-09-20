@@ -95,6 +95,16 @@ TypeScript, deployed to Vercel.
 - The importer sets a category's parent only on creation; after changing
   categoryFor(), run `pnpm categories:regroup` (`--dry-run` first).
 
+## Admin chrome
+
+- The admin has a fixed top bar (`AdminTopBar`, h-14) and a fixed footer
+  (`AdminFooter`, h-12); the protected layout pads the content by those
+  heights. A page that pins its own header uses `sticky top-14` with the page
+  ground as background so rows scroll beneath it (see the products list).
+- The nav map and `isCurrent`/`sectionTitle` live in `src/lib/admin/nav.ts`,
+  a plain module, so server components can import them; `admin-nav.tsx` is
+  the client component.
+
 ## Accounts
 
 - Settings lets anyone change their own password and lets an OWNER add, edit

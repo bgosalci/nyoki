@@ -81,6 +81,30 @@ describe("parseShopifyExport", () => {
     ]);
   });
 
+  it("lifts a code shared by every size to the product, leaving the sizes without one", () => {
+    // Shopify stamps one SKU on all sizes of a product; the code is the
+    // product's, and a per-variant unique constraint would reject it.
+    const rows = vest.map((r) => ({ ...r, "Variant SKU": "0405_OV_P" }));
+    const { products } = parseShopifyExport(csv(rows));
+
+    expect(products[0].sku).toBe("0405_OV_P");
+    expect(products[0].variants.map((v) => v.sku)).toEqual([null, null]);
+  });
+
+  it("keeps distinct per-size codes on the sizes", () => {
+    const { products } = parseShopifyExport(csv(vest));
+
+    expect(products[0].sku).toBeNull();
+    expect(products[0].variants.map((v) => v.sku)).toEqual(["V-S", "V-M"]);
+  });
+
+  it("keeps a repeated code among otherwise distinct ones only once", () => {
+    const rows = [vest[0], vest[1], { ...vest[1], "Option1 Value": "L", "Variant SKU": "V-M", "Image Src": "", "Image Position": "" }];
+    const { products } = parseShopifyExport(csv(rows));
+
+    expect(products[0].variants.map((v) => v.sku)).toEqual(["V-S", "V-M", null]);
+  });
+
   it("orders images by their position column, not by row order", () => {
     const { products } = parseShopifyExport(csv(vest));
 
