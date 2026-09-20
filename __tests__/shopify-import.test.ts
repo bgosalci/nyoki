@@ -169,6 +169,13 @@ describe("categoryFor", () => {
     ["Hairband", "Accessories"],
     ["Baby Girl Hat and Booties", "Clothes"],
     ["Girls Vest", "Clothes"],
+    ["Girls Coat", "Clothes"],
+    ["Baby Boys Jacket", "Clothes"],
+    ["Cardigan and Skirt", "Clothes"],
+    ["Dresses", "Clothes"],
+    ["Collar", "Accessories"],
+    // a cardigan is not a card
+    ["Boys Cardigan", "Clothes"],
   ])("puts %s under %s", (type, parent) => {
     expect(categoryFor(type)).toEqual({ name: type, parent });
   });

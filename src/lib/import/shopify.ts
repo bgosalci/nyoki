@@ -150,9 +150,9 @@ export function htmlToText(html: string): string | null {
 
 /** Groups follow the three price lists that sit beside the export. */
 const GROUPS: [RegExp, string][] = [
-  [/card|new baby (boy|girl)/i, "Cards"],
-  [/brooch|hair|clip|band|necklace|bracelet|earring|bag|purse|scarf/i, "Accessories"],
-  [/hat|bootie|vest|cardigan|dress|blanket|romper|bib|jumper|top\b|shoe/i, "Clothes"],
+  [/\bcards?\b|new baby (boy|girl)/i, "Cards"],
+  [/brooch|hair|clip|band|necklace|bracelet|earring|bag|purse|scarf|collar/i, "Accessories"],
+  [/hat|bootie|vest|cardigan|dress|skirt|coat|jacket|blanket|romper|bib|jumper|top\b|shoe/i, "Clothes"],
 ];
 
 export function categoryFor(type: string): ImportedCategory | null {
