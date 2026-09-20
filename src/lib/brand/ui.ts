@@ -65,6 +65,9 @@ export const ui = {
   badgeQuiet: "bg-nyoki-accent-beige text-nyoki-navy dark:bg-nyoki-night-rule dark:text-nyoki-beige",
   badgeDark: "bg-nyoki-ink text-nyoki-beige dark:bg-nyoki-night-rule dark:text-nyoki-beige",
   tableHead: "border-nyoki-light-slate dark:border-nyoki-night-rule",
+  // The dim behind a modal. Plain black, because every brand colour we have is
+  // a tint: ink especially (#0b063c) lays a blue-purple wash over the page.
+  scrim: "backdrop:bg-black/50",
   // --- storefront. Deliberately light-only: the shop commits to one warm
   // look, where the admin is a tool that follows the viewer's theme. Radii
   // come from the theme board: cards 8px, buttons 4px, tags 3px, bands 6px.

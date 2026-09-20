@@ -51,6 +51,13 @@ describe("CMS class recipes", () => {
     }
   });
 
+  it("dims the page behind a modal with a neutral scrim, never a brand tint", () => {
+    // Ink is #0b063c - a saturated blue-purple. At any opacity it lays a blue
+    // wash over whatever is behind it, which is why the scrim is plain black.
+    expect(ui.scrim).toMatch(/\bbackdrop:bg-black\/\d+\b/);
+    expect(ui.scrim).not.toMatch(/nyoki-/);
+  });
+
   it("pairs every dark surface with light text", () => {
     expect(ui.page).toMatch(/dark:bg-nyoki-night\b/);
     expect(ui.page).toMatch(/dark:text-nyoki-beige/);

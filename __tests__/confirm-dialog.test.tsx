@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
+import { ui } from "@/lib/brand/ui";
 
 // jsdom does not implement the dialog element's modal methods.
 beforeAll(() => {
@@ -26,6 +27,14 @@ describe("ConfirmDialog", () => {
     const dialog = screen.getByRole("dialog", { name: "Delete this category?" });
     expect(dialog).toHaveAttribute("open");
     expect(dialog).toHaveTextContent("Its sub-categories move to the top level.");
+  });
+
+  it("dims the page with a neutral scrim rather than a blue brand tint", () => {
+    render(<ConfirmDialog open {...props} />);
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.className).toContain(ui.scrim);
+    expect(dialog.className).not.toMatch(/backdrop:bg-nyoki-/);
   });
 
   it("stays closed until asked", () => {

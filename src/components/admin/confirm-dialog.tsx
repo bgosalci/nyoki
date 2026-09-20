@@ -56,7 +56,7 @@ export function ConfirmDialog({
         event.preventDefault();
         onCancel();
       }}
-      className={`m-auto w-[calc(100%-2rem)] max-w-md rounded-lg border p-6 shadow-xl backdrop:bg-nyoki-ink/40 ${ui.panel} ${ui.rule}`}
+      className={`m-auto w-[calc(100%-2rem)] max-w-md rounded-lg border p-6 shadow-xl ${ui.scrim} ${ui.panel} ${ui.rule}`}
     >
       <h2 id={titleId} className={`text-lg font-semibold ${ui.heading}`}>
         {title}
