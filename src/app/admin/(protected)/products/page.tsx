@@ -1,6 +1,7 @@
 import { ui } from "@/lib/brand/ui";
 import { ProductFilterForm } from "@/components/admin/product-filter-form";
 import { PinnedHeight } from "@/components/admin/pinned-height";
+import { ProductThumbnail } from "@/components/admin/product-thumbnail";
 import { PINNED_BLOCK_CLASS, Th } from "@/components/admin/th";
 import Link from "next/link";
 
@@ -88,6 +89,7 @@ export default async function ProductsPage({
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr>
+                <Th srOnly>Photo</Th>
                 <Th>Name</Th>
                 <Th>Status</Th>
                 <Th align="right">Price</Th>
@@ -100,6 +102,9 @@ export default async function ProductsPage({
                   key={product.id}
                   className={`border-b ${ui.tableRow}`}
                 >
+                  <td className="py-2 pr-3">
+                    <ProductThumbnail image={product.images[0] ?? null} />
+                  </td>
                   <td className="py-3 pr-4">
                     <Link
                       href={`/admin/products/${product.id}`}

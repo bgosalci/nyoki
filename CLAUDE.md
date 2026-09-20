@@ -115,6 +115,9 @@ TypeScript, deployed to Vercel.
   the category plus its descendants with `subtreeIds`. Anything shared between
   the client form and server pills - `filterHref` - lives in a plain module
   under `src/lib`, never in a "use client" file.
+- List thumbnails go through `next/image` (`ProductThumbnail`). The imported
+  catalogue has photos up to ~4,900px wide, so a plain `<img>` would download
+  the full original for a 44px square, 240-odd times on one page.
 - Filtering is live: the products filter is a client component that writes to
   the URL as you type (debounced) or change a select, so the server component
   re-renders and the view stays bookmarkable. No Filter buttons.

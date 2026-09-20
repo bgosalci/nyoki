@@ -20,7 +20,7 @@ export interface Surface {
 /** Each named surface with the text colours that may sit on it, per theme. */
 export const surfaces: Record<string, Surface> = {
   page: {
-    light: { bg: neutral.beige, text: brand.navy, muted: neutral.textDark },
+    light: { bg: neutral.white, text: brand.navy, muted: neutral.textDark },
     dark: { bg: brand.ink, text: neutral.beige, muted: neutral.blueGrey },
   },
   panel: {
@@ -43,7 +43,7 @@ export const surfaces: Record<string, Surface> = {
 
 /** Tailwind class recipes. Every token here is checked to exist by the brand tests. */
 export const ui = {
-  page: "bg-nyoki-beige text-nyoki-navy dark:bg-nyoki-ink dark:text-nyoki-beige",
+  page: "bg-nyoki-white text-nyoki-navy dark:bg-nyoki-ink dark:text-nyoki-beige",
   panel: "bg-nyoki-white text-nyoki-navy dark:bg-nyoki-navy dark:text-nyoki-beige",
   card: "bg-nyoki-accent-beige text-nyoki-navy dark:bg-nyoki-navy dark:text-nyoki-beige",
   mutedOnPage: "text-nyoki-text-dark dark:text-nyoki-blue-grey",

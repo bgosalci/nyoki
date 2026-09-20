@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 :root {
-  /* Page ground and text: beige and navy, ink and beige in the dark - the
+  /* Page ground and text: white and navy, ink and beige in the dark - the
      "page" surface in src/lib/brand/ui.ts. */
-  --background: #f5f3ef;
+  --background: #ffffff;
   --foreground: #4a5667;
 }
 

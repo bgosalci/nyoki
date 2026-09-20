@@ -32,8 +32,8 @@ describe("CMS class recipes", () => {
     expect(ui.buttonPrimary).toMatch(/\btext-nyoki-beige\b/);
   });
 
-  it("the page ground is beige in light and ink in dark", () => {
-    expect(ui.page).toMatch(/\bbg-nyoki-beige\b/);
+  it("the page ground is white in light and ink in dark", () => {
+    expect(ui.page).toMatch(/\bbg-nyoki-white\b/);
     expect(ui.page).toMatch(/\bdark:bg-nyoki-ink\b/);
   });
 
