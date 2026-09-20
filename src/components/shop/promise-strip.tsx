@@ -9,8 +9,9 @@ const PROMISES = [
 /**
  * The three things true of everything in the shop.
  *
- * It sits at the foot of the browsing pages rather than only on the home
- * page: a shopper who arrives on a category from a search has not seen it.
+ * The home page only. It was tried at the foot of the browsing pages too, on
+ * the reasoning that a shopper arriving from a search has never seen the home
+ * page, and it was not wanted there.
  */
 export function PromiseStrip() {
   return (

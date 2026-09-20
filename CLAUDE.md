@@ -189,8 +189,9 @@ TypeScript, deployed to Vercel.
 ## Storefront pages
 
 - A category page opens on a quiet band (`ui.shopBandQuiet`): name, a line
-  about it, a photo from inside it. Then picture tiles for the types beneath,
-  then everything in it, then the promises.
+  about it, a photo from inside it, and pills straight into the types beneath.
+  Then picture tiles for those same types, then everything in it. The promise
+  strip is the home page's alone - it was tried here and was not wanted.
 - Tiles come from `categoryTiles` in `src/lib/storefront/tiles.ts`, built in
   one pass over `tileProducts()` rather than a query per tile. A child holding
   nothing is left out - a tile leading to an empty page is a dead end.

@@ -86,6 +86,9 @@ export const ui = {
   // every one of them would shout; this sits a shade off the page ground.
   shopBandQuiet: "bg-nyoki-accent-beige text-nyoki-navy",
   shopBadge: "rounded-[3px] bg-nyoki-accent-beige text-nyoki-navy",
+  // A pill sits on the quiet band, which is itself accent-beige, so it needs
+  // to lift off it rather than borrow its colour.
+  shopPill: "rounded-[3px] border border-nyoki-light-slate bg-nyoki-white text-nyoki-navy hover:border-nyoki-navy",
   // The three product badges, as drawn on the theme board.
   shopBadgeSale: "rounded-[3px] bg-nyoki-sage text-nyoki-ink",
   shopBadgeMade: "rounded-[3px] bg-nyoki-accent-beige text-nyoki-navy",

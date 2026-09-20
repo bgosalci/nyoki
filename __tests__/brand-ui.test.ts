@@ -98,6 +98,14 @@ describe("CMS class recipes", () => {
     expect(ui.shopBandQuiet).toMatch(/\btext-nyoki-navy\b/);
   });
 
+  it("gives the storefront a pill that reads on the quiet band", () => {
+    // The old one was accent-beige, which is now the band's own colour - a
+    // pill in it would have been invisible.
+    expect(ui.shopPill).toMatch(/\bbg-nyoki-white\b/);
+    expect(ui.shopPill).toMatch(/\btext-nyoki-navy\b/);
+    expect(ui.shopPill).not.toMatch(/\bbg-nyoki-accent-beige\b/);
+  });
+
   it("nothing ever puts white or navy text on sage", () => {
     for (const classes of Object.values(ui)) {
       const onSage = /\bbg-nyoki-sage\b/.test(classes);

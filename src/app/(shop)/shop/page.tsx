@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 
 import { CategoryTiles } from "@/components/shop/category-tiles";
 import { ProductGrid } from "@/components/shop/product-grid";
-import { PromiseStrip } from "@/components/shop/promise-strip";
 import { ui } from "@/lib/brand/ui";
 import { db } from "@/lib/db";
 import { activeProducts, tileProducts, toCards } from "@/lib/storefront/queries";
@@ -51,8 +50,6 @@ export default async function ShopAllPage() {
           </div>
         </section>
       </div>
-
-      <PromiseStrip />
     </>
   );
 }

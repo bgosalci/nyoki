@@ -5,7 +5,6 @@ import { notFound } from "next/navigation";
 
 import { CategoryTiles } from "@/components/shop/category-tiles";
 import { ProductGrid } from "@/components/shop/product-grid";
-import { PromiseStrip } from "@/components/shop/promise-strip";
 import { ui } from "@/lib/brand/ui";
 import { db } from "@/lib/db";
 import { chainTo, subtreeIds } from "@/lib/products/category-pills";
@@ -75,6 +74,25 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
             <p className={`text-sm ${ui.shopMuted}`}>
               {products.length} {products.length === 1 ? "piece" : "pieces"} to choose from
             </p>
+
+            {/* Straight into a type without scrolling past the tiles, which
+                show the same places but ask to be looked at rather than read.
+                Built from the tiles, so a type holding nothing is left out of
+                both. */}
+            {inside.length > 0 ? (
+              <ul className="flex flex-wrap gap-2">
+                {inside.map((child) => (
+                  <li key={child.slug}>
+                    <Link
+                      href={`/shop/${child.slug}`}
+                      className={`inline-block px-3 py-1.5 text-xs tracking-[0.1em] uppercase ${ui.shopPill}`}
+                    >
+                      {child.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </div>
 
           {cover ? (
@@ -120,8 +138,6 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
           </div>
         </section>
       </div>
-
-      <PromiseStrip />
     </>
   );
 }
