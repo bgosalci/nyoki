@@ -92,6 +92,8 @@ TypeScript, deployed to Vercel.
 - Idempotent by slug: a product already present is skipped, never updated, so
   re-running cannot clobber Njomza's edits. Gift cards are skipped.
 - Images go through the same byte-sniff validation and ImageStorage as uploads.
+- The importer sets a category's parent only on creation; after changing
+  categoryFor(), run `pnpm categories:regroup` (`--dry-run` first).
 
 ## Accounts
 
