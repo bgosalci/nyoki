@@ -104,6 +104,14 @@ TypeScript, deployed to Vercel.
 - The nav map and `isCurrent`/`sectionTitle` live in `src/lib/admin/nav.ts`,
   a plain module, so server components can import them; `admin-nav.tsx` is
   the client component.
+- A list page wraps its title block in `PinnedHeight` with `PINNED_BLOCK_CLASS`
+  and uses `Th` for column headers: the block publishes its height as
+  `--pinned-height` and each `Th` sticks just beneath it. A table must not sit
+  in an overflow container, or its header would stick to that instead of the
+  page.
+- Filtering is live: the products filter is a client component that writes to
+  the URL as you type (debounced) or change a select, so the server component
+  re-renders and the view stays bookmarkable. No Filter buttons.
 
 ## Accounts
 
