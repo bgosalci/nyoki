@@ -49,8 +49,10 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
 
   return (
     <>
-      <section className={ui.shopBandQuiet}>
-        <div className="mx-auto grid max-w-shop gap-8 px-4 py-10 sm:px-6 md:grid-cols-[1.1fr_1fr] md:items-center md:py-14">
+      {/* Raised above the section below so the photo can hang past the band's
+          bottom edge rather than being painted over by it. */}
+      <section className={`relative z-10 ${ui.shopBandQuiet}`}>
+        <div className="mx-auto grid max-w-shop gap-8 px-4 py-10 sm:px-6 md:grid-cols-[1fr_1fr] md:items-center md:py-12">
           <div className="flex flex-col items-start gap-4">
             <nav aria-label="Breadcrumb">
               <ol className={`flex flex-wrap items-center gap-2 text-xs font-medium tracking-[0.1em] uppercase ${ui.shopMuted}`}>
@@ -78,7 +80,9 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
           </div>
 
           {cover ? (
-            <div className="relative aspect-[5/4] w-full overflow-hidden rounded-lg bg-nyoki-soft-ash">
+            // A wide crop at a fixed height, so the band stays the same shape
+            // whatever the photo is, and hangs below it on a wide screen.
+            <div className="relative h-52 w-full overflow-hidden rounded-lg bg-nyoki-soft-ash md:-mb-24 md:h-80">
               <Image
                 src={cover.url}
                 alt=""
@@ -92,7 +96,8 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
         </div>
       </section>
 
-      <div className="mx-auto flex max-w-shop flex-col gap-14 px-4 py-12 sm:px-6">
+      {/* Top padding clears the photo where it overhangs the band. */}
+      <div className="mx-auto flex max-w-shop flex-col gap-14 px-4 pt-12 pb-12 sm:px-6 md:pt-32">
         <CategoryTiles heading={`${pluralise(category.name)} by type`} tiles={inside} />
 
         <section>

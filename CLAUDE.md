@@ -195,7 +195,10 @@ TypeScript, deployed to Vercel.
   one pass over `tileProducts()` rather than a query per tile. A child holding
   nothing is left out - a tile leading to an empty page is a dead end.
 - Tile photos are square, like the product shots themselves: a landscape crop
-  slices a card across the middle.
+  slices a card across the middle. The band's own photo is the opposite - a
+  wide crop at a fixed height, so the band keeps its shape whatever the photo
+  is, and it hangs past the band's bottom edge on a wide screen. That overhang
+  is why the band is `relative z-10` and the section below carries `md:pt-32`.
 - An unwritten category falls back to `categoryIntro`, a line built from its
   name, which also becomes the page's meta description. The shopkeeper's own
   description always wins.
