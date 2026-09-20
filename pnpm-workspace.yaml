@@ -6,7 +6,13 @@
 # native build, which would otherwise fail `pnpm install` on Vercel.
 #   @parcel/watcher - native file watcher used by `jest --watch`
 #   unrs-resolver   - native resolver used by eslint-config-next
+#   esbuild / workerd / msgpackr-extract - Prisma 7 toolchain
 # Anything not listed here stays blocked from executing install scripts.
 allowBuilds:
   '@parcel/watcher': true
+  '@prisma/engines': true
+  esbuild: true
+  msgpackr-extract: true
+  prisma: true
   unrs-resolver: true
+  workerd: true

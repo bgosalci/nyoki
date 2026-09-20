@@ -1,0 +1,366 @@
+// Nyoki storefront + CMS data model.
+//
+// MONEY IS ALWAYS AN INTEGER NUMBER OF PENCE. Never a float, never pounds.
+// Stripe works in the smallest currency unit too, so amounts pass straight
+// through without conversion and cannot accumulate rounding error.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// CMS access
+// ---------------------------------------------------------------------------
+
+enum AdminRole {
+  OWNER // full access, including managing other admins
+  STAFF // day-to-day catalogue and order management (Njomza)
+}
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  passwordHash String    @map("password_hash")
+  role         AdminRole @default(STAFF)
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@map("admin_users")
+}
+
+// ---------------------------------------------------------------------------
+// Catalogue
+// ---------------------------------------------------------------------------
+
+enum ProductStatus {
+  DRAFT // not visible on the storefront
+  ACTIVE
+  ARCHIVED // kept for order history, hidden everywhere else
+}
+
+model Product {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  name        String
+  description String?
+  status      ProductStatus @default(DRAFT)
+
+  // Base price. A variant may override it.
+  pricePence Int @map("price_pence")
+
+  // Shown struck through next to the price. Purely presentational: the actual
+  // discount a customer receives comes from an active Sale.
+  compareAtPence Int? @map("compare_at_pence")
+
+  sku         String? @unique
+  // Stock for products with no variants. When variants exist, each variant
+  // carries its own stock and this is ignored.
+  stock       Int     @default(0)
+  weightGrams Int?    @map("weight_grams")
+  featured    Boolean @default(false)
+
+  images     ProductImage[]
+  variants   ProductVariant[]
+  categories CategoryProduct[]
+  sales      SaleProduct[]
+  orderItems OrderItem[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@map("products")
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String  @map("product_id")
+  url       String
+  alt       String?
+  position  Int     @default(0)
+  width     Int?
+  height    Int?
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_images")
+}
+
+model ProductVariant {
+  id        String @id @default(cuid())
+  productId String @map("product_id")
+
+  // Human-readable label Njomza sees and the customer picks, e.g. "Large / Red".
+  name String
+
+  // Structured form of the same thing, e.g. { "Size": "L", "Colour": "Red" }.
+  // Kept alongside `name` so the storefront can build option pickers without
+  // parsing the label.
+  options Json?
+
+  sku        String? @unique
+  pricePence Int?    @map("price_pence") // null = inherit the product price
+  stock      Int     @default(0)
+  position   Int     @default(0)
+
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@index([productId])
+  @@map("product_variants")
+}
+
+model Category {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  name        String
+  description String?
+  position    Int     @default(0)
+
+  // Self-relation for sub-categories.
+  parentId String?    @map("parent_id")
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children Category[] @relation("CategoryTree")
+
+  products CategoryProduct[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("categories")
+}
+
+model CategoryProduct {
+  categoryId String @map("category_id")
+  productId  String @map("product_id")
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([categoryId, productId])
+  @@map("category_products")
+}
+
+// ---------------------------------------------------------------------------
+// Sales and discounts
+// ---------------------------------------------------------------------------
+
+enum SaleType {
+  PERCENTAGE // `value` is a percentage, 1-100
+  FIXED_AMOUNT // `value` is pence off
+}
+
+// A price promotion applied to a set of products. One Sale row attached to many
+// products is what makes a batch sale a batch: Njomza selects products in the
+// CMS and they all join the same Sale.
+model Sale {
+  id       String   @id @default(cuid())
+  name     String
+  type     SaleType
+  value    Int
+  startsAt DateTime @map("starts_at")
+  endsAt   DateTime? @map("ends_at") // null = runs until switched off
+  active   Boolean  @default(true)
+
+  products SaleProduct[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([active, startsAt, endsAt])
+  @@map("sales")
+}
+
+model SaleProduct {
+  saleId    String @map("sale_id")
+  productId String @map("product_id")
+
+  sale    Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([saleId, productId])
+  @@map("sale_products")
+}
+
+// A code the customer types at checkout. Distinct from a Sale, which needs no
+// code and applies automatically.
+model DiscountCode {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  type          SaleType
+  value         Int
+  minSpendPence Int?     @map("min_spend_pence")
+  usageLimit    Int?     @map("usage_limit") // null = unlimited
+  usedCount     Int      @default(0) @map("used_count")
+  startsAt      DateTime @map("starts_at")
+  endsAt        DateTime? @map("ends_at")
+  active        Boolean  @default(true)
+
+  orders Order[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("discount_codes")
+}
+
+// ---------------------------------------------------------------------------
+// Customers and orders
+// ---------------------------------------------------------------------------
+
+model Customer {
+  id               String  @id @default(cuid())
+  email            String  @unique
+  name             String?
+  phone            String?
+  stripeCustomerId String? @unique @map("stripe_customer_id")
+  marketingOptIn   Boolean @default(false) @map("marketing_opt_in")
+
+  orders    Order[]
+  addresses Address[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("customers")
+}
+
+model Address {
+  id         String  @id @default(cuid())
+  customerId String? @map("customer_id")
+  name       String
+  line1      String
+  line2      String?
+  city       String
+  county     String?
+  postcode   String
+  country    String  @default("GB")
+  phone      String?
+
+  customer          Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  shippingForOrders Order[]   @relation("OrderShippingAddress")
+  billingForOrders  Order[]   @relation("OrderBillingAddress")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([customerId])
+  @@map("addresses")
+}
+
+enum OrderStatus {
+  PENDING // checkout started, payment not confirmed
+  PAID
+  FULFILLED
+  CANCELLED
+  REFUNDED
+}
+
+model Order {
+  id          String      @id @default(cuid())
+  // Short human-readable reference shown to the customer, e.g. NYK-1042.
+  orderNumber String      @unique @map("order_number")
+  status      OrderStatus @default(PENDING)
+
+  customerId String?   @map("customer_id")
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  // Captured separately so guest checkout works without a Customer row.
+  email      String
+
+  subtotalPence Int    @map("subtotal_pence")
+  discountPence Int    @default(0) @map("discount_pence")
+  shippingPence Int    @default(0) @map("shipping_pence")
+  taxPence      Int    @default(0) @map("tax_pence")
+  totalPence    Int    @map("total_pence")
+  currency      String @default("GBP")
+
+  discountCodeId String?       @map("discount_code_id")
+  discountCode   DiscountCode? @relation(fields: [discountCodeId], references: [id], onDelete: SetNull)
+
+  shippingAddressId String?  @map("shipping_address_id")
+  shippingAddress   Address? @relation("OrderShippingAddress", fields: [shippingAddressId], references: [id], onDelete: SetNull)
+  billingAddressId  String?  @map("billing_address_id")
+  billingAddress    Address? @relation("OrderBillingAddress", fields: [billingAddressId], references: [id], onDelete: SetNull)
+
+  stripeCheckoutSessionId String? @unique @map("stripe_checkout_session_id")
+  stripePaymentIntentId   String? @unique @map("stripe_payment_intent_id")
+
+  trackingNumber String? @map("tracking_number")
+  carrier        String?
+  notes          String?
+
+  items OrderItem[]
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  paidAt      DateTime? @map("paid_at")
+  fulfilledAt DateTime? @map("fulfilled_at")
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+// Line items snapshot their product details. A product renamed, repriced or
+// archived later must not retroactively change what an old order says it sold.
+model OrderItem {
+  id      String @id @default(cuid())
+  orderId String @map("order_id")
+
+  productId String?  @map("product_id")
+  variantId String?  @map("variant_id")
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  productName String  @map("product_name")
+  variantName String? @map("variant_name")
+  sku         String?
+  imageUrl    String? @map("image_url")
+
+  unitPricePence Int @map("unit_price_pence")
+  quantity       Int
+  totalPence     Int @map("total_pence")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+// ---------------------------------------------------------------------------
+// Shipping and store configuration
+// ---------------------------------------------------------------------------
+
+model ShippingRate {
+  id       String  @id @default(cuid())
+  name     String // "Royal Mail 2nd Class"
+  pricePence Int   @map("price_pence")
+  // Order subtotal at or above which this rate becomes free. null = never free.
+  freeOverPence Int? @map("free_over_pence")
+  minDays  Int?    @map("min_days")
+  maxDays  Int?    @map("max_days")
+  active   Boolean @default(true)
+  position Int     @default(0)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("shipping_rates")
+}
+
+// Simple key/value store for things Njomza can edit without a deploy:
+// store name, contact email, announcement banner, social links.
+model StoreSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("store_settings")
+}
