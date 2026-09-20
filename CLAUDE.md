@@ -43,6 +43,22 @@ TypeScript, deployed to Vercel.
 - Server-only tests need `@jest-environment node`; the pg driver needs Node
   crypto, which jsdom lacks.
 
+## Product photos
+
+- The upload format is decided by **sniffing the first bytes**, never by the
+  declared MIME type or filename - both come from the client. See
+  `src/lib/images/validate.ts`. Do not relax this: an HTML file relabelled
+  image/png would otherwise be served from our own domain.
+- Storage goes through the `ImageStorage` interface (`src/lib/storage`). A
+  `BLOB_READ_WRITE_TOKEN` selects Vercel Blob; without one, development writes
+  to `public/uploads` (gitignored) and **production refuses to start** rather
+  than write to Vercel's ephemeral disk.
+- Image positions are renumbered 0..n-1 after every delete or move, in one
+  transaction. Moving swaps the two `position` values, not the array slots.
+- Removing a photo deletes the stored file first, then the row. A product's
+  images are always looked up scoped to that product id, so a forged image id
+  cannot touch another product's photos.
+
 ## CMS accounts
 
 `pnpm admin:create "<email>" "<name>" [OWNER|STAFF]` creates or updates an

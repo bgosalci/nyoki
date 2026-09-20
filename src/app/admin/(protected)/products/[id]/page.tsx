@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { EditProductForm } from "@/components/admin/edit-product-form";
+import { EditProductImages } from "@/components/admin/edit-product-images";
 import { db } from "@/lib/db";
 import type { ProductInput } from "@/lib/products/validate";
 
@@ -12,7 +13,10 @@ export default async function EditProductPage({
 }) {
   const { id } = await params;
 
-  const product = await db.product.findUnique({ where: { id } });
+  const product = await db.product.findUnique({
+    where: { id },
+    include: { images: { orderBy: { position: "asc" } } },
+  });
   if (!product) notFound();
 
   // Narrow the database row to exactly what the form needs, so a column added
@@ -48,7 +52,8 @@ export default async function EditProductPage({
         </Link>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-6 flex flex-col gap-10">
+        <EditProductImages productId={product.id} images={product.images} />
         <EditProductForm id={product.id} product={initial} />
       </div>
     </>
