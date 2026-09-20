@@ -1,5 +1,4 @@
-import { ui } from "@/lib/brand/ui";
-import Link from "next/link";
+import { BackLink } from "@/components/admin/back-link";
 import { notFound } from "next/navigation";
 
 import { EditCategoryForm } from "@/components/admin/edit-category-form";
@@ -25,11 +24,9 @@ export default async function EditCategoryPage({ params }: { params: Promise<{ i
 
   return (
     <>
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
+      <div className="flex flex-col gap-2">
+        <BackLink href="/admin/categories">Back to all categories</BackLink>
         <h1 className="text-xl font-semibold tracking-tight">{category.name}</h1>
-        <Link href="/admin/categories" className={`text-sm ${ui.link}`}>
-          All categories
-        </Link>
       </div>
       <div className="mt-6">
         <EditCategoryForm id={category.id} category={initial} categories={categories} />

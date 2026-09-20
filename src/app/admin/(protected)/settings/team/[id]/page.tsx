@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/components/admin/back-link";
 import { notFound } from "next/navigation";
 
 import { EditAdminPanel } from "@/components/admin/edit-admin-panel";
@@ -15,14 +15,12 @@ export default async function EditTeamMemberPage({ params }: { params: Promise<{
 
   return (
     <>
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
+      <div className="flex flex-col gap-2">
+        <BackLink href="/admin/settings">Back to settings</BackLink>
         <div>
           <h1 className="text-xl font-semibold tracking-tight">{admin.name}</h1>
           <p className={`text-sm ${ui.mutedOnPage}`}>{admin.email}</p>
         </div>
-        <Link href="/admin/settings" className={`text-sm ${ui.link}`}>
-          Settings
-        </Link>
       </div>
       <div className="mt-6">
         <EditAdminPanel id={id} admin={{ name: admin.name, role: admin.role }} />

@@ -1,4 +1,6 @@
 import { ui } from "@/lib/brand/ui";
+import { PinnedHeight } from "@/components/admin/pinned-height";
+import { PINNED_BLOCK_CLASS, Th } from "@/components/admin/th";
 import Link from "next/link";
 
 import { flattenTree } from "@/lib/categories/tree";
@@ -22,15 +24,17 @@ export default async function CategoriesPage() {
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold tracking-tight">Categories</h1>
-        <Link
-          href="/admin/categories/new"
-          className={`rounded-md px-3.5 py-2 text-sm font-medium ${ui.buttonPrimary}`}
-        >
-          New category
-        </Link>
-      </div>
+      <PinnedHeight className={PINNED_BLOCK_CLASS}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-xl font-semibold tracking-tight">Categories</h1>
+          <Link
+            href="/admin/categories/new"
+            className={`rounded-md px-3.5 py-2 text-sm font-medium ${ui.buttonPrimary}`}
+          >
+            New category
+          </Link>
+        </div>
+      </PinnedHeight>
 
       {tree.length === 0 ? (
         <div className={`mt-8 rounded-lg border border-dashed p-10 text-center ${ui.ruleOnPage}`}>
@@ -42,13 +46,13 @@ export default async function CategoriesPage() {
           </Link>
         </div>
       ) : (
-        <div className="mt-6 overflow-x-auto">
-          <table className="w-full min-w-md border-collapse text-sm">
+        <div className="mt-6">
+          <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className={`border-b text-left ${ui.tableHead}`}>
-                <th className="py-2.5 pr-4 font-medium">Name</th>
-                <th className="py-2.5 pr-4 font-medium">Web address</th>
-                <th className="py-2.5 pr-4 text-right font-medium">Products</th>
+              <tr>
+                <Th>Name</Th>
+                <Th>Web address</Th>
+                <Th align="right">Products</Th>
               </tr>
             </thead>
             <tbody>

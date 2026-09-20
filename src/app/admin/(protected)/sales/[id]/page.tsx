@@ -1,5 +1,4 @@
-import { ui } from "@/lib/brand/ui";
-import Link from "next/link";
+import { BackLink } from "@/components/admin/back-link";
 import { notFound } from "next/navigation";
 
 import { EditSaleForm } from "@/components/admin/edit-sale-form";
@@ -32,11 +31,9 @@ export default async function EditSalePage({ params }: { params: Promise<{ id: s
 
   return (
     <>
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
+      <div className="flex flex-col gap-2">
+        <BackLink href="/admin/sales">Back to all sales</BackLink>
         <h1 className="text-xl font-semibold tracking-tight">{sale.name}</h1>
-        <Link href="/admin/sales" className={`text-sm ${ui.link}`}>
-          All sales
-        </Link>
       </div>
       <div className="mt-6">
         <EditSaleForm id={sale.id} sale={initial} products={products} />

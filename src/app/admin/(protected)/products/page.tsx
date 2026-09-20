@@ -1,7 +1,9 @@
 import { ui } from "@/lib/brand/ui";
+import { ProductFilterForm } from "@/components/admin/product-filter-form";
+import { PinnedHeight } from "@/components/admin/pinned-height";
+import { PINNED_BLOCK_CLASS, Th } from "@/components/admin/th";
 import Link from "next/link";
 
-import { inputClass } from "@/components/admin/field";
 import { db } from "@/lib/db";
 import { parseProductFilter, productWhere } from "@/lib/products/filter";
 import { formatPence } from "@/lib/money";
@@ -31,7 +33,7 @@ export default async function ProductsPage({
 
   return (
     <>
-      <div className={`sticky top-14 z-20 -mx-6 -mt-6 px-6 pt-6 pb-4 md:-mx-10 md:-mt-10 md:px-10 md:pt-10 ${ui.page}`}>
+      <PinnedHeight className={PINNED_BLOCK_CLASS}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold tracking-tight">Products</h1>
 
@@ -43,45 +45,12 @@ export default async function ProductsPage({
         </Link>
       </div>
 
-      <form method="get" className="mt-6 flex flex-wrap items-end gap-3">
-        <div className="flex min-w-48 flex-1 flex-col gap-1.5">
-          <label htmlFor="product-search" className="text-sm font-medium">
-            Find
-          </label>
-          <input
-            id="product-search"
-            name="q"
-            type="search"
-            defaultValue={filter.q ?? ""}
-            placeholder="Name or product code"
-            className={inputClass}
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="product-status" className="text-sm font-medium">
-            Status
-          </label>
-          <select id="product-status" name="status" defaultValue={filter.status ?? ""} className={inputClass}>
-            <option value="">All</option>
-            <option value="ACTIVE">Active</option>
-            <option value="DRAFT">Draft</option>
-            <option value="ARCHIVED">Archived</option>
-          </select>
-        </div>
-        <button type="submit" className={`rounded-md px-3.5 py-2 text-sm font-medium ${ui.buttonSecondary}`}>
-          Filter
-        </button>
-        {filtering ? (
-          <Link href="/admin/products" className={`text-sm ${ui.link}`}>
-            Clear
-          </Link>
-        ) : null}
-      </form>
+      <ProductFilterForm initialQ={filter.q ?? ""} initialStatus={filter.status ?? ""} />
 
       <p className={`mt-4 text-sm ${ui.mutedOnPage}`}>
         {filtering ? `${products.length} of ${total} products` : `${total} products`}
       </p>
-      </div>
+      </PinnedHeight>
 
       {products.length === 0 && !filtering ? (
         <div className={`mt-8 rounded-lg border border-dashed p-10 text-center ${ui.ruleOnPage}`}>
@@ -98,14 +67,14 @@ export default async function ProductsPage({
       ) : products.length === 0 ? (
         <p className={`mt-8 text-sm ${ui.mutedOnPage}`}>Nothing matches that. Try a shorter search, or clear the status.</p>
       ) : (
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-xl border-collapse text-sm">
+        <div className="mt-4">
+          <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className={`border-b text-left ${ui.tableHead}`}>
-                <th className="py-2.5 pr-4 font-medium">Name</th>
-                <th className="py-2.5 pr-4 font-medium">Status</th>
-                <th className="py-2.5 pr-4 text-right font-medium">Price</th>
-                <th className="py-2.5 pr-4 text-right font-medium">Stock</th>
+              <tr>
+                <Th>Name</Th>
+                <Th>Status</Th>
+                <Th align="right">Price</Th>
+                <Th align="right">Stock</Th>
               </tr>
             </thead>
             <tbody>

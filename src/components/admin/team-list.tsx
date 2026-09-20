@@ -1,5 +1,6 @@
 "use client";
 
+import { Th } from "@/components/admin/th";
 import { ui } from "@/lib/brand/ui";
 import Link from "next/link";
 
@@ -17,16 +18,16 @@ export interface TeamMember {
 /** Binds each row's id to the remove action; a client component for the same reason as EditProductForm. */
 export function TeamList({ members, currentUserId }: { members: TeamMember[]; currentUserId: string }) {
   return (
-    <table className="w-full min-w-md border-collapse text-sm">
+    <table className="w-full border-collapse text-sm">
       <thead>
-        <tr className={`border-b text-left ${ui.tableHead}`}>
-          <th className="py-2.5 pr-4 font-medium">Name</th>
-          <th className="py-2.5 pr-4 font-medium">Email</th>
-          <th className="py-2.5 pr-4 font-medium">Role</th>
-          <th className="py-2.5 pr-4 font-medium">Last signed in</th>
-          <th className="py-2.5 font-medium"><span className="sr-only">Actions</span></th>
-        </tr>
-      </thead>
+              <tr>
+                <Th>Name</Th>
+                <Th>Email</Th>
+                <Th>Role</Th>
+                <Th>Last signed in</Th>
+                <Th srOnly>Actions</Th>
+              </tr>
+            </thead>
       <tbody>
         {members.map((member) => (
           <tr key={member.id} className={`border-b ${ui.tableRow}`}>

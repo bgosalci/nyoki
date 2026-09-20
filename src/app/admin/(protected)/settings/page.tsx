@@ -37,7 +37,7 @@ export default async function SettingsPage() {
         <>
           <section className={`mt-12 flex flex-col gap-4 border-t pt-8 ${ui.ruleOnPage}`}>
             <h2 className="text-base font-semibold">Team</h2>
-            <div className="overflow-x-auto">
+            <div>
               <TeamList
                 currentUserId={session.userId}
                 members={members.map((m) => ({

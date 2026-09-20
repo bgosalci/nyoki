@@ -1,5 +1,4 @@
-import { ui } from "@/lib/brand/ui";
-import Link from "next/link";
+import { BackLink } from "@/components/admin/back-link";
 import { notFound } from "next/navigation";
 
 import { EditProductForm } from "@/components/admin/edit-product-form";
@@ -50,14 +49,9 @@ export default async function EditProductPage({
 
   return (
     <>
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
+      <div className="flex flex-col gap-2">
+        <BackLink href="/admin/products">Back to all products</BackLink>
         <h1 className="text-xl font-semibold tracking-tight">{product.name}</h1>
-        <Link
-          href="/admin/products"
-          className={`text-sm ${ui.link}`}
-        >
-          All products
-        </Link>
       </div>
 
       <div className="mt-6 flex flex-col gap-10">
