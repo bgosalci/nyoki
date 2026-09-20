@@ -39,7 +39,7 @@ export default async function HomePage() {
           </Link>
         </div>
         {hero?.images[0] ? (
-          <Link href={`/product/${hero.slug}`} className="relative block aspect-[4/5] w-full overflow-hidden bg-nyoki-soft-ash">
+          <Link href={`/product/${hero.slug}`} className="relative block aspect-[4/5] w-full overflow-hidden rounded-lg bg-nyoki-soft-ash">
             <Image
               src={hero.images[0].url}
               alt={hero.name}
@@ -52,7 +52,7 @@ export default async function HomePage() {
         ) : null}
       </section>
 
-      <section className={`border-y ${ui.shopRule} ${ui.shopBand}`}>
+      <section className={`border-y ${ui.shopRule} bg-nyoki-sage text-nyoki-ink`}>
         <ul className="mx-auto grid max-w-6xl gap-4 px-4 py-8 text-center text-sm sm:grid-cols-3 sm:px-6">
           <li>Every piece touched by human hands</li>
           <li>Eco-friendly, organic and recyclable</li>

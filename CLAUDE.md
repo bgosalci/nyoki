@@ -103,9 +103,11 @@ TypeScript, deployed to Vercel.
   and the logo above it, product departments below. The top row is a three
   column grid whose empty right column is reserved for search, account and
   basket - it keeps the logo centred until those exist.
-- The shop is **light-only and square-cornered** - it commits to one warm look
-  (beige ground, Jost, radius 0) where the admin follows the viewer's theme and
-  uses rounded corners. Use the `shop*` recipes in `src/lib/brand/ui.ts`.
+- The shop is **light-only**: it commits to one warm look (beige ground, Jost)
+  where the admin follows the viewer's theme. Corner radii come from the theme
+  board, not from holly.co - cards 8px, buttons 4px, tags 3px, bands 6px - and
+  live in the `shop*` recipes in `src/lib/brand/ui.ts`, so they stay in one
+  place. A full-bleed band keeps square edges, since it has no edges to curve.
 - Prices always go through `toCardProduct`/`effectivePricePence` so a live sale
   is what a shopper sees. A sale beats the was-price, because the sale is what
   would actually be charged.

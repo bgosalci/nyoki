@@ -70,6 +70,22 @@ describe("ProductCard", () => {
     expect(card.className).toMatch(/border/);
   });
 
+  it("has the theme board's curved edges, with the photo clipped to them", () => {
+    // The board draws cards at 8px with overflow hidden; without the clip the
+    // square photo would poke out through the rounded top corners.
+    render(<ProductCard product={base} />);
+
+    const card = screen.getByRole("link", { name: /handmade easter bunny card/i });
+    expect(card.className).toMatch(/rounded-lg/);
+    expect(card.className).toMatch(/overflow-hidden/);
+  });
+
+  it("curves the badges too, as the board's tags are", () => {
+    render(<ProductCard product={{ ...base, badges: [{ label: "20% off", tone: "sale" }] }} />);
+
+    expect(screen.getByText("20% off").className).toMatch(/rounded/);
+  });
+
   it("gives the photo an empty alt, since the name is in the same link", () => {
     render(<ProductCard product={base} />);
 

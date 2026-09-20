@@ -78,7 +78,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       <div className="mt-6 grid gap-10 md:grid-cols-2">
         <div className="flex flex-col gap-3">
           {product.images.map((image, index) => (
-            <div key={image.id} className="relative aspect-square w-full overflow-hidden bg-nyoki-soft-ash">
+            <div key={image.id} className="relative aspect-square w-full overflow-hidden rounded-lg bg-nyoki-soft-ash">
               <Image
                 src={image.url}
                 alt={image.alt ?? (index === 0 ? product.name : "")}
