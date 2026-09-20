@@ -63,6 +63,26 @@ TypeScript, deployed to Vercel.
 - `pnpm brand:board` regenerates docs/brand/theme-board.html from the module.
   Never edit the board by hand.
 
+## Promo codes
+
+- `DiscountCode` is a code a shopper types at checkout; a `Sale` needs no code
+  and applies automatically. Both live in the CMS, and they are separate things.
+- `codeRedeemability()` decides whether a code can be used. Every unavailable
+  reason reads identically on purpose - naming the reason confirms the code
+  exists. A minimum spend is the exception, since the shopper can act on it.
+- Codes are deleted outright: an order records the discount it was given in
+  pence, so nothing about it depends on the code surviving.
+- Redemption itself waits on checkout.
+
+## Products list
+
+- Rows carry checkboxes and the list offers bulk actions. Archiving and
+  deleting are both offered because they differ: archiving is reversible,
+  deleting is not.
+- Deleting a product is safe for order history - a line snapshots the name,
+  price and code it sold at, and its product reference is SetNull rather than
+  cascading - but it also removes the photos from storage, so it asks first.
+
 ## Sales
 
 - A batch sale is one `Sale` row joined to many products through the picker

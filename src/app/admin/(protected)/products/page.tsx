@@ -1,21 +1,15 @@
 import { ui } from "@/lib/brand/ui";
 import { ProductFilterForm } from "@/components/admin/product-filter-form";
 import { PinnedHeight } from "@/components/admin/pinned-height";
-import { ProductThumbnail } from "@/components/admin/product-thumbnail";
-import { PINNED_BLOCK_CLASS, Th } from "@/components/admin/th";
+import { ProductTable } from "@/components/admin/product-table";
+import { deleteProducts, setProductsStatus } from "@/app/admin/(protected)/products/actions";
+import { PINNED_BLOCK_CLASS } from "@/components/admin/th";
 import Link from "next/link";
 
 import { db } from "@/lib/db";
 import { CategoryPills } from "@/components/admin/category-pills";
 import { subtreeIds } from "@/lib/products/category-pills";
 import { parseProductFilter, productWhere } from "@/lib/products/filter";
-import { formatPence } from "@/lib/money";
-
-const STATUS_LABEL: Record<string, string> = {
-  DRAFT: "Draft",
-  ACTIVE: "Active",
-  ARCHIVED: "Archived",
-};
 
 export default async function ProductsPage({
   searchParams,
@@ -85,53 +79,20 @@ export default async function ProductsPage({
       ) : products.length === 0 ? (
         <p className={`mt-8 text-sm ${ui.mutedOnPage}`}>Nothing matches that. Try a shorter search, or clear the status.</p>
       ) : (
-        <div className="mt-4">
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr>
-                <Th srOnly>Photo</Th>
-                <Th>Name</Th>
-                <Th>Status</Th>
-                <Th align="right">Price</Th>
-                <Th align="right">Stock</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map((product) => (
-                <tr
-                  key={product.id}
-                  className={`border-b ${ui.tableRow}`}
-                >
-                  <td className="py-2 pr-3">
-                    <ProductThumbnail image={product.images[0] ?? null} />
-                  </td>
-                  <td className="py-3 pr-4">
-                    <Link
-                      href={`/admin/products/${product.id}`}
-                      className="font-medium underline-offset-4 hover:underline"
-                    >
-                      {product.name}
-                    </Link>
-                    {product.oneOfAKind ? (
-                      <span className={`ml-2 text-xs ${ui.mutedOnPage}`}>
-                        one of a kind
-                      </span>
-                    ) : null}
-                  </td>
-                  <td className={`py-3 pr-4 ${ui.mutedOnPage}`}>
-                    {STATUS_LABEL[product.status] ?? product.status}
-                  </td>
-                  <td className="py-3 pr-4 text-right tabular-nums">
-                    {formatPence(product.pricePence)}
-                  </td>
-                  <td className="py-3 pr-4 text-right tabular-nums">
-                    {product.madeToOrder ? "made to order" : product.stock}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ProductTable
+          rows={products.map((product) => ({
+            id: product.id,
+            name: product.name,
+            status: product.status,
+            pricePence: product.pricePence,
+            stock: product.stock,
+            madeToOrder: product.madeToOrder,
+            oneOfAKind: product.oneOfAKind,
+            image: product.images[0] ?? null,
+          }))}
+          setStatus={setProductsStatus}
+          remove={deleteProducts}
+        />
       )}
     </>
   );

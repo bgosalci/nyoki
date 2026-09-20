@@ -1,0 +1,113 @@
+import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+
+import { ProductTable, type ProductRow } from "@/components/admin/product-table";
+
+beforeAll(() => {
+  HTMLDialogElement.prototype.showModal = function () { this.setAttribute("open", ""); };
+  HTMLDialogElement.prototype.close = function () { this.removeAttribute("open"); };
+});
+
+const rows: ProductRow[] = [
+  { id: "p1", name: "Snowflake Card", status: "ACTIVE", pricePence: 600, stock: 3, madeToOrder: false, oneOfAKind: false, image: null },
+  { id: "p2", name: "Stocking Card", status: "DRAFT", pricePence: 500, stock: 0, madeToOrder: false, oneOfAKind: true, image: null },
+  { id: "p3", name: "Bud Vase", status: "ARCHIVED", pricePence: 1800, stock: 1, madeToOrder: true, oneOfAKind: false, image: null },
+];
+
+function setup(overrides: Partial<React.ComponentProps<typeof ProductTable>> = {}) {
+  const setStatus = jest.fn(async () => {});
+  const remove = jest.fn(async () => {});
+  render(<ProductTable rows={rows} setStatus={setStatus} remove={remove} {...overrides} />);
+  return { setStatus, remove, user: userEvent.setup() };
+}
+
+describe("ProductTable", () => {
+  it("offers nothing to act on until something is chosen", () => {
+    setup();
+
+    expect(screen.queryByRole("button", { name: /delete/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/selected/i)).not.toBeInTheDocument();
+  });
+
+  it("counts what is chosen", async () => {
+    const { user } = setup();
+
+    await user.click(screen.getByRole("checkbox", { name: /snowflake card/i }));
+    expect(screen.getByText(/1 selected/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("checkbox", { name: /bud vase/i }));
+    expect(screen.getByText(/2 selected/i)).toBeInTheDocument();
+  });
+
+  it("chooses and clears everything from the header", async () => {
+    const { user } = setup();
+    const all = screen.getByRole("checkbox", { name: /select all/i });
+
+    await user.click(all);
+    expect(screen.getByText(/3 selected/i)).toBeInTheDocument();
+
+    await user.click(all);
+    expect(screen.queryByText(/selected/i)).not.toBeInTheDocument();
+  });
+
+  it("changes the status of exactly what was chosen", async () => {
+    const { user, setStatus } = setup();
+
+    await user.click(screen.getByRole("checkbox", { name: /stocking card/i }));
+    await user.click(screen.getByRole("button", { name: /make active/i }));
+
+    expect(setStatus).toHaveBeenCalledWith(["p2"], "ACTIVE");
+  });
+
+  it("archives rather than deletes when asked to archive", async () => {
+    const { user, setStatus } = setup();
+
+    await user.click(screen.getByRole("checkbox", { name: /select all/i }));
+    await user.click(screen.getByRole("button", { name: /archive/i }));
+
+    expect(setStatus).toHaveBeenCalledWith(["p1", "p2", "p3"], "ARCHIVED");
+  });
+
+  it("asks before deleting, and says how many and that it cannot be undone", async () => {
+    const { user, remove } = setup();
+
+    await user.click(screen.getByRole("checkbox", { name: /snowflake card/i }));
+    await user.click(screen.getByRole("checkbox", { name: /bud vase/i }));
+    await user.click(screen.getByRole("button", { name: /^delete/i }));
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveTextContent(/2 products/i);
+    expect(dialog).toHaveTextContent(/cannot be undone/i);
+    expect(remove).not.toHaveBeenCalled();
+  });
+
+  it("deletes only once confirmed", async () => {
+    const { user, remove } = setup();
+
+    await user.click(screen.getByRole("checkbox", { name: /snowflake card/i }));
+    await user.click(screen.getByRole("button", { name: /^delete/i }));
+    await user.click(screen.getByRole("button", { name: /delete 1 product/i }));
+
+    expect(remove).toHaveBeenCalledWith(["p1"]);
+  });
+
+  it("leaves the selection alone when the deletion is called off", async () => {
+    const { user, remove } = setup();
+
+    await user.click(screen.getByRole("checkbox", { name: /snowflake card/i }));
+    await user.click(screen.getByRole("button", { name: /^delete/i }));
+    await user.click(screen.getByRole("button", { name: /cancel/i }));
+
+    expect(remove).not.toHaveBeenCalled();
+    expect(screen.getByText(/1 selected/i)).toBeInTheDocument();
+  });
+
+  it("still lists every product with its price and status", () => {
+    setup();
+
+    const table = screen.getByRole("table");
+    expect(within(table).getByText("Snowflake Card")).toBeInTheDocument();
+    expect(within(table).getByText("£18.00")).toBeInTheDocument();
+    expect(within(table).getByText("Archived")).toBeInTheDocument();
+  });
+});

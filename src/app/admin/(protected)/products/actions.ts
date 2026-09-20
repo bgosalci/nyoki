@@ -6,9 +6,10 @@ import { redirect } from "next/navigation";
 import type { ProductFormState } from "@/components/admin/product-form";
 import { requireAdmin } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
-import { validateProductInput } from "@/lib/products/validate";
+import { validateProductInput, type ProductStatus } from "@/lib/products/validate";
 import { isUniqueViolationOn } from "@/lib/db-errors";
 import { uniqueSlug } from "@/lib/slug";
+import { createImageStorage } from "@/lib/storage";
 
 /**
  * Slugs already in use that could collide with `base`.
@@ -115,4 +116,45 @@ export async function archiveProduct(id: string): Promise<void> {
 
   revalidatePath("/admin/products");
   redirect("/admin/products");
+}
+
+/** Applies a status to several products at once, from the list's bulk actions. */
+export async function setProductsStatus(ids: string[], status: ProductStatus): Promise<void> {
+  await requireAdmin();
+  if (ids.length === 0) return;
+
+  await db.product.updateMany({ where: { id: { in: ids } }, data: { status } });
+
+  revalidatePath("/admin/products");
+}
+
+/**
+ * Deletes products outright, with their photos.
+ *
+ * Safe for order history: a line snapshots the name, price and code it sold
+ * at, and its product reference is nulled rather than cascading, so an old
+ * order still reads correctly once the product is gone.
+ */
+export async function deleteProducts(ids: string[]): Promise<void> {
+  await requireAdmin();
+  if (ids.length === 0) return;
+
+  const images = await db.productImage.findMany({
+    where: { productId: { in: ids } },
+    select: { url: true },
+  });
+
+  const storage = createImageStorage();
+  for (const image of images) {
+    try {
+      await storage.remove(image.url);
+    } catch {
+      // A photo that cannot be removed - already gone, or stored by a backend
+      // we no longer use - must not stop the product being deleted.
+    }
+  }
+
+  await db.product.deleteMany({ where: { id: { in: ids } } });
+
+  revalidatePath("/admin/products");
 }
