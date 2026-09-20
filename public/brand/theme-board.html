@@ -1,0 +1,473 @@
+<title>Nyoki Theme Board</title>
+<meta name="description" content="The Nyoki Handmade palette, read from the logo files, with the text pairings that pass and the ones that don't.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@500;600&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ground: #f5f3ef;
+    --panel: #e9e5da;
+    --rule: #cad3d4;
+    --text: #4a5667;
+    --text-soft: #4a4a4a;
+    --heading: #0b063c;
+    --ok: #2f6b4f;
+    --no: #8a3b2e;
+    --font-display: "Jost", "Futura", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+    --font-body: "Source Sans 3", "Source Sans Pro", "Segoe UI", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #171b21; --panel: #1f242c; --rule: #313842;
+      --text: #bfc9ca; --text-soft: #d4ddde; --heading: #f5f3ef;
+      --ok: #7fc8a4; --no: #e0907f;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #171b21; --panel: #1f242c; --rule: #313842;
+    --text: #bfc9ca; --text-soft: #d4ddde; --heading: #f5f3ef;
+    --ok: #7fc8a4; --no: #e0907f;
+  }
+  body { background: var(--ground); color: var(--text); font-family: var(--font-body); font-size: 17px; line-height: 1.55; padding-inline: clamp(16px, 4vw, 40px); padding-block: 0 80px; }
+  .wrap { max-width: 1040px; margin: 0 auto; }
+  h1, h2, h3 { font-family: var(--font-display); color: var(--heading); text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 600; letter-spacing: -0.01em; line-height: 1.1; }
+  h2 { font-size: 1.5rem; font-weight: 600; }
+  h3 { font-size: 1.05rem; font-weight: 600; }
+  p { margin: 0; }
+  .eyebrow { font-family: var(--font-display); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text); opacity: .75; }
+  .mono { font-family: var(--font-mono); font-size: 0.82rem; font-variant-numeric: tabular-nums; }
+  .lede { max-width: 62ch; color: var(--text-soft); font-size: 1.1rem; }
+  section { padding-block: 56px; border-top: 1px solid var(--rule); display: grid; gap: 22px; }
+  section:first-of-type { border-top: 0; padding-top: 48px; }
+  .section-head { display: grid; gap: 6px; }
+  .section-head p { max-width: 62ch; color: var(--text-soft); }
+
+  .marks { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .mark { display: grid; place-items: center; aspect-ratio: 16 / 10; max-width: 100%; border-radius: 6px; padding: 24px; }
+  .mark img { width: min(100%, 260px); height: auto; }
+  .mark--white { background: #ffffff; border: 1px solid var(--rule); }
+  .mark--sage { background: #889c9d; }
+  .mark--moth { background: var(--panel); }
+  .mark--moth svg { width: 30%; height: auto; fill: #0b063c; }
+  .mark__caption { grid-column: 1 / -1; color: var(--text-soft); font-size: .95rem; }
+
+  .swatches { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 16px; }
+  .swatches--brand { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .swatch { display: grid; gap: 10px; align-content: start; }
+  .swatch__chip { aspect-ratio: 4 / 3; max-width: 100%; border-radius: 6px; border: 1px solid var(--rule); }
+  .swatch--large .swatch__chip { aspect-ratio: 3 / 2; }
+  .swatch__meta { display: grid; gap: 4px; }
+  .swatch__name { font-family: var(--font-display); font-weight: 600; color: var(--heading); display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .swatch__note { color: var(--text-soft); font-size: .9rem; }
+  .swatch__source { color: var(--text-soft); font-size: .78rem; opacity: .8; }
+  .role { font-family: var(--font-display); font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; padding: 2px 6px; border-radius: 3px; background: var(--panel); color: var(--text); font-weight: 600; }
+
+  .pairs { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+  .pair { border-radius: 6px; padding: 16px 16px 14px; display: grid; gap: 4px; align-content: start; border: 1px solid rgba(0,0,0,.08); }
+  .pair__sample { font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; }
+  .pair__use { font-size: .9rem; opacity: .9; }
+  .pair__ratio { margin-top: 6px; display: flex; align-items: center; gap: 8px; }
+  .pairs--large .pair__sample { font-size: 1.45rem; }
+  .pairs--large .pair__use { font-size: 1.1rem; }
+  .verdict { font-family: var(--font-display); font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; padding: 2px 6px; border-radius: 3px; font-weight: 600; }
+  .verdict--ok { background: rgba(255,255,255,.55); color: #1f4d38; }
+  .verdict--no { background: rgba(255,255,255,.7); color: #7a2a1e; }
+  .pair--bad { position: relative; }
+  .pair--bad::after { content: ""; position: absolute; inset: 0; border-radius: 6px; border: 2px dashed rgba(122,42,30,.55); pointer-events: none; }
+
+  .components { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; align-items: start; }
+  .demo { background: #f5f3ef; border: 1px solid #cad3d4; border-radius: 8px; padding: 20px; display: grid; gap: 14px; color: #4a5667; font-family: var(--font-body); }
+  .demo h3 { color: #0b063c; }
+  .btn { font-family: var(--font-display); font-weight: 600; font-size: .95rem; letter-spacing: .02em; padding: 11px 18px; border-radius: 4px; border: 1.5px solid transparent; display: inline-block; text-align: center; }
+  .btn--primary { background: #4a5667; color: #f5f3ef; }
+  .btn--secondary { background: transparent; color: #4a5667; border-color: #4a5667; }
+  .btn--sage { background: #889c9d; color: #0b063c; }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .card { background: #ffffff; border: 1px solid #cad3d4; border-radius: 8px; overflow: hidden; display: grid; }
+  .card__img { aspect-ratio: 1; max-width: 100%; background: #d4ddde; display: grid; place-items: center; color: #4a5667; font-size: .85rem; }
+  .card__body { padding: 14px 16px 16px; display: grid; gap: 6px; }
+  .card__name { font-family: var(--font-display); font-weight: 600; color: #0b063c; font-size: 1.1rem; }
+  .price { font-family: var(--font-mono); font-variant-numeric: tabular-nums; display: flex; gap: 10px; align-items: baseline; }
+  .price s { color: #4a4a4a; opacity: .7; }
+  .tag { font-family: var(--font-display); font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; font-weight: 600; padding: 3px 8px; border-radius: 3px; display: inline-block; }
+  .tag--sale { background: #889c9d; color: #0b063c; }
+  .tag--made { background: #e9e5da; color: #4a5667; }
+  .tag--one { background: #0b063c; color: #f5f3ef; }
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .band { background: #889c9d; color: #0b063c; border-radius: 6px; padding: 18px 20px; display: grid; gap: 4px; }
+  .band .eyebrow { color: #0b063c; opacity: .8; }
+  .band h3 { color: #0b063c; font-size: 1.3rem; }
+  .footer-demo { background: #0b063c; color: #f5f3ef; border-radius: 6px; padding: 18px 20px; display: grid; gap: 6px; }
+  .footer-demo .eyebrow { color: #bfc9ca; opacity: 1; }
+
+  .voice { display: grid; gap: 18px; max-width: 66ch; }
+  .voice h2 { font-size: clamp(1.6rem, 4vw, 2.2rem); }
+  .voice p { color: var(--text-soft); font-size: 1.08rem; }
+  .voice p em { font-style: italic; }
+  .type-specimen { display: grid; gap: 10px; padding: 20px; background: var(--panel); border-radius: 8px; }
+  .type-specimen .line { display: grid; grid-template-columns: 9ch 1fr; gap: 12px; align-items: baseline; }
+  .type-specimen .line .mono { color: var(--text-soft); }
+  .display-sample { font-family: var(--font-display); font-weight: 600; font-size: 1.6rem; color: var(--heading); }
+  .body-sample { font-family: var(--font-body); }
+  .mono-sample { font-family: var(--font-mono); }
+  .where { display: grid; gap: 6px; color: var(--text-soft); font-size: .92rem; }
+  .where code { font-family: var(--font-mono); font-size: .82rem; background: var(--panel); padding: 1px 5px; border-radius: 3px; }
+  @media (prefers-reduced-motion: no-preference) { .pair, .swatch__chip { transition: transform .15s ease; } .pair:hover, .swatch__chip:hover { transform: translateY(-1px); } }
+</style>
+
+<div class="wrap">
+  <section>
+    <div class="section-head">
+      <p class="eyebrow">Nyoki Handmade</p>
+      <h1>Theme board</h1>
+      <p class="lede">Every colour here was read out of the logo files — the sage from the SVG, the script and the HANDMADE caps from the pixels, the ink from the moth — and the neutrals are the palette that already existed. The pairings show what passes for text and what doesn't.</p>
+    </div>
+    <div class="marks">
+      <div class="mark mark--white"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOMAAACOCAYAAADD5L/IAAAFUWlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNS41LjAiPgogPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgeG1sbnM6dGlmZj0iaHR0cDovL25zLmFkb2JlLmNvbS90aWZmLzEuMC8iCiAgICB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iCiAgICB4bWxuczpleGlmPSJodHRwOi8vbnMuYWRvYmUuY29tL2V4aWYvMS4wLyIKICAgIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIKICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIKICAgIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIgogICAgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIKICAgdGlmZjpJbWFnZUxlbmd0aD0iMTQyIgogICB0aWZmOkltYWdlV2lkdGg9IjIyNyIKICAgdGlmZjpSZXNvbHV0aW9uVW5pdD0iMiIKICAgdGlmZjpYUmVzb2x1dGlvbj0iNzIvMSIKICAgdGlmZjpZUmVzb2x1dGlvbj0iNzIvMSIKICAgZXhpZjpQaXhlbFhEaW1lbnNpb249IjIyNyIKICAgZXhpZjpQaXhlbFlEaW1lbnNpb249IjE0MiIKICAgZXhpZjpDb2xvclNwYWNlPSIxIgogICBwaG90b3Nob3A6Q29sb3JNb2RlPSIzIgogICBwaG90b3Nob3A6SUNDUHJv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" alt="Nyoki Handmade wordmark: sage script with navy caps, on white" width="227" height="142"></div>
+      <div class="mark mark--sage"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAM8AAACMCAIAAABUL2rKAAAFRWlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNS41LjAiPgogPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgeG1sbnM6ZGM9Imh0dHA6Ly9wdXJsLm9yZy9kYy9lbGVtZW50cy8xLjEvIgogICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iCiAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIKICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIKICAgIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIgogICAgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIKICAgZXhpZjpQaXhlbFhEaW1lbnNpb249IjIwNyIKICAgZXhpZjpQaXhlbFlEaW1lbnNpb249IjE0MCIKICAgZXhpZjpDb2xvclNwYWNlPSIxIgogICB0aWZmOkltYWdlV2lkdGg9IjIwNyIKICAgdGlmZjpJbWFnZUxlbmd0aD0iMTQwIgogICB0aWZmOlJlc29sdXRpb25Vbml0PSIyIgogICB0aWZmOlhSZXNvbHV0aW9uPSI3Mi8xIgogICB0aWZmOllSZXNvbHV0aW9uPSI3Mi8xIgogICBwaG90b3Nob3A6Q29sb3JNb2RlPSIzIgogICBwaG90b3Nob3A6SUNDUHJv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" alt="Nyoki Handmade wordmark in white on sage" width="207" height="140"></div>
+      <div class="mark mark--moth" aria-label="The moth mark in ink"><svg width="613px" height="535px" viewBox="0 0 613 535" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <path d="M554.91089,16.7109375 C559.835119,25.7286118 538.096093,1.95101675 516.957767,9.875 C509.698439,12.5962558 505.166511,13.6943064 500.826131,14.6199608 L500.061654,14.7818174 L499.298056,14.9418665 C496.878122,15.4476974 494.424839,15.9529934 491.495672,16.7109375 C489.596685,17.2023148 487.682197,17.684781 485.763087,18.1651369 L483.842838,18.6450412 C483.522674,18.724992 483.202482,18.8049472 482.882313,18.8849382 L480.961975,19.365566 C469.126531,22.3351966 457.460007,25.4401004 448.513271,30.2751301 C438.627009,35.6179028 431.478157,38.13208 424.726227,40.5560704 L423.786438,40.8939918 L422.850387,41.2323958 C421.915736,41.5715923 420.984573,41.9139925 420.050541,42.267036 C407.826413,46.8874864 404.454177,46.7735806 394.457765,56.3185368 C389.901318,60.6692067 376.898265,66.3855995 372.045413,71.0201071 C366.25157,76.5532688 368.69292,85.9551189 364.653078,87.421875 C363.156817,87.9651265 361.755868,88.4818165 360.444166,88.9687799 C381.894965,103.358556 400.6875,124.288695 400.6875,149.006803 C400.6875,149.664319 400.674203,150.32334 400.647911,150.983697 C418.348747,145.688524 446.263395,160.630619 455.190832,170.8125 C457.616059,173.578509 460.023661,176.338036 462.422558,179.095164 L464.818885,181.851644 L468.406832,185.985351 C469.158589,186.852007 469.91022,187.718762 470.662004,188.585744 L472.918086,191.187495 C491.351016,212.442747 510.041659,233.910074 533.069963,257.457031 C557.402984,282.338091 584.165883,333.520956 603.925431,369.710937 C614.317871,388.744885 613.063101,423.326995 612.831681,438.820312 C612.416044,466.646787 600.366634,515.102227 578.83144,529.269531 C563.73769,539.199219 533.069963,534.063315 517.331681,529.269531 C501.5934,524.475747 474.616396,518.235347 455.190832,511.070312 C410.933244,494.746094 393.988087,474.114922 365.460588,447.070312 C358.671133,440.633781 348.758057,435.936618 338.538822,431.397106 L336.923126,430.68142 L335.304805,429.966971 C334.765201,429.728874 334.225571,429.490752 333.686325,429.252375 L332.070151,428.536249 C322.756427,424.397216 313.6809,420.112653 306.973961,414.486564 C291.358044,427.588025 262.893468,433.414545 248.488938,447.070312 C219.961439,474.114922 203.016282,494.746094 158.758694,511.070312 C139.33313,518.235347 112.356126,524.475747 96.6178443,529.269531 C80.879563,534.063315 50.2118351,539.199219 35.1180851,529.269531 C13.5828912,515.102227 1.53348147,466.646787 1.11784429,438.820312 C1.06461773,435.256849 0.957255924,430.683589 0.949921599,425.52196 L0.950378716,424.162378 C0.986989967,407.0077 2.22976423,383.986398 10.0240943,369.710937 C29.7836428,333.520956 56.5465415,282.338091 80.879563,257.457031 C103.48712,234.340298 121.914073,213.227895 140.020799,192.352775 L142.282751,189.744492 L146.80335,184.532276 C147.180163,184.098038 147.557045,183.663807 147.934033,183.229568 L150.328202,180.473547 C153.123821,177.257698 155.929262,174.039511 158.758694,170.8125 C168.311802,159.917031 201.081268,143.461731 218.456612,152.286531 C218.385421,151.189951 218.351563,150.096311 218.351563,149.006803 C218.351563,124.227358 235.865935,103.254704 256.070485,88.861282 C254.843498,88.4073053 253.537011,87.926028 252.148438,87.421875 C248.108595,85.9551189 250.549946,76.5532688 244.756102,71.0201071 C239.90325,66.3855995 226.900197,60.6692067 222.34375,56.3185368 C212.347338,46.7735806 208.975103,46.8874864 196.750974,42.267036 C195.816942,41.9139925 194.88578,41.5715923 193.951128,41.2323958 L193.015078,40.8939918 C185.982446,38.3598378 178.634333,35.8664039 168.288244,30.2751301 C156.681669,24.0026591 140.497742,20.641956 125.305843,16.7109375 C116.518343,14.4371053 112.013798,14.4371053 99.8437486,9.875 C78.7054221,1.95101675 56.9663965,25.7286118 61.890625,16.7109375 C76.5234375,-10.0859375 92.3144531,3.859375 145.90625,9.875 C163.172792,11.8131518 206.914894,30.6847716 222.34375,37.796875 C253.374827,52.1009958 273.759594,62.069644 275.493218,77.3105942 C287.788873,71.3045203 299.369013,68 307,68 C314.934659,68 327.676285,71.5727583 341.239749,78.0385868 C342.397621,62.3849422 362.934248,52.3279915 394.457765,37.796875 C409.886622,30.6847716 453.628724,11.8131518 470.895265,9.875 C524.487062,3.859375 540.278078,-10.0859375 554.91089,16.7109375 Z" id="Combined-Shape" fill="#0B063C"></path>
+    </g>
+</svg></div>
+      <p class="mark__caption">Left to right: the wordmark on white (sage light + navy), the wordmark on sage (white), and the moth in ink. The moth is the only mark that is a true vector; the wordmark files are pixels, so keep them at or below their native size.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <p class="eyebrow">Colours</p>
+      <h2>Four brand colours, seven neutrals</h2>
+      <p>The ratio under each swatch is its contrast against white. Anything under 3:1 is decoration, not text.</p>
+    </div>
+    <ul class="swatches swatches--brand">
+      
+    <li class="swatch swatch--large">
+      <div class="swatch__chip" style="background:#889c9d"></div>
+      <div class="swatch__meta">
+        <p class="swatch__name">Sage <span class="role role--brand">brand</span></p>
+        <p class="mono">#889c9d · <span title="Tailwind token">nyoki-sage</span></p>
+        <p class="swatch__note">The brand colour. A surface for ink text or the white logo, never for small text of its own.</p>
+        <p class="swatch__source">from logo-svg · 2.88:1 on white</p>
+      </div>
+    </li>
+    <li class="swatch swatch--large">
+      <div class="swatch__chip" style="background:#acbcbc"></div>
+      <div class="swatch__meta">
+        <p class="swatch__name">Sage light <span class="role role--decorative">decorative</span></p>
+        <p class="mono">#acbcbc · <span title="Tailwind token">nyoki-sage-light</span></p>
+        <p class="swatch__note">The script in the wordmark. Decorative only - never copy.</p>
+        <p class="swatch__source">from logo-pixels · 1.97:1 on white</p>
+      </div>
+    </li>
+    <li class="swatch swatch--large">
+      <div class="swatch__chip" style="background:#4a5667"></div>
+      <div class="swatch__meta">
+        <p class="swatch__name">Navy <span class="role role--text">text</span></p>
+        <p class="mono">#4a5667 · <span title="Tailwind token">nyoki-navy</span></p>
+        <p class="swatch__note">HANDMADE. The working text and button colour on every light surface.</p>
+        <p class="swatch__source">from logo-pixels · 7.45:1 on white</p>
+      </div>
+    </li>
+    <li class="swatch swatch--large">
+      <div class="swatch__chip" style="background:#0b063c"></div>
+      <div class="swatch__meta">
+        <p class="swatch__name">Ink <span class="role role--text">text</span></p>
+        <p class="mono">#0b063c · <span title="Tailwind token">nyoki-ink</span></p>
+        <p class="swatch__note">The moth. The one text colour that reads on sage.</p>
+        <p class="swatch__source">from moth-svg · 19.00:1 on white</p>
+      </div>
+    </li>
+    </ul>
+    <ul class="swatches">
+      
+    <li class="swatch ">
+      <div class="swatch__chip" style="background:#f5f3ef"></div>
+      <div class="swatch__meta">
+        <p class="swatch__name">Beige <span class="role role--surface">surface</span></p>
+        <p class="mono">#f5f3ef · <span title="Tailwind token">nyoki-beige</span></p>
+        <p class="swatch__note">Page background.</p>
+        <p class="swatch__source">from colour-palette.css · 1.11:1 on white</p>
+      </div>
+    </li>
+    <li class="swatch ">
+      <div class="swatch__chip" style="background:#e9e5da"></div>
+      <div class="swatch__meta">
+        <p class="swatch__name">Accent beige <span class="role role--surface">surface</span></p>
+        <p class="mono">#e9e5da · <span title="Tailwind token">nyoki-accent-beige</span></p>
+        <p class="swatch__note">Cards and panels on the beige page.</p>
+        <p class="swatch__source">from colour-palette.css · 1.26:1 on white</p>
+      </div>
+    </li>
+    <li class="swatch ">
+      <div class="swatch__chip" style="background:#d4ddde"></div>
+      <div class="swatch__meta">
+        <p class="swatch__name">Soft ash <span class="role role--surface">surface</span></p>
+        <p class="mono">#d4ddde · <span title="Tailwind token">nyoki-soft-ash</span></p>
+        <p class="swatch__note">Image placeholders, quiet fills.</p>
+        <p class="swatch__source">from colour-palette.css · 1.38:1 on white</p>
+      </div>
+    </li>
+    <li class="swatch ">
+      <div class="swatch__chip" style="background:#cad3d4"></div>
+      <div class="swatch__meta">
+        <p class="swatch__name">Light slate <span class="role role--surface">surface</span></p>
+        <p class="mono">#cad3d4 · <span title="Tailwind token">nyoki-light-slate</span></p>
+        <p class="swatch__note">Borders and dividers.</p>
+        <p class="swatch__source">from colour-palette.css · 1.52:1 on white</p>
+      </div>
+    </li>
+    <li class="swatch ">
+      <div class="swatch__chip" style="background:#bfc9ca"></div>
+      <div class="swatch__meta">
+        <p class="swatch__name">Blue grey <span class="role role--surface">surface</span></p>
+        <p class="mono">#bfc9ca · <span title="Tailwind token">nyoki-blue-grey</span></p>
+        <p class="swatch__note">Strong surface. Navy on it is large text only.</p>
+        <p class="swatch__source">from colour-palette.css · 1.69:1 on white</p>
+      </div>
+    </li>
+    <li class="swatch ">
+      <div class="swatch__chip" style="background:#4a4a4a"></div>
+      <div class="swatch__meta">
+        <p class="swatch__name">Text dark <span class="role role--text">text</span></p>
+        <p class="mono">#4a4a4a · <span title="Tailwind token">nyoki-text-dark</span></p>
+        <p class="swatch__note">Body copy where navy would feel too cool.</p>
+        <p class="swatch__source">from colour-palette.css · 8.86:1 on white</p>
+      </div>
+    </li>
+    <li class="swatch ">
+      <div class="swatch__chip" style="background:#ffffff"></div>
+      <div class="swatch__meta">
+        <p class="swatch__name">White <span class="role role--surface">surface</span></p>
+        <p class="mono">#ffffff · <span title="Tailwind token">nyoki-white</span></p>
+        <p class="swatch__note">Product photography ground.</p>
+        <p class="swatch__source">from colour-palette.css · 1.00:1 on white</p>
+      </div>
+    </li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <p class="eyebrow">Pairings</p>
+      <h2>Text on surface — what passes</h2>
+      <p>These are the only combinations the site puts text in. Each meets WCAG AA for body text (4.5:1 or better). The tests in the repo check every one.</p>
+    </div>
+    <ul class="pairs">
+      
+    <li class="pair" style="background:#ffffff;color:#4a5667">
+      <p class="pair__sample">Navy on White</p>
+      <p class="pair__use">Product names and copy on white</p>
+      <p class="pair__ratio mono">7.45:1 <span class="verdict verdict--ok">AA</span></p>
+    </li>
+    <li class="pair" style="background:#f5f3ef;color:#4a5667">
+      <p class="pair__sample">Navy on Beige</p>
+      <p class="pair__use">Copy on the page background</p>
+      <p class="pair__ratio mono">6.72:1 <span class="verdict verdict--ok">AA</span></p>
+    </li>
+    <li class="pair" style="background:#e9e5da;color:#4a5667">
+      <p class="pair__sample">Navy on Accent beige</p>
+      <p class="pair__use">Copy on cards</p>
+      <p class="pair__ratio mono">5.92:1 <span class="verdict verdict--ok">AA</span></p>
+    </li>
+    <li class="pair" style="background:#d4ddde;color:#4a5667">
+      <p class="pair__sample">Navy on Soft ash</p>
+      <p class="pair__use">Captions on placeholders</p>
+      <p class="pair__ratio mono">5.39:1 <span class="verdict verdict--ok">AA</span></p>
+    </li>
+    <li class="pair" style="background:#cad3d4;color:#4a5667">
+      <p class="pair__sample">Navy on Light slate</p>
+      <p class="pair__use">Labels on dividers</p>
+      <p class="pair__ratio mono">4.89:1 <span class="verdict verdict--ok">AA</span></p>
+    </li>
+    <li class="pair" style="background:#ffffff;color:#4a4a4a">
+      <p class="pair__sample">Text dark on White</p>
+      <p class="pair__use">Long-form copy</p>
+      <p class="pair__ratio mono">8.86:1 <span class="verdict verdict--ok">AA</span></p>
+    </li>
+    <li class="pair" style="background:#f5f3ef;color:#4a4a4a">
+      <p class="pair__sample">Text dark on Beige</p>
+      <p class="pair__use">Long-form copy</p>
+      <p class="pair__ratio mono">8.00:1 <span class="verdict verdict--ok">AA</span></p>
+    </li>
+    <li class="pair" style="background:#e9e5da;color:#4a4a4a">
+      <p class="pair__sample">Text dark on Accent beige</p>
+      <p class="pair__use">Long-form copy on cards</p>
+      <p class="pair__ratio mono">7.04:1 <span class="verdict verdict--ok">AA</span></p>
+    </li>
+    <li class="pair" style="background:#d4ddde;color:#4a4a4a">
+      <p class="pair__sample">Text dark on Soft ash</p>
+      <p class="pair__use">Small print</p>
+      <p class="pair__ratio mono">6.41:1 <span class="verdict verdict--ok">AA</span></p>
+    </li>
+    <li class="pair" style="background:#cad3d4;color:#4a4a4a">
+      <p class="pair__sample">Text dark on Light slate</p>
+      <p class="pair__use">Small print</p>
+      <p class="pair__ratio mono">5.82:1 <span class="verdict verdict--ok">AA</span></p>
+    </li>
+    <li class="pair" style="background:#bfc9ca;color:#4a4a4a">
+      <p class="pair__sample">Text dark on Blue grey</p>
+      <p class="pair__use">Small print on strong surfaces</p>
+      <p class="pair__ratio mono">5.24:1 <span class="verdict verdict--ok">AA</span></p>
+    </li>
+    <li class="pair" style="background:#889c9d;color:#0b063c">
+      <p class="pair__sample">Ink on Sage</p>
+      <p class="pair__use">Text on a sage band or badge</p>
+      <p class="pair__ratio mono">6.59:1 <span class="verdict verdict--ok">AA</span></p>
+    </li>
+    <li class="pair" style="background:#acbcbc;color:#0b063c">
+      <p class="pair__sample">Ink on Sage light</p>
+      <p class="pair__use">Text on a sage-light band</p>
+      <p class="pair__ratio mono">9.65:1 <span class="verdict verdict--ok">AA</span></p>
+    </li>
+    <li class="pair" style="background:#f5f3ef;color:#0b063c">
+      <p class="pair__sample">Ink on Beige</p>
+      <p class="pair__use">Headlines</p>
+      <p class="pair__ratio mono">17.14:1 <span class="verdict verdict--ok">AA</span></p>
+    </li>
+    <li class="pair" style="background:#ffffff;color:#0b063c">
+      <p class="pair__sample">Ink on White</p>
+      <p class="pair__use">Headlines</p>
+      <p class="pair__ratio mono">19.00:1 <span class="verdict verdict--ok">AA</span></p>
+    </li>
+    <li class="pair" style="background:#4a5667;color:#ffffff">
+      <p class="pair__sample">White on Navy</p>
+      <p class="pair__use">Primary button</p>
+      <p class="pair__ratio mono">7.45:1 <span class="verdict verdict--ok">AA</span></p>
+    </li>
+    <li class="pair" style="background:#0b063c;color:#ffffff">
+      <p class="pair__sample">White on Ink</p>
+      <p class="pair__use">Footer, dark bands</p>
+      <p class="pair__ratio mono">19.00:1 <span class="verdict verdict--ok">AA</span></p>
+    </li>
+    <li class="pair" style="background:#4a5667;color:#f5f3ef">
+      <p class="pair__sample">Beige on Navy</p>
+      <p class="pair__use">Primary button, warmer</p>
+      <p class="pair__ratio mono">6.72:1 <span class="verdict verdict--ok">AA</span></p>
+    </li>
+    <li class="pair" style="background:#0b063c;color:#f5f3ef">
+      <p class="pair__sample">Beige on Ink</p>
+      <p class="pair__use">Footer copy</p>
+      <p class="pair__ratio mono">17.14:1 <span class="verdict verdict--ok">AA</span></p>
+    </li>
+    </ul>
+    <div class="section-head">
+      <h3>Large text and labels only (3:1)</h3>
+      <p>Fine for headings from about 24px, tags and badges. Not for a paragraph.</p>
+    </div>
+    <ul class="pairs pairs--large">
+      
+    <li class="pair" style="background:#bfc9ca;color:#4a5667">
+      <p class="pair__sample">Navy on Blue grey</p>
+      <p class="pair__use">Section headings on a blue-grey band</p>
+      <p class="pair__ratio mono">4.41:1 <span class="verdict verdict--ok">AA large</span></p>
+    </li>
+    <li class="pair" style="background:#acbcbc;color:#4a5667">
+      <p class="pair__sample">Navy on Sage light</p>
+      <p class="pair__use">Large heading on a sage-light band</p>
+      <p class="pair__ratio mono">3.79:1 <span class="verdict verdict--ok">AA large</span></p>
+    </li>
+    </ul>
+    <div class="section-head">
+      <h3>The tempting ones that don't</h3>
+      <p>The logo puts white on sage, so this is the first thing anyone reaches for on a button. It fails even the large-text minimum. On sage, use ink.</p>
+    </div>
+    <ul class="pairs">
+      
+    <li class="pair pair--bad" style="background:#889c9d;color:#ffffff">
+      <p class="pair__sample">White on Sage</p>
+      <p class="pair__use">The logo does this — a wordmark can, small text cannot</p>
+      <p class="pair__ratio mono">2.88:1 <span class="verdict verdict--no">fails</span></p>
+    </li>
+    <li class="pair pair--bad" style="background:#889c9d;color:#4a5667">
+      <p class="pair__sample">Navy on Sage</p>
+      <p class="pair__use">Both brand colours together, and neither reads</p>
+      <p class="pair__ratio mono">2.59:1 <span class="verdict verdict--no">fails</span></p>
+    </li>
+    <li class="pair pair--bad" style="background:#ffffff;color:#acbcbc">
+      <p class="pair__sample">Sage light on White</p>
+      <p class="pair__use">The script colour as copy</p>
+      <p class="pair__ratio mono">1.97:1 <span class="verdict verdict--no">fails</span></p>
+    </li>
+    <li class="pair pair--bad" style="background:#f5f3ef;color:#889c9d">
+      <p class="pair__sample">Sage on Beige</p>
+      <p class="pair__use">Sage as a text colour</p>
+      <p class="pair__ratio mono">2.60:1 <span class="verdict verdict--no">fails</span></p>
+    </li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <p class="eyebrow">Components</p>
+      <h2>How the palette behaves in use</h2>
+      <p>Samples only — the storefront design is still to be decided. What these settle is which colour does which job.</p>
+    </div>
+    <div class="components">
+      <div class="demo">
+        <h3>Buttons</h3>
+        <div class="btn-row">
+          <span class="btn btn--primary">Add to basket</span>
+          <span class="btn btn--secondary">Keep browsing</span>
+          <span class="btn btn--sage">On sale</span>
+        </div>
+        <p style="font-size:.9rem;color:#4a4a4a">Primary is beige on navy. The sage button carries ink text — the only text colour that reads on sage.</p>
+      </div>
+      <div class="demo">
+        <h3>Product card</h3>
+        <div class="card">
+          <div class="card__img">photo · soft ash ground</div>
+          <div class="card__body">
+            <p class="card__name">Hand-thrown Stoneware Mug</p>
+            <p class="price"><span>£19.20</span><s>£24.00</s></p>
+            <div class="tags"><span class="tag tag--sale">20% off</span><span class="tag tag--made">Made to order · 14 days</span><span class="tag tag--one">One of a kind</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="demo">
+        <h3>Bands</h3>
+        <div class="band">
+          <p class="eyebrow">Free UK delivery</p>
+          <h3>On orders over £40</h3>
+        </div>
+        <div class="footer-demo">
+          <p class="eyebrow">Nyoki Handmade</p>
+          <p>Made in the UK from UK-sourced materials. Biodegradable packaging, water-based adhesives.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <p class="eyebrow">Type</p>
+      <h2>Three faces, three jobs</h2>
+      <p>The wordmark pairs a hand script with geometric bold caps. Jost carries that geometry into headings; Source Sans 3 does the reading; Plex Mono handles prices and codes so digits line up.</p>
+    </div>
+    <div class="type-specimen">
+      <div class="line"><span class="mono">display</span><span class="display-sample">Where tradition meets modern</span></div>
+      <div class="line"><span class="mono">body</span><span class="body-sample">Raised in homes adorned with handcrafted treasures, we inherited a passion for craftsmanship from our mothers and grandmothers.</span></div>
+      <div class="line"><span class="mono">mono</span><span class="mono-sample">£19.20 · SKU NYK-0142 · 4.41:1</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <p class="eyebrow">Voice</p>
+    </div>
+    <div class="voice">
+      <h2>Where tradition meets modern, the kind way.</h2>
+      <p>The roots of Nyoki Handmade trace back to our childhood in Kosovo, where the tradition of handmade crafting runs deep. Raised in homes adorned with handcrafted treasures and adorned in handmade clothing, we inherited a passion for craftsmanship from our mothers and grandmothers. Now, we pass this legacy on to our own children.</p>
+      <p>The Nyoki style is eclectic, blending vintage, traditional, and contemporary influences. Committed to ethical principles, our products meet stringent criteria for eco-friendliness, organic sourcing, recyclability and of high-quality. Sustainability is central to our ethos, reflected in every aspect of our brand – even our packaging is biodegradable, and our adhesives are water-based and solvent-free. We proudly source all our materials from the UK.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="where">
+      <p class="eyebrow">Where this lives</p>
+      <p>Values: <code>src/lib/brand/palette.ts</code> · Contrast rules: <code>src/lib/brand/contrast.ts</code> · Tailwind tokens: <code>src/app/globals.css</code> (<code>bg-nyoki-sage</code>, <code>text-nyoki-navy</code>…) · Assets: <code>public/brand/</code></p>
+      <p>This page is generated from those files by <code>pnpm brand:board</code>. Change the palette there and regenerate; don't edit the board by hand.</p>
+    </div>
+  </section>
+</div>

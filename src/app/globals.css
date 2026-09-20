@@ -5,6 +5,23 @@
   --foreground: #171717;
 }
 
+/* Nyoki brand tokens. The values are owned by src/lib/brand/palette.ts and its
+   tests; change them there first. Usable as bg-nyoki-sage, text-nyoki-navy,
+   border-nyoki-light-slate and so on. */
+@theme {
+  --color-nyoki-sage: #889c9d;
+  --color-nyoki-sage-light: #acbcbc;
+  --color-nyoki-navy: #4a5667;
+  --color-nyoki-ink: #0b063c;
+  --color-nyoki-beige: #f5f3ef;
+  --color-nyoki-accent-beige: #e9e5da;
+  --color-nyoki-soft-ash: #d4ddde;
+  --color-nyoki-light-slate: #cad3d4;
+  --color-nyoki-blue-grey: #bfc9ca;
+  --color-nyoki-text-dark: #4a4a4a;
+  --color-nyoki-white: #ffffff;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

@@ -1,0 +1,5 @@
+Where tradition meets modern, the kind way.
+
+The roots of Nyoki Handmade trace back to our childhood in Kosovo, where the tradition of handmade crafting runs deep. Raised in homes adorned with handcrafted treasures and adorned in handmade clothing, we inherited a passion for craftsmanship from our mothers and grandmothers. Now, we pass this legacy on to our own children.
+
+The Nyoki style is eclectic, blending vintage, traditional, and contemporary influences. Committed to ethical principles, our products meet stringent criteria for eco-friendliness, organic sourcing, recyclability and of high-quality. Sustainability is central to our ethos, reflected in every aspect of our brand – even our packaging is biodegradable, and our adhesives are water-based and solvent-free. We proudly source all our materials from the UK.

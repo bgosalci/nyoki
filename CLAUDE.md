@@ -43,6 +43,18 @@ TypeScript, deployed to Vercel.
 - Server-only tests need `@jest-environment node`; the pg driver needs Node
   crypto, which jsdom lacks.
 
+## Brand
+
+- Colours are owned by `src/lib/brand/palette.ts` and its tests. The Tailwind
+  tokens (`--color-nyoki-*` in globals.css) are pinned to it by a test, so
+  change the module first. Every value traces to a file in `public/brand/` or
+  `docs/brand/`.
+- Text goes only in an approved pairing (`APPROVED_TEXT_PAIRINGS`). **White on
+  sage and navy on sage both fail WCAG AA**; on sage the text colour is ink.
+  Sage-light is the wordmark script and is decorative only.
+- `pnpm brand:board` regenerates docs/brand/theme-board.html from the module.
+  Never edit the board by hand.
+
 ## Sales
 
 - A batch sale is one `Sale` row joined to many products through the picker
