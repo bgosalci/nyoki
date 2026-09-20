@@ -72,7 +72,7 @@ export function DepartmentNav({ groups }: { groups: DepartmentGroup[] }) {
                 hidden={openSlug !== group.slug}
                 className="absolute inset-x-0 top-full z-40 border-b border-nyoki-light-slate bg-nyoki-beige shadow-lg"
               >
-                <ul className="mx-auto grid max-w-6xl grid-cols-2 gap-x-8 gap-y-2 px-4 py-6 sm:grid-cols-3 sm:px-6 lg:grid-cols-4">
+                <ul className="mx-auto grid max-w-shop grid-cols-2 gap-x-8 gap-y-2 px-4 py-6 sm:grid-cols-3 sm:px-6 lg:grid-cols-4">
                   {group.children.map((child) => (
                     <li key={child.slug}>
                       <Link

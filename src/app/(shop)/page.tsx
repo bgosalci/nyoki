@@ -25,7 +25,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <section className="mx-auto grid max-w-6xl items-center gap-8 px-4 py-14 sm:px-6 md:grid-cols-2 md:py-20">
+      <section className="mx-auto grid max-w-shop items-center gap-8 px-4 py-14 sm:px-6 md:grid-cols-2 md:py-20">
         <div className="flex flex-col items-start gap-5">
           <h1 className={`text-4xl leading-tight tracking-tight md:text-5xl ${ui.shopHeading}`}>
             Made by hand, the kind way
@@ -53,14 +53,14 @@ export default async function HomePage() {
       </section>
 
       <section className={`border-y ${ui.shopRule} bg-nyoki-sage text-nyoki-ink`}>
-        <ul className="mx-auto grid max-w-6xl gap-4 px-4 py-8 text-center text-sm sm:grid-cols-3 sm:px-6">
+        <ul className="mx-auto grid max-w-shop gap-4 px-4 py-8 text-center text-sm sm:grid-cols-3 sm:px-6">
           <li>Every piece touched by human hands</li>
           <li>Eco-friendly, organic and recyclable</li>
           <li>Materials sourced in the UK</li>
         </ul>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
+      <section className="mx-auto max-w-shop px-4 py-14 sm:px-6">
         <h2 className={`text-2xl tracking-tight ${ui.shopHeading}`}>Have a look around</h2>
         <div className="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {groups.map((group) => (
@@ -83,7 +83,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
+      <section className="mx-auto max-w-shop px-4 pb-16 sm:px-6">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <h2 className={`text-2xl tracking-tight ${ui.shopHeading}`}>Just made</h2>
           <Link href="/shop" className="text-xs tracking-[0.14em] text-nyoki-navy uppercase underline underline-offset-4">

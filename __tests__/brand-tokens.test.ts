@@ -19,6 +19,12 @@ describe("Tailwind brand tokens", () => {
     },
   );
 
+  it("defines the storefront content width as a token", () => {
+    // The shop pages use max-w-shop, which Tailwind only generates from this
+    // token. Remove the token and every page silently loses its max width.
+    expect(css).toMatch(/--container-shop:\s*86rem;/);
+  });
+
   it("declares no nyoki token that the palette does not know", () => {
     const declared = [...css.matchAll(/--color-(nyoki-[a-z-]+):/g)].map((m) => m[1]);
     const known = palette.map((entry) => entry.token);

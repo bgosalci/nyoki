@@ -53,7 +53,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const wasPence = price.sale ? product.pricePence : product.compareAtPence;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+    <div className="mx-auto max-w-shop px-4 py-10 sm:px-6">
       <nav aria-label="Breadcrumb">
         <ol className={`flex flex-wrap items-center gap-2 text-sm font-medium tracking-[0.1em] uppercase ${ui.shopMuted}`}>
           <li><Link href="/shop" className="hover:underline hover:underline-offset-4">Shop</Link></li>

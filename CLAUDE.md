@@ -103,6 +103,10 @@ TypeScript, deployed to Vercel.
   and the logo above it, product departments below. The top row is a three
   column grid whose empty right column is reserved for search, account and
   basket - it keeps the logo centred until those exist.
+- Storefront pages are held to one width by `max-w-shop`, generated from the
+  `--container-shop` token in globals.css. Change the width there, not per page.
+  The About page keeps a narrower measure, since long prose should not run the
+  full width.
 - The storefront never borrows admin components. The admin's `inputClass`
   carries dark-mode colours, which render as a near-black box on the shop's
   light-only pages.

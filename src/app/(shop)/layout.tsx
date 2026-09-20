@@ -28,7 +28,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
   return (
     <div className={`flex min-h-dvh flex-col ${ui.shopPage}`}>
       <header className={`sticky top-0 z-30 border-b ${ui.shopRule} ${ui.shopPage}`}>
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <div className="mx-auto max-w-shop px-4 sm:px-6">
           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 py-4">
             <TopNav />
 
@@ -47,7 +47,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
           </div>
         </div>
 
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <div className="mx-auto max-w-shop px-4 sm:px-6">
           <div className="border-t border-nyoki-sage" />
           <DepartmentNav groups={groups} />
         </div>
@@ -56,7 +56,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
       <main className="flex-1">{children}</main>
 
       <footer className={`mt-20 border-t ${ui.shopRule} ${ui.shopSurface}`}>
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-3">
+        <div className="mx-auto grid max-w-shop gap-10 px-4 py-14 sm:px-6 md:grid-cols-3">
           <div className="flex flex-col gap-3">
             <p className={`text-sm font-medium tracking-[0.12em] uppercase ${ui.shopHeading}`}>Nyoki Handmade</p>
             <p className={`max-w-prose text-sm leading-relaxed ${ui.shopMuted}`}>

@@ -32,7 +32,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
   const trail = chainTo(categories, category.slug).slice(0, -1);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
+    <div className="mx-auto max-w-shop px-4 py-12 sm:px-6">
       <nav aria-label="Breadcrumb">
         <ol className={`flex flex-wrap items-center gap-2 text-sm font-medium tracking-[0.1em] uppercase ${ui.shopMuted}`}>
           <li>
