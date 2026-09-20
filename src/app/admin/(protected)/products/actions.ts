@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import type { ProductFormState } from "@/components/admin/product-form";
 import { requireAdmin } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
+import { repriceProduct, validateRepriceInput, type RepriceFields } from "@/lib/products/repricing";
 import { validateProductInput, type ProductStatus } from "@/lib/products/validate";
 import { isUniqueViolationOn } from "@/lib/db-errors";
 import { uniqueSlug } from "@/lib/slug";
@@ -157,4 +158,49 @@ export async function deleteProducts(ids: string[]): Promise<void> {
   await db.product.deleteMany({ where: { id: { in: ids } } });
 
   revalidatePath("/admin/products");
+}
+
+/**
+ * Changes the price of several products at once.
+ *
+ * The browser sends the figures that were typed, never the prices it worked
+ * out: those are a preview. Each new price is calculated here from the row in
+ * the database, so a stale list cannot reprice against prices that have since
+ * moved.
+ *
+ * There is no undo - nothing records what a price used to be - which is why
+ * the dialog shows every change before it is applied.
+ */
+export async function repriceProducts(ids: string[], fields: RepriceFields): Promise<void> {
+  await requireAdmin();
+  if (ids.length === 0) return;
+
+  const result = validateRepriceInput(fields);
+  if (!result.ok) {
+    // The dialog runs the same validation, so getting here means the request
+    // did not come from it. Fail loudly rather than quietly repricing nothing.
+    throw new Error("Invalid price change.");
+  }
+
+  const products = await db.product.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, pricePence: true, compareAtPence: true },
+  });
+
+  const updates = products
+    .map((product) => ({ id: product.id, ...repriceProduct(product, result.data) }))
+    .filter((update) => update.changed);
+
+  if (updates.length === 0) return;
+
+  // One transaction, so a failure part-way cannot leave half the selection
+  // repriced and the other half not.
+  await db.$transaction(
+    updates.map(({ id, pricePence, compareAtPence }) =>
+      db.product.update({ where: { id }, data: { pricePence, compareAtPence } }),
+    ),
+  );
+
+  revalidatePath("/admin/products");
+  for (const { id } of updates) revalidatePath(`/admin/products/${id}`);
 }

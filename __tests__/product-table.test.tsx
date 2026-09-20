@@ -17,8 +17,9 @@ const rows: ProductRow[] = [
 function setup(overrides: Partial<React.ComponentProps<typeof ProductTable>> = {}) {
   const setStatus = jest.fn(async () => {});
   const remove = jest.fn(async () => {});
-  render(<ProductTable rows={rows} setStatus={setStatus} remove={remove} {...overrides} />);
-  return { setStatus, remove, user: userEvent.setup() };
+  const reprice = jest.fn(async () => {});
+  render(<ProductTable rows={rows} setStatus={setStatus} remove={remove} reprice={reprice} {...overrides} />);
+  return { setStatus, remove, reprice, user: userEvent.setup() };
 }
 
 describe("ProductTable", () => {
@@ -99,6 +100,36 @@ describe("ProductTable", () => {
     await user.click(screen.getByRole("button", { name: /cancel/i }));
 
     expect(remove).not.toHaveBeenCalled();
+    expect(screen.getByText(/1 selected/i)).toBeInTheDocument();
+  });
+
+  it("previews a price change before applying it to what was chosen", async () => {
+    const { user, reprice } = setup();
+
+    await user.click(screen.getByRole("checkbox", { name: /snowflake card/i }));
+    await user.click(screen.getByRole("checkbox", { name: /bud vase/i }));
+    await user.click(screen.getByRole("button", { name: /change price/i }));
+
+    await user.type(screen.getByLabelText(/by how much/i), "10");
+    expect(screen.getByRole("dialog")).toHaveTextContent(/2 products/i);
+    expect(reprice).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: /change 2 prices/i }));
+
+    expect(reprice).toHaveBeenCalledWith(
+      ["p1", "p3"],
+      { mode: "INCREASE", unit: "PERCENT", value: "10", rounding: "EXACT" },
+    );
+  });
+
+  it("leaves prices alone when the change is called off", async () => {
+    const { user, reprice } = setup();
+
+    await user.click(screen.getByRole("checkbox", { name: /snowflake card/i }));
+    await user.click(screen.getByRole("button", { name: /change price/i }));
+    await user.click(screen.getByRole("button", { name: /cancel/i }));
+
+    expect(reprice).not.toHaveBeenCalled();
     expect(screen.getByText(/1 selected/i)).toBeInTheDocument();
   });
 

@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import { BulkPriceDialog } from "@/components/admin/bulk-price-dialog";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { ProductThumbnail } from "@/components/admin/product-thumbnail";
 import { Th } from "@/components/admin/th";
 import { ui } from "@/lib/brand/ui";
 import { formatPence } from "@/lib/money";
+import type { RepriceFields } from "@/lib/products/repricing";
 import type { ProductStatus } from "@/lib/products/validate";
 
 export interface ProductRow {
@@ -31,6 +33,9 @@ const STATUS_LABEL: Record<ProductStatus, string> = {
  * The products list, with a checkbox per row and actions that apply to
  * whatever is chosen.
  *
+ * Changing a price in bulk previews itself first: the old prices are kept
+ * nowhere, so there is nothing to undo it with.
+ *
  * Archiving and deleting are both offered because they are different things:
  * archiving takes a product off the shop and can be undone, deleting removes
  * it for good. Deleting is safe for order history - a line records the name
@@ -41,13 +46,16 @@ export function ProductTable({
   rows,
   setStatus,
   remove,
+  reprice,
 }: {
   rows: ProductRow[];
   setStatus: (ids: string[], status: ProductStatus) => Promise<void>;
   remove: (ids: string[]) => Promise<void>;
+  reprice: (ids: string[], fields: RepriceFields) => Promise<void>;
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirming, setConfirming] = useState(false);
+  const [pricing, setPricing] = useState(false);
 
   // Kept in the table's order, so an action reads the same way the list does.
   const chosen = rows.filter((row) => selected.has(row.id)).map((row) => row.id);
@@ -75,6 +83,9 @@ export function ProductTable({
         <div className={`mt-4 flex flex-wrap items-center gap-3 rounded-md border p-3 ${ui.card} ${ui.ruleOnPage}`}>
           <p className="text-sm font-medium">{chosen.length} selected</p>
           <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => setPricing(true)} className={actionClass}>
+              Change price
+            </button>
             <button type="button" onClick={() => apply(() => setStatus(chosen, "ACTIVE"))} className={actionClass}>
               Make active
             </button>
@@ -144,6 +155,16 @@ export function ProductTable({
           </tbody>
         </table>
       </div>
+
+      <BulkPriceDialog
+        open={pricing}
+        rows={rows.filter((row) => selected.has(row.id))}
+        onCancel={() => setPricing(false)}
+        onApply={(fields) => {
+          setPricing(false);
+          return apply(() => reprice(chosen, fields));
+        }}
+      />
 
       <ConfirmDialog
         open={confirming}
