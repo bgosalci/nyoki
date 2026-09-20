@@ -66,6 +66,25 @@ model Product {
   weightGrams Int?    @map("weight_grams")
   featured    Boolean @default(false)
 
+  // --- handmade / craft specifics ---
+
+  // Free text rather than structured numbers: a non-technical editor can write
+  // "20cm x 15cm, 8cm deep" or "fits a 30cm cushion" without being forced into
+  // fields that do not suit every piece.
+  dimensions       String?
+  materials        String?
+  careInstructions String? @map("care_instructions")
+
+  // A one-of-a-kind piece. Shown as such on the storefront, and it is a
+  // deliberate flag rather than inferring it from stock == 1, which is also
+  // true of an ordinary item that has nearly sold out.
+  oneOfAKind Boolean @default(false) @map("one_of_a_kind")
+
+  // Made to order: not held in stock, so the stock count is not enforced at
+  // checkout and the lead time is shown to the customer instead.
+  madeToOrder  Boolean @default(false) @map("made_to_order")
+  leadTimeDays Int?    @map("lead_time_days")
+
   images     ProductImage[]
   variants   ProductVariant[]
   categories CategoryProduct[]
@@ -162,13 +181,13 @@ enum SaleType {
 // products is what makes a batch sale a batch: Njomza selects products in the
 // CMS and they all join the same Sale.
 model Sale {
-  id       String   @id @default(cuid())
+  id       String    @id @default(cuid())
   name     String
   type     SaleType
   value    Int
-  startsAt DateTime @map("starts_at")
+  startsAt DateTime  @map("starts_at")
   endsAt   DateTime? @map("ends_at") // null = runs until switched off
-  active   Boolean  @default(true)
+  active   Boolean   @default(true)
 
   products SaleProduct[]
 
@@ -193,16 +212,16 @@ model SaleProduct {
 // A code the customer types at checkout. Distinct from a Sale, which needs no
 // code and applies automatically.
 model DiscountCode {
-  id            String   @id @default(cuid())
-  code          String   @unique
+  id            String    @id @default(cuid())
+  code          String    @unique
   type          SaleType
   value         Int
-  minSpendPence Int?     @map("min_spend_pence")
-  usageLimit    Int?     @map("usage_limit") // null = unlimited
-  usedCount     Int      @default(0) @map("used_count")
-  startsAt      DateTime @map("starts_at")
+  minSpendPence Int?      @map("min_spend_pence")
+  usageLimit    Int?      @map("usage_limit") // null = unlimited
+  usedCount     Int       @default(0) @map("used_count")
+  startsAt      DateTime  @map("starts_at")
   endsAt        DateTime? @map("ends_at")
-  active        Boolean  @default(true)
+  active        Boolean   @default(true)
 
   orders Order[]
 
@@ -314,9 +333,9 @@ model OrderItem {
   id      String @id @default(cuid())
   orderId String @map("order_id")
 
-  productId String?  @map("product_id")
-  variantId String?  @map("variant_id")
-  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productId String?         @map("product_id")
+  variantId String?         @map("variant_id")
+  product   Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
   variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
 
   productName String  @map("product_name")
@@ -339,15 +358,15 @@ model OrderItem {
 // ---------------------------------------------------------------------------
 
 model ShippingRate {
-  id       String  @id @default(cuid())
-  name     String // "Royal Mail 2nd Class"
-  pricePence Int   @map("price_pence")
+  id            String  @id @default(cuid())
+  name          String // "Royal Mail 2nd Class"
+  pricePence    Int     @map("price_pence")
   // Order subtotal at or above which this rate becomes free. null = never free.
-  freeOverPence Int? @map("free_over_pence")
-  minDays  Int?    @map("min_days")
-  maxDays  Int?    @map("max_days")
-  active   Boolean @default(true)
-  position Int     @default(0)
+  freeOverPence Int?    @map("free_over_pence")
+  minDays       Int?    @map("min_days")
+  maxDays       Int?    @map("max_days")
+  active        Boolean @default(true)
+  position      Int     @default(0)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
