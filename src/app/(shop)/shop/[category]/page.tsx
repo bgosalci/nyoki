@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { ShopBackLink } from "@/components/shop/back-link";
 import { ProductGrid } from "@/components/shop/product-grid";
 import { ui } from "@/lib/brand/ui";
 import { db } from "@/lib/db";
@@ -48,15 +47,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
         </ol>
       </nav>
 
-      <div className="mt-5">
-        {trail.length > 0 ? (
-          <ShopBackLink href={`/shop/${trail[trail.length - 1].slug}`}>{trail[trail.length - 1].name}</ShopBackLink>
-        ) : (
-          <ShopBackLink href="/shop">everything</ShopBackLink>
-        )}
-      </div>
-
-      <h1 className={`mt-3 text-3xl tracking-tight ${ui.shopHeading}`}>{category.name}</h1>
+      <h1 className={`mt-4 text-3xl tracking-tight ${ui.shopHeading}`}>{category.name}</h1>
       {category.description ? (
         <p className={`mt-3 max-w-prose leading-relaxed ${ui.shopMuted}`}>{category.description}</p>
       ) : null}

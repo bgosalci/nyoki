@@ -3,7 +3,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { ShopBackLink } from "@/components/shop/back-link";
 import { ProductGrid } from "@/components/shop/product-grid";
 import { ui } from "@/lib/brand/ui";
 import { db } from "@/lib/db";
@@ -66,14 +65,6 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           ))}
         </ol>
       </nav>
-
-      <div className="mt-5">
-        {trail.length > 0 ? (
-          <ShopBackLink href={`/shop/${trail[trail.length - 1].slug}`}>{trail[trail.length - 1].name}</ShopBackLink>
-        ) : (
-          <ShopBackLink href="/shop">everything</ShopBackLink>
-        )}
-      </div>
 
       <div className="mt-6 grid gap-10 md:grid-cols-2">
         <div className="flex flex-col gap-3">
