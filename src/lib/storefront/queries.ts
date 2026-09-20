@@ -4,6 +4,10 @@ import type { TileProduct } from "@/lib/storefront/tiles";
 
 /** Everything a card needs, in one shape, for every storefront query. */
 export const CARD_SELECT = {
+  id: true,
+  // Carried so a saved piece that has since come off the shop can be dropped
+  // rather than linking to a page that is no longer there.
+  status: true,
   slug: true,
   name: true,
   pricePence: true,
@@ -50,4 +54,22 @@ export async function tileProducts(): Promise<TileProduct[]> {
     categoryIds: row.categories.map((link) => link.categoryId),
     image: row.images[0] ?? null,
   }));
+}
+
+/**
+ * Which products this shopper has saved, as a set to look up against.
+ *
+ * One query for a page of cards, and an empty set for a visitor who is not
+ * signed in - the hearts then render as an invitation to sign in rather than
+ * as controls that cannot work.
+ */
+export async function savedProductIds(customerId: string | null): Promise<Set<string>> {
+  if (!customerId) return new Set();
+
+  const rows = await db.favourite.findMany({
+    where: { customerId },
+    select: { productId: true },
+  });
+
+  return new Set(rows.map((row) => row.productId));
 }

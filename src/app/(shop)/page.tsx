@@ -1,16 +1,20 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { toggleFavourite } from "@/app/(shop)/account/actions";
 import { ProductGrid } from "@/components/shop/product-grid";
 import { PromiseStrip } from "@/components/shop/promise-strip";
+import { currentCustomer } from "@/lib/account/dal";
 import { ui } from "@/lib/brand/ui";
 import { db } from "@/lib/db";
-import { activeProducts, toCards } from "@/lib/storefront/queries";
+import { activeProducts, savedProductIds, toCards } from "@/lib/storefront/queries";
 
 const BUTTON = "inline-block px-6 py-3 text-xs tracking-[0.14em] uppercase";
 
 export default async function HomePage() {
-  const [newest, groups, hero] = await Promise.all([
+  const shopper = await currentCustomer();
+
+  const [newest, groups, hero, savedIds] = await Promise.all([
     activeProducts({}, 8),
     db.category.findMany({
       where: { parentId: null },
@@ -22,6 +26,7 @@ export default async function HomePage() {
       orderBy: { createdAt: "desc" },
       select: { name: true, slug: true, images: { orderBy: { position: "asc" }, take: 1, select: { url: true } } },
     }),
+    savedProductIds(shopper?.id ?? null),
   ]);
 
   return (
@@ -86,7 +91,12 @@ export default async function HomePage() {
           </Link>
         </div>
         <div className="mt-8">
-          <ProductGrid products={toCards(newest)} />
+          <ProductGrid
+            products={toCards(newest)}
+            signedIn={shopper !== null}
+            savedIds={savedIds}
+            toggleFavourite={toggleFavourite}
+          />
         </div>
       </section>
     </>

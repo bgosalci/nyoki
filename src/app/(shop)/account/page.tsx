@@ -13,13 +13,21 @@ export const metadata: Metadata = {
 export default async function AccountPage() {
   const shopper = await requireCustomer();
 
-  const orders = await db.order.count({ where: { customerId: shopper.id } });
+  const [orders, saved] = await Promise.all([
+    db.order.count({ where: { customerId: shopper.id } }),
+    db.favourite.count({ where: { customerId: shopper.id } }),
+  ]);
 
   const cards = [
     {
       href: "/account/orders",
       title: "Orders",
       note: orders === 0 ? "Nothing ordered yet" : `${orders} ${orders === 1 ? "order" : "orders"}`,
+    },
+    {
+      href: "/account/favourites",
+      title: "Saved pieces",
+      note: saved === 0 ? "Nothing saved yet" : `${saved} saved`,
     },
     { href: "/account/details", title: "Your details", note: "Name, email and password" },
   ];

@@ -9,7 +9,13 @@ const ICON = "size-6 stroke-nyoki-navy";
  * and until one does it is rendered disabled rather than as a control that
  * would silently do nothing. Accounts are the first to arrive.
  */
-export function HeaderIcons({ signedIn = false }: { signedIn?: boolean }) {
+export function HeaderIcons({
+  signedIn = false,
+  savedCount = 0,
+}: {
+  signedIn?: boolean;
+  savedCount?: number;
+}) {
   return (
     <ul className="flex items-center justify-end gap-5">
       <li>
@@ -31,6 +37,21 @@ export function HeaderIcons({ signedIn = false }: { signedIn?: boolean }) {
             <circle cx="12" cy="8" r="4" />
             <path d="M4 20c0-4 3.6-6 8-6s8 2 8 6" strokeLinecap="round" />
           </svg>
+        </Link>
+      </li>
+      <li>
+        <Link href="/account/favourites" aria-label="Saved pieces" title="Saved pieces" className="relative block">
+          <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.5" aria-hidden="true" className={ICON}>
+            <path
+              d="M12 20.5 4.7 13.4a4.6 4.6 0 1 1 6.5-6.5l.8.8.8-.8a4.6 4.6 0 1 1 6.5 6.5Z"
+              strokeLinejoin="round"
+            />
+          </svg>
+          {savedCount > 0 ? (
+            <span className="absolute -top-1.5 -right-2 grid min-w-4 place-items-center rounded-full bg-nyoki-navy px-1 text-[10px] leading-4 text-nyoki-beige">
+              {savedCount}
+            </span>
+          ) : null}
         </Link>
       </li>
       <li>

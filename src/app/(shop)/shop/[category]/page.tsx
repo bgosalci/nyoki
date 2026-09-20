@@ -3,12 +3,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { CategoryTiles } from "@/components/shop/category-tiles";
+import { toggleFavourite } from "@/app/(shop)/account/actions";
 import { ProductGrid } from "@/components/shop/product-grid";
+import { currentCustomer } from "@/lib/account/dal";
 import { ui } from "@/lib/brand/ui";
 import { db } from "@/lib/db";
 import { chainTo, subtreeIds } from "@/lib/products/category-pills";
 import { categoryIntro, pluralise } from "@/lib/storefront/category-copy";
-import { activeProducts, tileProducts, toCards } from "@/lib/storefront/queries";
+import { activeProducts, savedProductIds, tileProducts, toCards } from "@/lib/storefront/queries";
 import { categoryTiles } from "@/lib/storefront/tiles";
 
 async function findCategory(slug: string) {
@@ -32,10 +34,13 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
   const { categories, category } = await findCategory((await params).category);
   if (!category) notFound();
 
+  const shopper = await currentCustomer();
+
   const ids = subtreeIds(categories, category.id);
-  const [products, forTiles] = await Promise.all([
+  const [products, forTiles, savedIds] = await Promise.all([
     activeProducts({ categories: { some: { categoryId: { in: ids } } } }),
     tileProducts(),
+    savedProductIds(shopper?.id ?? null),
   ]);
 
   const cards = toCards(products);
@@ -103,7 +108,12 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
 
           <div className="mt-6">
             {cards.length > 0 ? (
-              <ProductGrid products={cards} />
+              <ProductGrid
+                products={cards}
+                signedIn={shopper !== null}
+                savedIds={savedIds}
+                toggleFavourite={toggleFavourite}
+              />
             ) : (
               <p className={`text-sm ${ui.shopMuted}`}>
                 Nothing here just yet.{" "}

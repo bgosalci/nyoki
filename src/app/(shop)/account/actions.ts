@@ -151,3 +151,26 @@ export async function changePassword(_state: PasswordState, formData: FormData):
 
   return { errors: {}, changed: true };
 }
+
+/**
+ * Save a piece, or take it off the list.
+ *
+ * Written as a delete-then-create rather than a read-then-branch so that two
+ * quick clicks cannot collide: deleteMany does not mind finding nothing, and
+ * createMany skips a duplicate instead of throwing.
+ */
+export async function toggleFavourite(productId: string): Promise<void> {
+  const shopper = await requireCustomer();
+
+  const removed = await db.favourite.deleteMany({ where: { customerId: shopper.id, productId } });
+
+  if (removed.count === 0) {
+    await db.favourite.createMany({
+      data: { customerId: shopper.id, productId },
+      skipDuplicates: true,
+    });
+  }
+
+  revalidatePath("/account/favourites");
+  revalidatePath("/account");
+}

@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 
 import { CategoryTiles } from "@/components/shop/category-tiles";
+import { toggleFavourite } from "@/app/(shop)/account/actions";
 import { ProductGrid } from "@/components/shop/product-grid";
+import { currentCustomer } from "@/lib/account/dal";
 import { ui } from "@/lib/brand/ui";
 import { db } from "@/lib/db";
-import { activeProducts, tileProducts, toCards } from "@/lib/storefront/queries";
+import { activeProducts, savedProductIds, tileProducts, toCards } from "@/lib/storefront/queries";
 import { categoryTiles } from "@/lib/storefront/tiles";
 
 export const metadata: Metadata = {
@@ -14,13 +16,16 @@ export const metadata: Metadata = {
 };
 
 export default async function ShopAllPage() {
-  const [products, categories, forTiles] = await Promise.all([
+  const shopper = await currentCustomer();
+
+  const [products, categories, forTiles, savedIds] = await Promise.all([
     activeProducts(),
     db.category.findMany({
       orderBy: [{ position: "asc" }, { name: "asc" }],
       select: { id: true, slug: true, name: true, parentId: true },
     }),
     tileProducts(),
+    savedProductIds(shopper?.id ?? null),
   ]);
 
   const departments = categoryTiles(categories, null, forTiles);
@@ -46,7 +51,12 @@ export default async function ShopAllPage() {
         <section>
           <h2 className={`text-2xl tracking-tight ${ui.shopHeading}`}>Everything, newest first</h2>
           <div className="mt-6">
-            <ProductGrid products={toCards(products)} />
+            <ProductGrid
+              products={toCards(products)}
+              signedIn={shopper !== null}
+              savedIds={savedIds}
+              toggleFavourite={toggleFavourite}
+            />
           </div>
         </section>
       </div>

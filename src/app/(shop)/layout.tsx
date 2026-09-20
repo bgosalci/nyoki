@@ -19,7 +19,8 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
   // Only whether somebody is signed in, so the header can point its account
   // icon at the right place. The pages inside the account do their own
   // checking; this is decoration.
-  const signedIn = (await currentCustomer()) !== null;
+  const shopper = await currentCustomer();
+  const savedCount = shopper ? await db.favourite.count({ where: { customerId: shopper.id } }) : 0;
 
   const groups = await db.category.findMany({
     where: { parentId: null },
@@ -49,7 +50,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
               />
             </Link>
 
-            <HeaderIcons signedIn={signedIn} />
+            <HeaderIcons signedIn={shopper !== null} savedCount={savedCount} />
           </div>
         </div>
 

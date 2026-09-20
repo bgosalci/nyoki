@@ -15,6 +15,7 @@ export interface CardBadge {
 }
 
 export interface CardProduct {
+  id: string;
   href: string;
   name: string;
   /** What the shopper pays. */
@@ -26,6 +27,7 @@ export interface CardProduct {
 }
 
 export interface CardSource {
+  id: string;
   slug: string;
   name: string;
   pricePence: number;
@@ -65,6 +67,7 @@ export function toCardProduct(product: CardSource, now: Date): CardProduct {
   if (product.oneOfAKind) badges.push({ label: "One of a kind", tone: "one" });
 
   return {
+    id: product.id,
     href: `/product/${product.slug}`,
     name: product.name,
     pricePence,

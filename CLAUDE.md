@@ -40,6 +40,10 @@ TypeScript, deployed to Vercel.
   prefers the unpooled URL. See the comment there for why.
 - The generated client is gitignored, so `pnpm build` runs `prisma generate`
   first. Removing that breaks Vercel deploys.
+- **After a migration, restart `next dev` as well as regenerating.** The
+  running server holds the old client in memory, and the failure reads as a
+  code bug: `Invalid customer.findUnique() invocation` on a column that plainly
+  exists, or `Cannot read properties of undefined` on a whole new model.
 - Server-only tests need `@jest-environment node`; the pg driver needs Node
   crypto, which jsdom lacks.
 
@@ -262,6 +266,27 @@ TypeScript, deployed to Vercel.
 - A new account's password is generated and returned to the owner once; it is
   never stored in plain text and never shown again.
 - Passwords are never trimmed - a leading space is a legitimate character.
+
+## Saved pieces
+
+- The heart is on the product cards, the product page and the header, and
+  `/account/favourites` lists them. It is what makes an account worth having
+  before checkout exists.
+- Signed out, the heart is a **link to the sign-in form**, not a control that
+  appears to work and cannot.
+- Signed in, it answers immediately through `useOptimistic` and reconciles
+  when the server catches up: a heart that waits on a round trip feels broken,
+  and being briefly wrong costs nothing worse than a heart that fills and
+  empties again.
+- `toggleFavourite` is a delete-then-create, not a read-then-branch, so two
+  quick clicks cannot collide: `deleteMany` does not mind finding nothing and
+  `createMany` skips a duplicate.
+- A saved piece that has since come off the shop is dropped from the list
+  rather than linking to a page that is no longer there.
+- **The product card is no longer a single link.** The link stretches over the
+  card (`after:absolute after:inset-0`) so the whole card is still one target
+  while the heart stays a control of its own - a button inside a link is
+  neither valid nor operable.
 
 ## Shopper accounts
 

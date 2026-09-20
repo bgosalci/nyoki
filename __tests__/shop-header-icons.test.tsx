@@ -29,6 +29,20 @@ describe("HeaderIcons", () => {
     expect(screen.queryByRole("link", { name: /sign in/i })).not.toBeInTheDocument();
   });
 
+  it("offers the saved pieces, and says how many there are", () => {
+    render(<HeaderIcons signedIn savedCount={3} />);
+
+    const saved = screen.getByRole("link", { name: /saved pieces/i });
+    expect(saved).toHaveAttribute("href", "/account/favourites");
+    expect(saved).toHaveTextContent("3");
+  });
+
+  it("shows no count when nothing is saved, rather than a nought", () => {
+    render(<HeaderIcons signedIn savedCount={0} />);
+
+    expect(screen.getByRole("link", { name: /saved pieces/i })).not.toHaveTextContent("0");
+  });
+
   it("keeps the icons themselves away from screen readers, which hear the labels", () => {
     const { container } = render(<HeaderIcons />);
 

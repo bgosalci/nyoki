@@ -4,6 +4,7 @@ const NOW = new Date("2026-06-15T12:00:00Z");
 
 function product(overrides: Partial<Parameters<typeof toCardProduct>[0]> = {}) {
   return {
+    id: "p1",
     slug: "handmade-easter-bunny-card",
     name: "Handmade Easter Bunny Card",
     pricePence: 650,

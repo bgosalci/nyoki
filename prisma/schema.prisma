@@ -88,6 +88,7 @@ model Product {
   images     ProductImage[]
   variants   ProductVariant[]
   categories CategoryProduct[]
+  favourites Favourite[]
   sales      SaleProduct[]
   orderItems OrderItem[]
 
@@ -155,6 +156,26 @@ model Category {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("categories")
+}
+
+/**
+ * A piece somebody has saved for later.
+ *
+ * The pair is the key: saving the same thing twice is the same thing saved,
+ * not a second row. Both sides cascade - a closed account and a deleted
+ * product each take their saves with them.
+ */
+model Favourite {
+  customerId String   @map("customer_id")
+  productId  String   @map("product_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([customerId, productId])
+  @@index([customerId])
+  @@map("favourites")
 }
 
 model CategoryProduct {
@@ -249,8 +270,9 @@ model Customer {
   stripeCustomerId String? @unique @map("stripe_customer_id")
   marketingOptIn   Boolean @default(false) @map("marketing_opt_in")
 
-  orders    Order[]
-  addresses Address[]
+  orders     Order[]
+  addresses  Address[]
+  favourites Favourite[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

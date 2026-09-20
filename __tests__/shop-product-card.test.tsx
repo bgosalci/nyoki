@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { ProductCard } from "@/components/shop/product-card";
 
 const base = {
+  id: "p1",
   href: "/product/easter-bunny-card",
   name: "Handmade Easter Bunny Card",
   pricePence: 650,
@@ -12,11 +13,15 @@ const base = {
 };
 
 describe("ProductCard", () => {
-  it("is a single link to the product, so the whole card is clickable", () => {
-    render(<ProductCard product={base} />);
+  it("makes the whole card clickable, without swallowing the controls on it", () => {
+    // The link stretches over the card rather than wrapping it, so a button
+    // sitting on the photo is still its own control and not part of the link.
+    const { container } = render(<ProductCard product={base} />);
 
     const link = screen.getByRole("link", { name: /handmade easter bunny card/i });
     expect(link).toHaveAttribute("href", "/product/easter-bunny-card");
+    expect(link.className).toMatch(/after:absolute/);
+    expect(container.firstElementChild).toContainElement(link);
   });
 
   it("shows the price", () => {
@@ -63,9 +68,9 @@ describe("ProductCard", () => {
   });
 
   it("is a white panel with a border, not a bare image", () => {
-    render(<ProductCard product={base} />);
+    const { container } = render(<ProductCard product={base} />);
+    const card = container.firstElementChild!;
 
-    const card = screen.getByRole("link", { name: /handmade easter bunny card/i });
     expect(card.className).toMatch(/bg-nyoki-white/);
     expect(card.className).toMatch(/border/);
   });
@@ -73,9 +78,9 @@ describe("ProductCard", () => {
   it("has the theme board's curved edges, with the photo clipped to them", () => {
     // The board draws cards at 8px with overflow hidden; without the clip the
     // square photo would poke out through the rounded top corners.
-    render(<ProductCard product={base} />);
+    const { container } = render(<ProductCard product={base} />);
 
-    const card = screen.getByRole("link", { name: /handmade easter bunny card/i });
+    const card = container.firstElementChild!;
     expect(card.className).toMatch(/rounded-lg/);
     expect(card.className).toMatch(/overflow-hidden/);
   });
@@ -90,6 +95,19 @@ describe("ProductCard", () => {
     render(<ProductCard product={base} />);
 
     expect(screen.getByRole("presentation")).toHaveAttribute("alt", "");
+  });
+
+  it("offers to save the piece when the page hands it a way to", () => {
+    const toggle = jest.fn(async () => {});
+    render(<ProductCard product={base} signedIn saved={false} toggleFavourite={toggle} />);
+
+    expect(screen.getByRole("button", { name: /save handmade easter bunny card/i })).toBeInTheDocument();
+  });
+
+  it("leaves the heart off entirely where saving is not on offer", () => {
+    render(<ProductCard product={base} />);
+
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
   it("shows a placeholder square when there is no photo", () => {

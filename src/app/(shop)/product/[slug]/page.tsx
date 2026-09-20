@@ -6,6 +6,9 @@ import { notFound } from "next/navigation";
 import { ProductGrid } from "@/components/shop/product-grid";
 import { ui } from "@/lib/brand/ui";
 import { db } from "@/lib/db";
+import { toggleFavourite } from "@/app/(shop)/account/actions";
+import { FavouriteButton } from "@/components/shop/favourite-button";
+import { currentCustomer } from "@/lib/account/dal";
 import { formatPence } from "@/lib/money";
 import { effectivePricePence } from "@/lib/pricing";
 import { chainTo } from "@/lib/products/category-pills";
@@ -37,6 +40,14 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   if (!product) notFound();
 
   const sales = product.sales.map((link) => link.sale);
+  const shopper = await currentCustomer();
+  const saved =
+    shopper !== null &&
+    (await db.favourite.findUnique({
+      where: { customerId_productId: { customerId: shopper.id, productId: product.id } },
+      select: { productId: true },
+    })) !== null;
+
   const price = effectivePricePence(product.pricePence, sales, new Date());
   const facts = productFacts(product);
 
@@ -145,7 +156,21 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             </details>
           ) : null}
 
-          <p className={`border-t pt-4 text-sm ${ui.shopRule} ${ui.shopMuted}`}>
+          <div className={`flex items-center gap-3 border-t pt-5 ${ui.shopRule}`}>
+            <FavouriteButton
+              productId={product.id}
+              name={product.name}
+              saved={saved}
+              signedIn={shopper !== null}
+              toggle={toggleFavourite}
+              className="border border-nyoki-light-slate"
+            />
+            <span className={`text-sm ${ui.shopMuted}`}>
+              {saved ? "Saved to your account" : "Save this for later"}
+            </span>
+          </div>
+
+          <p className={`text-sm ${ui.shopMuted}`}>
             Online ordering is coming soon. In the meantime, get in touch to buy this piece.
           </p>
         </div>
