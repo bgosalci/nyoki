@@ -189,21 +189,19 @@ TypeScript, deployed to Vercel.
 ## Storefront pages
 
 - A category page opens on a quiet band (`ui.shopBandQuiet`): name, a line
-  about it, a photo from inside it, and pills straight into the types beneath.
-  Then picture tiles for those same types, then everything in it. The promise
-  strip is the home page's alone - it was tried here and was not wanted.
+  about it, and pills straight into the types beneath. Then picture tiles for
+  those same types, then everything in it. The promise strip is the home
+  page's alone - it was tried here and was not wanted.
+- **The band carries no photograph.** One was tried wide, then upright, then
+  cropped and zoomed; the catalogue is shot on white with margins running from
+  nothing to 42% of the frame, so no crop suited them all and it was dropped.
 - Tiles come from `categoryTiles` in `src/lib/storefront/tiles.ts`, built in
   one pass over `tileProducts()` rather than a query per tile. A child holding
   nothing is left out - a tile leading to an empty page is a dead end.
 - Tile photos are square, like the product shots themselves: a landscape crop
-  slices a card across the middle. The band's photo is upright and small
-  enough to sit inside the band.
-- **The catalogue is shot on white with wildly uneven margins** - measured
-  across the imported photos, anything from none at all to 42% of the frame
-  each side. No single crop or zoom fixes that: the band's upright frame takes
-  the sides off and a gentle `scale-110` reaches the top and bottom, but white
-  will still show on the loosest shots. Trimming it properly means trimming
-  the stored images, not the CSS.
+  slices a card across the middle. The white around a subject is in the
+  photograph, not the layout - trimming it properly means trimming the stored
+  images, not the CSS.
 - An unwritten category falls back to `categoryIntro`, a line built from its
   name, which also becomes the page's meta description. The shopkeeper's own
   description always wins.

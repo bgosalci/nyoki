@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -41,7 +40,6 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
 
   const cards = toCards(products);
   const inside = categoryTiles(categories, category.id, forTiles);
-  const cover = cards.find((card) => card.image)?.image ?? null;
 
   // Breadcrumb, minus the category itself, which is the heading.
   const trail = chainTo(categories, category.slug).slice(0, -1);
@@ -49,71 +47,48 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
   return (
     <>
       <section className={ui.shopBandQuiet}>
-        <div className="mx-auto grid max-w-shop gap-8 px-4 py-10 sm:px-6 md:grid-cols-[1fr_auto] md:items-center md:py-12">
-          <div className="flex flex-col items-start gap-4">
-            <nav aria-label="Breadcrumb">
-              <ol className={`flex flex-wrap items-center gap-2 text-xs font-medium tracking-[0.1em] uppercase ${ui.shopMuted}`}>
-                <li>
-                  <Link href="/shop" className="hover:underline hover:underline-offset-4">Shop</Link>
+        <div className="mx-auto flex max-w-shop flex-col items-start gap-4 px-4 py-10 sm:px-6 md:py-12">
+          <nav aria-label="Breadcrumb">
+            <ol className={`flex flex-wrap items-center gap-2 text-xs font-medium tracking-[0.1em] uppercase ${ui.shopMuted}`}>
+              <li>
+                <Link href="/shop" className="hover:underline hover:underline-offset-4">Shop</Link>
+              </li>
+              {trail.map((crumb) => (
+                <li key={crumb.id} className="flex items-center gap-2">
+                  <span aria-hidden="true">/</span>
+                  <Link href={`/shop/${crumb.slug}`} className="hover:underline hover:underline-offset-4">
+                    {crumb.name}
+                  </Link>
                 </li>
-                {trail.map((crumb) => (
-                  <li key={crumb.id} className="flex items-center gap-2">
-                    <span aria-hidden="true">/</span>
-                    <Link href={`/shop/${crumb.slug}`} className="hover:underline hover:underline-offset-4">
-                      {crumb.name}
-                    </Link>
-                  </li>
-                ))}
-              </ol>
-            </nav>
+              ))}
+            </ol>
+          </nav>
 
-            <h1 className={`text-3xl tracking-tight md:text-4xl ${ui.shopHeading}`}>{category.name}</h1>
+          <h1 className={`text-3xl tracking-tight md:text-4xl ${ui.shopHeading}`}>{category.name}</h1>
 
-            <p className="max-w-prose leading-relaxed">{categoryIntro(category)}</p>
+          <p className="max-w-prose leading-relaxed">{categoryIntro(category)}</p>
 
-            <p className={`text-sm ${ui.shopMuted}`}>
-              {products.length} {products.length === 1 ? "piece" : "pieces"} to choose from
-            </p>
+          <p className={`text-sm ${ui.shopMuted}`}>
+            {products.length} {products.length === 1 ? "piece" : "pieces"} to choose from
+          </p>
 
-            {/* Straight into a type without scrolling past the tiles, which
-                show the same places but ask to be looked at rather than read.
-                Built from the tiles, so a type holding nothing is left out of
-                both. */}
-            {inside.length > 0 ? (
-              <ul className="flex flex-wrap gap-2">
-                {inside.map((child) => (
-                  <li key={child.slug}>
-                    <Link
-                      href={`/shop/${child.slug}`}
-                      className={`inline-block px-3 py-1.5 text-xs tracking-[0.1em] uppercase ${ui.shopPill}`}
-                    >
-                      {child.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
-
-          {cover ? (
-            // Upright rather than wide, and sized to sit inside the band. The
-            // catalogue is photographed square on white, with anything from no
-            // margin to nearly half the frame given over to it, so an upright
-            // crop takes the sides off - which is where that white is - without
-            // guessing at a zoom that would be wrong for most of them.
-            <div className="relative aspect-[3/4] h-52 overflow-hidden rounded-lg bg-nyoki-soft-ash md:h-64">
-              <Image
-                src={cover.url}
-                alt=""
-                fill
-                sizes="(min-width: 768px) 12rem, 10rem"
-                priority
-                // A cover crop can only take the sides off; the small zoom
-                // reaches the top and bottom too. Kept gentle on purpose - a
-                // photo shot tight to the card has no margin to spare.
-                className="scale-110 object-cover"
-              />
-            </div>
+          {/* Straight into a type without scrolling past the tiles, which
+              show the same places but ask to be looked at rather than read.
+              Built from the tiles, so a type holding nothing is left out of
+              both. */}
+          {inside.length > 0 ? (
+            <ul className="flex flex-wrap gap-2">
+              {inside.map((child) => (
+                <li key={child.slug}>
+                  <Link
+                    href={`/shop/${child.slug}`}
+                    className={`inline-block px-3 py-1.5 text-xs tracking-[0.1em] uppercase ${ui.shopPill}`}
+                  >
+                    {child.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
           ) : null}
         </div>
       </section>
