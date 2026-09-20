@@ -66,6 +66,13 @@ TypeScript, deployed to Vercel.
 - A modal dims the page with `ui.scrim`, which is plain black. Every brand
   colour is a tint; ink especially (#0b063c) lays a blue-purple wash over
   whatever is behind it rather than dimming it.
+- The admin can be set to light or dark outright; the storefront cannot,
+  and stays light. The choice marks `<html>` with `data-theme`, and the
+  `@custom-variant dark` in globals.css is what every `dark:` utility in the
+  CMS compiles against - one arm for the media query, one for the attribute.
+  Following the system means *no* attribute, so CSS answers it alone: no
+  JavaScript, no flash. `THEME_BOOTSTRAP` runs inline ahead of React for an
+  outright choice, which is why `<html>` carries `suppressHydrationWarning`.
 - `pnpm brand:board` regenerates docs/brand/theme-board.html from the module.
   Never edit the board by hand.
 
@@ -178,6 +185,20 @@ TypeScript, deployed to Vercel.
   nothing is filled in - most imported cards have no dimensions or care notes.
 - No cart yet: product pages say ordering is coming soon rather than showing a
   button that does nothing.
+
+## Storefront pages
+
+- A category page opens on a quiet band (`ui.shopBandQuiet`): name, a line
+  about it, a photo from inside it. Then picture tiles for the types beneath,
+  then everything in it, then the promises.
+- Tiles come from `categoryTiles` in `src/lib/storefront/tiles.ts`, built in
+  one pass over `tileProducts()` rather than a query per tile. A child holding
+  nothing is left out - a tile leading to an empty page is a dead end.
+- Tile photos are square, like the product shots themselves: a landscape crop
+  slices a card across the middle.
+- An unwritten category falls back to `categoryIntro`, a line built from its
+  name, which also becomes the page's meta description. The shopkeeper's own
+  description always wins.
 
 ## Admin chrome
 

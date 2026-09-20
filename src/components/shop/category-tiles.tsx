@@ -22,7 +22,9 @@ export function CategoryTiles({ heading, tiles }: { heading: string; tiles: Cate
         {tiles.map((tile) => (
           <li key={tile.slug}>
             <Link href={`/shop/${tile.slug}`} className={`group flex h-full flex-col ${ui.shopCard}`}>
-              <div className="relative aspect-[4/3] w-full overflow-hidden bg-nyoki-soft-ash">
+              {/* Square, like the photos themselves: a landscape crop slices a card
+                  across the middle and throws away its top and bottom. */}
+              <div className="relative aspect-square w-full overflow-hidden bg-nyoki-soft-ash">
                 {tile.image ? (
                   <Image
                     src={tile.image.url}

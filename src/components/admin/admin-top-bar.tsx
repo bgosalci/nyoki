@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { ThemeToggle } from "@/components/admin/theme-toggle";
 import { sectionTitle } from "@/lib/admin/nav";
 import { ui } from "@/lib/brand/ui";
 
@@ -30,6 +31,10 @@ export function AdminTopBar() {
       </Link>
       <span aria-hidden="true" className={ui.mutedOnPanel}>/</span>
       <h2 className="text-sm font-medium">{sectionTitle(pathname)}</h2>
+
+      <div className="ml-auto">
+        <ThemeToggle />
+      </div>
     </header>
   );
 }

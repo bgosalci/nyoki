@@ -27,6 +27,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       className={`${jost.variable} ${geistMono.variable} h-full antialiased`}
+      // The admin's theme script writes data-theme here before React
+      // hydrates, which is the whole point of it - it has to beat the first
+      // paint. Only this element's own attributes are exempted; nothing
+      // inside it is.
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

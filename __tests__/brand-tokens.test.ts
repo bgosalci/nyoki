@@ -31,6 +31,20 @@ describe("Tailwind brand tokens", () => {
     expect(css).toMatch(/color-scheme:\s*light dark;/);
   });
 
+  it("lets an outright theme choice beat what the machine is set to", () => {
+    // Every dark: utility in the CMS compiles against this variant. Without
+    // the data-theme arm the switch would change nothing; without the media
+    // arm, following the system would need JavaScript and could flash.
+    expect(css).toMatch(/@custom-variant dark/);
+    expect(css).toMatch(/:root\[data-theme="dark"\]/);
+    expect(css).toMatch(/:root:not\(\[data-theme="light"\]\)/);
+  });
+
+  it("pins the browser's own controls to an outright choice too", () => {
+    expect(css).toMatch(/:root\[data-theme="dark"\][^}]*color-scheme:\s*dark;/);
+    expect(css).toMatch(/:root\[data-theme="light"\][^}]*color-scheme:\s*light;/);
+  });
+
   it("declares no nyoki token that the palette does not know", () => {
     const declared = [...css.matchAll(/--color-(nyoki-[a-z-]+):/g)].map((m) => m[1]);
     const known = palette.map((entry) => entry.token);

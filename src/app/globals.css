@@ -1,5 +1,21 @@
 @import "tailwindcss";
 
+/* The admin can be set to light or dark outright, which marks the page with
+   data-theme. With no attribute the media query decides, so following the
+   machine's own setting needs no JavaScript and cannot flash on load. Every
+   dark: utility in the CMS compiles against this variant. */
+@custom-variant dark {
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
+
+  &:where(:root[data-theme="dark"], :root[data-theme="dark"] *) {
+    @slot;
+  }
+}
+
 :root {
   /* Page ground and text: white and navy, ink and beige in the dark - the
      "page" surface in src/lib/brand/ui.ts. */
@@ -44,10 +60,24 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --background: #171b21;
     --foreground: #f5f3ef;
   }
+}
+
+/* An outright choice, which also pins the browser's own controls: without
+   color-scheme here, a checkbox would keep following the machine. */
+:root[data-theme="dark"] {
+  --background: #171b21;
+  --foreground: #f5f3ef;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --background: #ffffff;
+  --foreground: #4a5667;
+  color-scheme: light;
 }
 
 body {
