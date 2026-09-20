@@ -1,0 +1,12 @@
+# pnpm 11 reads settings from here, not from the "pnpm" field in package.json.
+#
+# `allowBuilds` is the pnpm 11 key (pnpm 10 spelled it `onlyBuiltDependencies`,
+# which pnpm 11 silently ignores). It is an explicit allowlist of the only
+# packages permitted to run install scripts - pnpm exits 1 on any unapproved
+# native build, which would otherwise fail `pnpm install` on Vercel.
+#   @parcel/watcher - native file watcher used by `jest --watch`
+#   unrs-resolver   - native resolver used by eslint-config-next
+# Anything not listed here stays blocked from executing install scripts.
+allowBuilds:
+  '@parcel/watcher': true
+  unrs-resolver: true
