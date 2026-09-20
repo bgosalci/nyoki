@@ -1,25 +1,22 @@
-import Link from "next/link";
-
 const ICON = "size-6 stroke-nyoki-navy";
 
 /**
  * Search, account and basket.
  *
- * Search works: it leads to the Everything page, which is where you search.
- * The other two are in the design and hold their place, but neither customer
- * accounts nor a basket exist yet, so they are rendered disabled rather than
- * as links that would silently do nothing.
+ * All three hold their place in the design, and none of them exists yet, so
+ * each is rendered disabled rather than as a control that would silently do
+ * nothing. They become real one at a time.
  */
 export function HeaderIcons() {
   return (
     <ul className="flex items-center justify-end gap-5">
       <li>
-        <Link href="/shop" aria-label="Search" className="block hover:opacity-70">
+        <button type="button" disabled aria-label="Search" title="Search coming soon" className="block opacity-40">
           <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.5" aria-hidden="true" className={ICON}>
             <circle cx="11" cy="11" r="7" />
             <path d="m16.5 16.5 4 4" strokeLinecap="round" />
           </svg>
-        </Link>
+        </button>
       </li>
       <li>
         <button type="button" disabled aria-label="Account" title="Accounts coming soon" className="block opacity-40">
