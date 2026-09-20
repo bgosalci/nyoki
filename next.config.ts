@@ -6,6 +6,13 @@ const nextConfig: NextConfig = {
   // transformIgnorePatterns, so an appended override can never un-ignore a
   // package - it reads this field instead.
   transpilePackages: ["jose"],
+
+  devIndicators: {
+    // Defaults to bottom-left, which is exactly where the CMS sidebar puts the
+    // account block and sign-out button. Kept rather than disabled so compile
+    // status is still visible.
+    position: "bottom-right",
+  },
 };
 
 export default nextConfig;
