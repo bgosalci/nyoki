@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { ShopBackLink } from "@/components/shop/back-link";
 import { ProductGrid } from "@/components/shop/product-grid";
 import { ui } from "@/lib/brand/ui";
 import { db } from "@/lib/db";
@@ -34,7 +35,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
       <nav aria-label="Breadcrumb">
-        <ol className={`flex flex-wrap items-center gap-2 text-xs tracking-[0.1em] uppercase ${ui.shopMuted}`}>
+        <ol className={`flex flex-wrap items-center gap-2 text-sm font-medium tracking-[0.1em] uppercase ${ui.shopMuted}`}>
           <li>
             <Link href="/shop" className="hover:underline hover:underline-offset-4">Shop</Link>
           </li>
@@ -47,7 +48,15 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
         </ol>
       </nav>
 
-      <h1 className={`mt-4 text-3xl tracking-tight ${ui.shopHeading}`}>{category.name}</h1>
+      <div className="mt-5">
+        {trail.length > 0 ? (
+          <ShopBackLink href={`/shop/${trail[trail.length - 1].slug}`}>{trail[trail.length - 1].name}</ShopBackLink>
+        ) : (
+          <ShopBackLink href="/shop">everything</ShopBackLink>
+        )}
+      </div>
+
+      <h1 className={`mt-3 text-3xl tracking-tight ${ui.shopHeading}`}>{category.name}</h1>
       {category.description ? (
         <p className={`mt-3 max-w-prose leading-relaxed ${ui.shopMuted}`}>{category.description}</p>
       ) : null}

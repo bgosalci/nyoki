@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { ShopBackLink } from "@/components/shop/back-link";
 import { ProductGrid } from "@/components/shop/product-grid";
 import { ui } from "@/lib/brand/ui";
 import { db } from "@/lib/db";
@@ -55,7 +56,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
       <nav aria-label="Breadcrumb">
-        <ol className={`flex flex-wrap items-center gap-2 text-xs tracking-[0.1em] uppercase ${ui.shopMuted}`}>
+        <ol className={`flex flex-wrap items-center gap-2 text-sm font-medium tracking-[0.1em] uppercase ${ui.shopMuted}`}>
           <li><Link href="/shop" className="hover:underline hover:underline-offset-4">Shop</Link></li>
           {trail.map((crumb) => (
             <li key={crumb.id} className="flex items-center gap-2">
@@ -65,6 +66,14 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           ))}
         </ol>
       </nav>
+
+      <div className="mt-5">
+        {trail.length > 0 ? (
+          <ShopBackLink href={`/shop/${trail[trail.length - 1].slug}`}>{trail[trail.length - 1].name}</ShopBackLink>
+        ) : (
+          <ShopBackLink href="/shop">everything</ShopBackLink>
+        )}
+      </div>
 
       <div className="mt-6 grid gap-10 md:grid-cols-2">
         <div className="flex flex-col gap-3">
