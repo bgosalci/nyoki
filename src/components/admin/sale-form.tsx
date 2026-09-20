@@ -1,5 +1,6 @@
 "use client";
 
+import { ui } from "@/lib/brand/ui";
 import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
 
@@ -178,7 +179,7 @@ export function SaleForm({
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <h2 className="text-sm font-semibold">Products in this sale</h2>
-          <p className="text-xs text-black/60 dark:text-white/60">
+          <p className={`text-xs ${ui.mutedOnPage}`}>
             {selected.size} of {products.length} selected
           </p>
         </div>
@@ -198,14 +199,14 @@ export function SaleForm({
           <button
             type="button"
             onClick={() => setSelected(new Set(products.map((p) => p.id)))}
-            className="rounded-md border border-black/15 px-3 py-2 text-xs hover:bg-black/[0.04] dark:border-white/15 dark:hover:bg-white/5"
+            className={`rounded-md px-3 py-2 text-xs ${ui.buttonSecondary}`}
           >
             Select all
           </button>
           <button
             type="button"
             onClick={() => setSelected(new Set())}
-            className="rounded-md border border-black/15 px-3 py-2 text-xs hover:bg-black/[0.04] dark:border-white/15 dark:hover:bg-white/5"
+            className={`rounded-md px-3 py-2 text-xs ${ui.buttonSecondary}`}
           >
             Clear
           </button>
@@ -215,10 +216,10 @@ export function SaleForm({
           <p className="text-xs text-red-600 dark:text-red-400">{errors.productIds}</p>
         ) : null}
 
-        <ul className="max-h-80 divide-y divide-black/5 overflow-y-auto rounded-md border border-black/10 dark:divide-white/5 dark:border-white/10">
+        <ul className={`max-h-80 divide-y divide-nyoki-accent-beige overflow-y-auto rounded-md border dark:divide-nyoki-navy ${ui.panel} ${ui.rule}`}>
           {products.map((product) => (
             <li key={product.id} hidden={!visibleIds.has(product.id)}>
-              <label className="flex cursor-pointer items-center justify-between gap-3 px-3 py-2 text-sm hover:bg-black/[0.03] dark:hover:bg-white/5">
+              <label className="flex cursor-pointer items-center justify-between gap-3 px-3 py-2 text-sm hover:bg-nyoki-beige dark:hover:bg-nyoki-ink">
                 <span className="flex items-center gap-2.5">
                   <input
                     type="checkbox"
@@ -230,7 +231,7 @@ export function SaleForm({
                   />
                   {product.name}
                 </span>
-                <span className="tabular-nums text-black/60 dark:text-white/60">
+                <span className={`tabular-nums ${ui.mutedOnPanel}`}>
                   {formatPence(product.pricePence)}
                 </span>
               </label>
@@ -239,17 +240,17 @@ export function SaleForm({
         </ul>
       </section>
 
-      <div className="flex items-center gap-3 border-t border-black/10 pt-6 dark:border-white/10">
+      <div className={`flex items-center gap-3 border-t pt-6 ${ui.ruleOnPage}`}>
         <button
           type="submit"
           disabled={isPending}
-          className="rounded-md bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60 dark:bg-white dark:text-neutral-900"
+          className={`rounded-md px-4 py-2.5 text-sm font-medium transition-opacity ${ui.buttonPrimary}`}
         >
           {isPending ? "Saving…" : submitLabel}
         </button>
         <Link
           href="/admin/sales"
-          className="text-sm text-black/60 underline underline-offset-4 dark:text-white/60"
+          className={`text-sm ${ui.link}`}
         >
           Cancel
         </Link>

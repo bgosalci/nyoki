@@ -1,5 +1,6 @@
 "use client";
 
+import { ui } from "@/lib/brand/ui";
 import Link from "next/link";
 import { useActionState } from "react";
 
@@ -97,15 +98,15 @@ export function CategoryForm({
         )}
       </Field>
 
-      <div className="flex items-center gap-3 border-t border-black/10 pt-6 dark:border-white/10">
+      <div className={`flex items-center gap-3 border-t pt-6 ${ui.ruleOnPage}`}>
         <button
           type="submit"
           disabled={isPending}
-          className="rounded-md bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60 dark:bg-white dark:text-neutral-900"
+          className={`rounded-md px-4 py-2.5 text-sm font-medium transition-opacity ${ui.buttonPrimary}`}
         >
           {isPending ? "Saving…" : submitLabel}
         </button>
-        <Link href="/admin/categories" className="text-sm text-black/60 underline underline-offset-4 dark:text-white/60">
+        <Link href="/admin/categories" className={`text-sm ${ui.link}`}>
           Cancel
         </Link>
       </div>

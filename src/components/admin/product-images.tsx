@@ -1,5 +1,6 @@
 "use client";
 
+import { ui } from "@/lib/brand/ui";
 import { useActionState } from "react";
 
 export interface ProductImageItem {
@@ -23,8 +24,7 @@ const EMPTY: UploadState = { error: null };
 
 const ACCEPT = "image/jpeg,image/png,image/webp";
 
-const buttonClass =
-  "rounded-md border border-black/15 px-2.5 py-1 text-xs hover:bg-black/[0.04] disabled:opacity-40 disabled:hover:bg-transparent dark:border-white/15 dark:hover:bg-white/5";
+const buttonClass = `rounded-md px-2.5 py-1 text-xs disabled:opacity-40 ${ui.buttonSecondary}`;
 
 export function ProductImages({
   images,
@@ -48,7 +48,7 @@ export function ProductImages({
       <h2 className="text-sm font-semibold">Photos</h2>
 
       {ordered.length === 0 ? (
-        <p className="text-sm text-black/60 dark:text-white/60">
+        <p className={`text-sm ${ui.mutedOnPage}`}>
           No photos yet. The first one you add becomes the main photo.
         </p>
       ) : (
@@ -56,9 +56,9 @@ export function ProductImages({
           {ordered.map((image, index) => (
             <li
               key={image.id}
-              className="flex flex-col gap-2 rounded-lg border border-black/10 p-2 dark:border-white/10"
+              className={`flex flex-col gap-2 rounded-lg border p-2 ${ui.panel} ${ui.rule}`}
             >
-              <div className="relative aspect-square overflow-hidden rounded-md bg-black/[0.03] dark:bg-white/5">
+              <div className="relative aspect-square overflow-hidden rounded-md bg-nyoki-soft-ash">
                 {/* alt="" marks a photo without a description as decorative, so a
                     screen reader skips it instead of reading the filename. */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -68,7 +68,7 @@ export function ProductImages({
                   className="size-full object-cover"
                 />
                 {index === 0 ? (
-                  <span className="absolute top-1.5 left-1.5 rounded bg-neutral-900/80 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                  <span className={`absolute top-1.5 left-1.5 rounded px-1.5 py-0.5 text-[10px] font-medium ${ui.badgeDark}`}>
                     Main photo
                   </span>
                 ) : null}
@@ -142,12 +142,12 @@ export function ProductImages({
           <button
             type="submit"
             disabled={isUploading}
-            className="rounded-md bg-neutral-900 px-3.5 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60 dark:bg-white dark:text-neutral-900"
+            className={`rounded-md px-3.5 py-1.5 text-sm font-medium ${ui.buttonPrimary}`}
           >
             {isUploading ? "Uploading…" : "Upload"}
           </button>
         </div>
-        <p className="text-xs text-black/50 dark:text-white/50">
+        <p className={`text-xs ${ui.mutedOnPage}`}>
           JPEG, PNG or WebP, up to 10MB each. Up to 10 photos per product.
         </p>
       </form>

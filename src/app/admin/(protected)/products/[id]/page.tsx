@@ -1,3 +1,4 @@
+import { ui } from "@/lib/brand/ui";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -53,7 +54,7 @@ export default async function EditProductPage({
         <h1 className="text-xl font-semibold tracking-tight">{product.name}</h1>
         <Link
           href="/admin/products"
-          className="text-sm text-black/60 underline underline-offset-4 dark:text-white/60"
+          className={`text-sm ${ui.link}`}
         >
           All products
         </Link>

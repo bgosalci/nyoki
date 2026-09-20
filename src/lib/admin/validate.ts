@@ -98,3 +98,25 @@ export function validatePasswordChange(form: FormData): PasswordChangeValidation
 
   return { ok: true, data: { currentPassword, newPassword } };
 }
+
+export interface AdminEditInput {
+  name: string;
+  role: AdminRole;
+}
+
+export type AdminEditValidation =
+  | { ok: true; data: AdminEditInput }
+  | { ok: false; errors: Partial<Record<keyof AdminEditInput, string>> };
+
+export function validateAdminEdit(form: FormData): AdminEditValidation {
+  const errors: Partial<Record<keyof AdminEditInput, string>> = {};
+
+  const name = text(form, "name");
+  if (name.length === 0) errors.name = "Give the account a name.";
+
+  const roleRaw = text(form, "role");
+  if (!ROLES.includes(roleRaw as AdminRole)) errors.role = "Choose owner or staff.";
+
+  if (Object.keys(errors).length > 0) return { ok: false, errors };
+  return { ok: true, data: { name, role: roleRaw as AdminRole } };
+}

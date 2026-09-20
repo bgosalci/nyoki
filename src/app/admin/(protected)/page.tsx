@@ -1,3 +1,4 @@
+import { ui } from "@/lib/brand/ui";
 import { db } from "@/lib/db";
 
 export default async function AdminOverviewPage() {
@@ -23,9 +24,9 @@ export default async function AdminOverviewPage() {
         {stats.map((stat) => (
           <div
             key={stat.label}
-            className="rounded-lg border border-black/10 p-4 dark:border-white/10"
+            className={`rounded-lg border p-4 ${ui.card} ${ui.rule}`}
           >
-            <dt className="text-sm text-black/60 dark:text-white/60">
+            <dt className={`text-sm ${ui.mutedOnPanel}`}>
               {stat.label}
             </dt>
             <dd className="mt-1 text-2xl font-semibold tabular-nums">

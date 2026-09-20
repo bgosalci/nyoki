@@ -45,6 +45,9 @@ TypeScript, deployed to Vercel.
 
 ## Brand
 
+- The CMS uses the class recipes in `src/lib/brand/ui.ts`; the brand tests
+  check every recipe against the approved pairings. Do not add ad-hoc colour
+  classes to admin components.
 - Colours are owned by `src/lib/brand/palette.ts` and its tests. The Tailwind
   tokens (`--color-nyoki-*` in globals.css) are pinned to it by a test, so
   change the module first. Every value traces to a file in `public/brand/` or
@@ -82,10 +85,18 @@ TypeScript, deployed to Vercel.
   images are always looked up scoped to that product id, so a forged image id
   cannot touch another product's photos.
 
+## Catalogue import
+
+- `src/lib/import/shopify.ts` is pure (string in, products out) and fully
+  tested; `scripts/import-shopify.ts` does the database and network work.
+- Idempotent by slug: a product already present is skipped, never updated, so
+  re-running cannot clobber Njomza's edits. Gift cards are skipped.
+- Images go through the same byte-sniff validation and ImageStorage as uploads.
+
 ## Accounts
 
-- Settings lets anyone change their own password and lets an OWNER add or
-  remove accounts. `removalBlockedBecause()` in `src/lib/admin/removal.ts` is
+- Settings lets anyone change their own password and lets an OWNER add, edit
+  (name, role, password reset) or remove accounts. `removalBlockedBecause()` in `src/lib/admin/removal.ts` is
   the rule: no removing yourself, no removing the last owner, staff remove
   nobody. It runs on the server for every removal.
 - A new account's password is generated and returned to the owner once; it is

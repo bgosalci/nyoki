@@ -88,6 +88,9 @@ export const APPROVED_TEXT_PAIRINGS: readonly Pairing[] = [
   { text: neutral.white, surface: brand.ink, use: "Footer, dark bands" },
   { text: neutral.beige, surface: brand.navy, use: "Primary button, warmer" },
   { text: neutral.beige, surface: brand.ink, use: "Footer copy" },
+  { text: neutral.accentBeige, surface: brand.navy, use: "Secondary text on a navy panel" },
+  { text: neutral.accentBeige, surface: brand.ink, use: "Secondary text on a dark band" },
+  { text: neutral.blueGrey, surface: brand.ink, use: "Muted text on the dark page" },
 ];
 
 /** Combinations that pass only the large-text minimum (3:1): headings, tags, badges. */

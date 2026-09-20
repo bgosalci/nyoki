@@ -56,6 +56,20 @@ Re-running for an existing email resets that account's password and role, so
 this doubles as the password-reset path until account management exists in the
 CMS itself.
 
+## Importing the old catalogue
+
+```bash
+pnpm import:shopify "/path/to/products_export.csv" --dry-run
+pnpm import:shopify "/path/to/products_export.csv"
+```
+
+Reads a Shopify product export: products, variants, categories (grouped into
+Cards, Accessories and Clothes) and images, which are downloaded from Shopify's
+CDN and stored the same way uploads are. Products already present, matched by
+web address, are left untouched, so re-running never overwrites CMS edits.
+Shopify gift cards are skipped - they are redeemed by Shopify. `--skip-images`
+and `--limit N` help when testing.
+
 ## Conventions
 
 Development is test-first: the failing test comes before the implementation.

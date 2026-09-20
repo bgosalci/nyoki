@@ -1,6 +1,9 @@
 "use client";
 
+import { ui } from "@/lib/brand/ui";
 import { useActionState } from "react";
+
+import { inputClass } from "@/components/admin/field";
 
 export interface LoginState {
   error: string | null;
@@ -50,7 +53,7 @@ export function LoginForm({
           autoComplete="username"
           defaultValue={state.email ?? ""}
           required
-          className="rounded-md border border-black/15 bg-white px-3 py-2 text-sm outline-none focus:border-black/40 dark:border-white/15 dark:bg-white/5 dark:focus:border-white/40"
+          className={inputClass}
         />
       </div>
 
@@ -64,14 +67,14 @@ export function LoginForm({
           type="password"
           autoComplete="current-password"
           required
-          className="rounded-md border border-black/15 bg-white px-3 py-2 text-sm outline-none focus:border-black/40 dark:border-white/15 dark:bg-white/5 dark:focus:border-white/40"
+          className={inputClass}
         />
       </div>
 
       <button
         type="submit"
         disabled={isPending}
-        className="rounded-md bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60 dark:bg-white dark:text-neutral-900"
+        className={`rounded-md px-4 py-2.5 text-sm font-medium transition-opacity ${ui.buttonPrimary}`}
       >
         {isPending ? "Signing in…" : "Sign in"}
       </button>

@@ -29,3 +29,25 @@ export function removalBlockedBecause(
 
   return null;
 }
+
+/**
+ * Why `actorId` may not set `targetId`'s role to `newRole`, or null if they may.
+ * The one hard rule is that the shop can never end up with no owner.
+ */
+export function roleChangeBlockedBecause(
+  admins: readonly AdminSummary[],
+  { actorId, targetId, newRole }: { actorId: string; targetId: string; newRole: AdminRole },
+): string | null {
+  const target = admins.find((admin) => admin.id === targetId);
+  if (!target) return "That account no longer exists.";
+
+  const actor = admins.find((admin) => admin.id === actorId);
+  if (actor?.role !== "OWNER") return "Only an owner can change roles.";
+
+  if (target.role === newRole) return null;
+
+  const owners = admins.filter((admin) => admin.role === "OWNER").length;
+  if (target.role === "OWNER" && owners <= 1) return "The last owner cannot be made staff.";
+
+  return null;
+}

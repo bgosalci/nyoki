@@ -5,10 +5,12 @@ import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 
 import type { ChangePasswordState } from "@/components/admin/change-password-form";
+import type { EditAdminState } from "@/components/admin/edit-admin-form";
 import type { NewAdminState } from "@/components/admin/new-admin-form";
 import type { RemoveAdminState } from "@/components/admin/remove-admin-button";
-import { removalBlockedBecause } from "@/lib/admin/removal";
-import { validateNewAdminInput, validatePasswordChange } from "@/lib/admin/validate";
+import type { ResetPasswordState } from "@/components/admin/reset-password-button";
+import { removalBlockedBecause, roleChangeBlockedBecause } from "@/lib/admin/removal";
+import { validateAdminEdit, validateNewAdminInput, validatePasswordChange } from "@/lib/admin/validate";
 import { requireAdmin, requireOwner } from "@/lib/auth/dal";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { db } from "@/lib/db";
@@ -78,4 +80,41 @@ export async function removeAdmin(
 
   revalidatePath("/admin/settings");
   return { error: null };
+}
+
+export async function updateAdmin(
+  targetId: string,
+  _state: EditAdminState,
+  formData: FormData,
+): Promise<EditAdminState> {
+  const session = await requireOwner();
+
+  const result = validateAdminEdit(formData);
+  if (!result.ok) return { errors: result.errors, saved: false };
+
+  const admins = await db.adminUser.findMany({ select: { id: true, role: true } });
+  const blocked = roleChangeBlockedBecause(admins, { actorId: session.userId, targetId, newRole: result.data.role });
+  if (blocked) return { errors: { role: blocked }, saved: false };
+
+  await db.adminUser.update({ where: { id: targetId }, data: result.data });
+
+  revalidatePath("/admin/settings");
+  revalidatePath(`/admin/settings/team/${targetId}`);
+  return { errors: {}, saved: true };
+}
+
+export async function resetAdminPassword(
+  targetId: string,
+  _state: ResetPasswordState,
+  _formData: FormData,
+): Promise<ResetPasswordState> {
+  await requireOwner();
+
+  const target = await db.adminUser.findUnique({ where: { id: targetId }, select: { id: true } });
+  if (!target) return { password: null, error: "That account no longer exists." };
+
+  const password = randomBytes(18).toString("base64url");
+  await db.adminUser.update({ where: { id: targetId }, data: { passwordHash: await hashPassword(password) } });
+
+  return { password, error: null };
 }

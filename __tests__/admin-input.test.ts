@@ -1,4 +1,4 @@
-import { validateNewAdminInput, validatePasswordChange } from "@/lib/admin/validate";
+import { validateAdminEdit, validateNewAdminInput, validatePasswordChange } from "@/lib/admin/validate";
 
 function form(fields: Record<string, string>): FormData {
   const data = new FormData();
@@ -83,5 +83,21 @@ describe("validatePasswordChange", () => {
     const spaced = " leading-space-passphrase";
     const result = validatePasswordChange(form({ currentPassword: "old-password-here", newPassword: spaced, confirmPassword: spaced }));
     expect(result.ok && result.data.newPassword).toBe(spaced);
+  });
+});
+
+describe("validateAdminEdit", () => {
+  it("accepts a name and a role", () => {
+    expect(validateAdminEdit(form({ name: "  Njomza ", role: "OWNER" }))).toEqual({ ok: true, data: { name: "Njomza", role: "OWNER" } });
+  });
+
+  it("requires a name", () => {
+    const result = validateAdminEdit(form({ name: "", role: "STAFF" }));
+    expect(!result.ok && result.errors.name).toMatch(/name/i);
+  });
+
+  it("rejects an unknown role", () => {
+    const result = validateAdminEdit(form({ name: "A", role: "GOD" }));
+    expect(!result.ok && result.errors.role).toBeTruthy();
   });
 });

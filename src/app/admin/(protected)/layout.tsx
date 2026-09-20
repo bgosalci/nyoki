@@ -1,3 +1,4 @@
+import { ui } from "@/lib/brand/ui";
 import type { Metadata } from "next";
 
 import { AdminNav } from "@/components/admin/admin-nav";
@@ -19,20 +20,20 @@ export default async function AdminLayout({
 
   return (
     <div className="flex min-h-dvh flex-col md:flex-row">
-      <aside className="flex shrink-0 flex-col justify-between border-b border-black/10 p-4 md:w-60 md:border-r md:border-b-0 dark:border-white/10">
+      <aside className={`flex shrink-0 flex-col justify-between border-b p-4 md:w-60 md:border-r md:border-b-0 ${ui.panel} ${ui.rule}`}>
         <div>
           <p className="px-3 pb-4 text-lg font-semibold tracking-tight">Nyoki</p>
           <AdminNav />
         </div>
 
-        <div className="mt-6 border-t border-black/10 px-3 pt-4 dark:border-white/10">
-          <p className="truncate text-xs text-black/50 dark:text-white/50">
+        <div className={`mt-6 border-t px-3 pt-4 ${ui.rule}`}>
+          <p className={`truncate text-xs ${ui.mutedOnPanel}`}>
             {session.email}
           </p>
           <form action={signOut}>
             <button
               type="submit"
-              className="mt-2 text-sm text-black/70 underline underline-offset-4 hover:text-black dark:text-white/70 dark:hover:text-white"
+              className={`mt-2 text-sm ${ui.link}`}
             >
               Sign out
             </button>

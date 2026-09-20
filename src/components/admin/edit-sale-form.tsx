@@ -1,5 +1,6 @@
 "use client";
 
+import { ui } from "@/lib/brand/ui";
 import { SaleForm, type SaleFormProduct } from "@/components/admin/sale-form";
 import { deleteSale, updateSale } from "@/app/admin/(protected)/sales/actions";
 import type { SaleInput } from "@/lib/sales/validate";
@@ -25,7 +26,7 @@ export function EditSaleForm({
             event.preventDefault();
           }
         }}
-        className="border-t border-black/10 pt-6 dark:border-white/10"
+        className={`border-t pt-6 ${ui.ruleOnPage}`}
       >
         <button type="submit" className="text-sm text-red-700 underline underline-offset-4 dark:text-red-300">
           Delete this sale

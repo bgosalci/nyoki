@@ -1,3 +1,4 @@
+import { ui } from "@/lib/brand/ui";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -33,7 +34,7 @@ export default async function EditSalePage({ params }: { params: Promise<{ id: s
     <>
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h1 className="text-xl font-semibold tracking-tight">{sale.name}</h1>
-        <Link href="/admin/sales" className="text-sm text-black/60 underline underline-offset-4 dark:text-white/60">
+        <Link href="/admin/sales" className={`text-sm ${ui.link}`}>
           All sales
         </Link>
       </div>

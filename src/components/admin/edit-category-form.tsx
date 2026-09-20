@@ -1,5 +1,6 @@
 "use client";
 
+import { ui } from "@/lib/brand/ui";
 import { CategoryForm, type CategoryOption } from "@/components/admin/category-form";
 import { deleteCategory, updateCategory } from "@/app/admin/(protected)/categories/actions";
 import type { CategoryInput } from "@/lib/categories/validate";
@@ -35,7 +36,7 @@ export function EditCategoryForm({
             event.preventDefault();
           }
         }}
-        className="border-t border-black/10 pt-6 dark:border-white/10"
+        className={`border-t pt-6 ${ui.ruleOnPage}`}
       >
         <button type="submit" className="text-sm text-red-700 underline underline-offset-4 dark:text-red-300">
           Delete this category

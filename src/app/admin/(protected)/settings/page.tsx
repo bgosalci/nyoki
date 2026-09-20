@@ -1,3 +1,4 @@
+import { ui } from "@/lib/brand/ui";
 import { ChangePasswordForm } from "@/components/admin/change-password-form";
 import { NewAdminForm } from "@/components/admin/new-admin-form";
 import { TeamList } from "@/components/admin/team-list";
@@ -25,7 +26,7 @@ export default async function SettingsPage() {
       <section className="mt-8 flex flex-col gap-4">
         <div>
           <h2 className="text-base font-semibold">Your account</h2>
-          <p className="text-sm text-black/60 dark:text-white/60">
+          <p className={`text-sm ${ui.mutedOnPage}`}>
             Signed in as {session.email} · {session.role === "OWNER" ? "Owner" : "Staff"}
           </p>
         </div>
@@ -34,7 +35,7 @@ export default async function SettingsPage() {
 
       {session.role === "OWNER" ? (
         <>
-          <section className="mt-12 flex flex-col gap-4 border-t border-black/10 pt-8 dark:border-white/10">
+          <section className={`mt-12 flex flex-col gap-4 border-t pt-8 ${ui.ruleOnPage}`}>
             <h2 className="text-base font-semibold">Team</h2>
             <div className="overflow-x-auto">
               <TeamList
@@ -47,7 +48,7 @@ export default async function SettingsPage() {
             </div>
           </section>
 
-          <section className="mt-12 flex flex-col gap-4 border-t border-black/10 pt-8 dark:border-white/10">
+          <section className={`mt-12 flex flex-col gap-4 border-t pt-8 ${ui.ruleOnPage}`}>
             <h2 className="text-base font-semibold">Add someone</h2>
             <NewAdminForm action={createAdmin} />
           </section>

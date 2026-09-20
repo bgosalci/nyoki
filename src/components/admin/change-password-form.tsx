@@ -1,5 +1,6 @@
 "use client";
 
+import { ui } from "@/lib/brand/ui";
 import { useActionState } from "react";
 
 import { Field, inputClass } from "@/components/admin/field";
@@ -65,7 +66,7 @@ export function ChangePasswordForm({
         <button
           type="submit"
           disabled={isPending}
-          className="rounded-md bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60 dark:bg-white dark:text-neutral-900"
+          className={`rounded-md px-4 py-2.5 text-sm font-medium transition-opacity ${ui.buttonPrimary}`}
         >
           {isPending ? "Changing…" : "Change password"}
         </button>

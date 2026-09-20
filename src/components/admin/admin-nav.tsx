@@ -1,5 +1,6 @@
 "use client";
 
+import { ui } from "@/lib/brand/ui";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -41,8 +42,8 @@ export function AdminNav({ items = ADMIN_NAV }: { items?: AdminNavItem[] }) {
             aria-current={current ? "page" : undefined}
             className={
               current
-                ? "rounded-md bg-black/[0.06] px-3 py-2 text-sm font-medium dark:bg-white/10"
-                : "rounded-md px-3 py-2 text-sm text-black/70 hover:bg-black/[0.04] dark:text-white/70 dark:hover:bg-white/5"
+                ? `rounded-md px-3 py-2 text-sm ${ui.navActive}`
+                : `rounded-md px-3 py-2 text-sm ${ui.navItem}`
             }
           >
             {item.label}

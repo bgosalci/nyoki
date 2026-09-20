@@ -1,3 +1,4 @@
+import { ui } from "@/lib/brand/ui";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -26,7 +27,7 @@ export default async function EditCategoryPage({ params }: { params: Promise<{ i
     <>
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h1 className="text-xl font-semibold tracking-tight">{category.name}</h1>
-        <Link href="/admin/categories" className="text-sm text-black/60 underline underline-offset-4 dark:text-white/60">
+        <Link href="/admin/categories" className={`text-sm ${ui.link}`}>
           All categories
         </Link>
       </div>
