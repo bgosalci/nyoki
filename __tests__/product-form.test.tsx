@@ -4,6 +4,32 @@ import { ProductForm } from "@/components/admin/product-form";
 
 const noopAction = async () => ({ errors: {} });
 
+const categories = [
+  { id: "cat_tableware", name: "Tableware", parentId: null },
+  { id: "cat_mugs", name: "Mugs", parentId: "cat_tableware" },
+  { id: "cat_vases", name: "Vases", parentId: null },
+];
+
+const mug = {
+  name: "Hand-thrown Mug",
+  slug: "hand-thrown-mug",
+  description: null,
+  status: "ACTIVE" as const,
+  pricePence: 2400,
+  compareAtPence: 3000,
+  sku: null,
+  stock: 3,
+  weightGrams: null,
+  featured: false,
+  dimensions: null,
+  materials: null,
+  careInstructions: null,
+  oneOfAKind: false,
+  madeToOrder: false,
+  leadTimeDays: null,
+  categoryIds: ["cat_mugs"],
+};
+
 describe("ProductForm", () => {
   it("renders the fields needed to create a product", () => {
     render(<ProductForm action={noopAction} />);
@@ -45,6 +71,7 @@ describe("ProductForm", () => {
           oneOfAKind: false,
           madeToOrder: false,
           leadTimeDays: null,
+          categoryIds: [],
         }}
       />,
     );
@@ -75,11 +102,38 @@ describe("ProductForm", () => {
           oneOfAKind: false,
           madeToOrder: false,
           leadTimeDays: null,
+          categoryIds: [],
         }}
       />,
     );
 
     expect(screen.getByLabelText(/was.price|compare/i)).toHaveValue("");
+  });
+
+  it("lists every category as a checkbox, nested ones indented under their parent", () => {
+    render(<ProductForm action={noopAction} categories={categories} />);
+
+    const mugs = screen.getByRole("checkbox", { name: /mugs/i });
+    expect(mugs).toHaveAttribute("name", "categoryIds");
+    expect(mugs).toHaveAttribute("value", "cat_mugs");
+    expect(screen.getByRole("checkbox", { name: /tableware/i })).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: /vases/i })).toBeInTheDocument();
+    // The child sits after its parent, not in plain alphabetical order.
+    const order = screen.getAllByRole("checkbox", { name: /tableware|mugs|vases/i }).map((c) => c.getAttribute("value"));
+    expect(order.indexOf("cat_mugs")).toBe(order.indexOf("cat_tableware") + 1);
+  });
+
+  it("pre-ticks the categories the product is already in", () => {
+    render(<ProductForm action={noopAction} categories={categories} product={mug} />);
+
+    expect(screen.getByRole("checkbox", { name: /mugs/i })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /tableware/i })).not.toBeChecked();
+  });
+
+  it("says so when there are no categories yet, instead of an empty fieldset", () => {
+    render(<ProductForm action={noopAction} categories={[]} />);
+
+    expect(screen.getByText(/no categories yet/i)).toBeInTheDocument();
   });
 
   it("shows an error next to the field it belongs to", () => {

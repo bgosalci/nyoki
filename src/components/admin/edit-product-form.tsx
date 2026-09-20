@@ -1,6 +1,6 @@
 "use client";
 
-import { ProductForm } from "@/components/admin/product-form";
+import { ProductForm, type ProductFormCategory } from "@/components/admin/product-form";
 import { updateProduct } from "@/app/admin/(protected)/products/actions";
 import type { ProductInput } from "@/lib/products/validate";
 
@@ -13,14 +13,17 @@ import type { ProductInput } from "@/lib/products/validate";
 export function EditProductForm({
   id,
   product,
+  categories,
 }: {
   id: string;
   product: ProductInput;
+  categories: ProductFormCategory[];
 }) {
   return (
     <ProductForm
       action={updateProduct.bind(null, id)}
       product={product}
+      categories={categories}
       submitLabel="Save changes"
     />
   );

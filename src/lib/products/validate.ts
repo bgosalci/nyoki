@@ -22,6 +22,7 @@ export interface ProductInput {
   oneOfAKind: boolean;
   madeToOrder: boolean;
   leadTimeDays: number | null;
+  categoryIds: string[];
 }
 
 /**
@@ -45,7 +46,8 @@ export type ProductField =
   | "careInstructions"
   | "oneOfAKind"
   | "madeToOrder"
-  | "leadTimeDays";
+  | "leadTimeDays"
+  | "categoryIds";
 
 export type ProductErrors = Partial<Record<ProductField, string>>;
 
@@ -176,6 +178,15 @@ export function validateProductInput(form: FormData): ProductValidation {
       oneOfAKind,
       madeToOrder,
       leadTimeDays: leadParsed ?? null,
+      categoryIds: [
+        ...new Set(
+          form
+            .getAll("categoryIds")
+            .filter((entry): entry is string => typeof entry === "string")
+            .map((id) => id.trim())
+            .filter((id) => id.length > 0),
+        ),
+      ],
     },
   };
 }

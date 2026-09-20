@@ -1,8 +1,8 @@
 import { validateProductInput } from "@/lib/products/validate";
 
-function form(overrides: Record<string, string> = {}): FormData {
+function form(overrides: Record<string, string | string[]> = {}): FormData {
   const data = new FormData();
-  const base: Record<string, string> = {
+  const base: Record<string, string | string[]> = {
     name: "Hand-thrown Mug",
     price: "24.00",
     stock: "3",
@@ -11,7 +11,8 @@ function form(overrides: Record<string, string> = {}): FormData {
   };
 
   for (const [key, value] of Object.entries(base)) {
-    if (value !== "") data.set(key, value);
+    if (Array.isArray(value)) value.forEach((v) => data.append(key, v));
+    else if (value !== "") data.set(key, value);
   }
 
   return data;
@@ -153,6 +154,18 @@ describe("validateProductInput", () => {
 
     expect(result.ok && result.data.materials).toBe("Stoneware");
     expect(result.ok && result.data.dimensions).toBeNull();
+  });
+
+  it("has no categories unless some are ticked", () => {
+    const result = validateProductInput(form());
+
+    expect(result.ok && result.data.categoryIds).toEqual([]);
+  });
+
+  it("keeps the ticked categories, without duplicates", () => {
+    const result = validateProductInput(form({ categoryIds: ["cat_a", "cat_b", "cat_a"] }));
+
+    expect(result.ok && result.data.categoryIds).toEqual(["cat_a", "cat_b"]);
   });
 
   it("reports every problem at once rather than one at a time", () => {

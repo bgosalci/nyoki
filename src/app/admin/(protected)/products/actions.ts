@@ -49,10 +49,17 @@ export async function createProduct(
   if (!result.ok) return { errors: result.errors };
 
   const slug = uniqueSlug(result.data.slug, await takenSlugs(result.data.slug));
+  const { categoryIds, ...fields } = result.data;
 
   let id: string;
   try {
-    const created = await db.product.create({ data: { ...result.data, slug } });
+    const created = await db.product.create({
+      data: {
+        ...fields,
+        slug,
+        categories: { create: categoryIds.map((categoryId) => ({ categoryId })) },
+      },
+    });
     id = created.id;
   } catch (error) {
     if (isUniqueViolation(error) && error.meta?.target?.includes("sku")) {
@@ -77,9 +84,22 @@ export async function updateProduct(
   if (!result.ok) return { errors: result.errors };
 
   const slug = uniqueSlug(result.data.slug, await takenSlugs(result.data.slug, id));
+  const { categoryIds, ...fields } = result.data;
 
   try {
-    await db.product.update({ where: { id }, data: { ...result.data, slug } });
+    // Replace the category set in one transaction, so a failure part-way
+    // cannot leave the product in half its intended categories.
+    await db.$transaction([
+      db.categoryProduct.deleteMany({ where: { productId: id } }),
+      db.product.update({
+        where: { id },
+        data: {
+          ...fields,
+          slug,
+          categories: { create: categoryIds.map((categoryId) => ({ categoryId })) },
+        },
+      }),
+    ]);
   } catch (error) {
     if (isUniqueViolation(error) && error.meta?.target?.includes("sku")) {
       return { errors: { sku: "Another product already uses that code." } };

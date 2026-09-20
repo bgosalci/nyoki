@@ -1,39 +1,7 @@
 import Link from "next/link";
 
+import { flattenTree } from "@/lib/categories/tree";
 import { db } from "@/lib/db";
-
-interface Row {
-  id: string;
-  name: string;
-  slug: string;
-  parentId: string | null;
-  productCount: number;
-}
-
-/** Depth-first order with each row's depth, so the list reads as a tree. */
-function flattenTree(rows: Row[]): { row: Row; depth: number }[] {
-  const byParent = new Map<string | null, Row[]>();
-  for (const row of rows) {
-    const siblings = byParent.get(row.parentId) ?? [];
-    siblings.push(row);
-    byParent.set(row.parentId, siblings);
-  }
-
-  const out: { row: Row; depth: number }[] = [];
-  const seen = new Set<string>();
-
-  function walk(parentId: string | null, depth: number) {
-    for (const row of byParent.get(parentId) ?? []) {
-      if (seen.has(row.id)) continue; // guards against a cycle in corrupt data
-      seen.add(row.id);
-      out.push({ row, depth });
-      walk(row.id, depth + 1);
-    }
-  }
-
-  walk(null, 0);
-  return out;
-}
 
 export default async function CategoriesPage() {
   const categories = await db.category.findMany({

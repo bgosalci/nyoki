@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState } from "react";
 
 import { Field, inputClass } from "@/components/admin/field";
+import { flattenTree } from "@/lib/categories/tree";
 import { formatPence } from "@/lib/money";
 import type { ProductErrors, ProductInput } from "@/lib/products/validate";
 
@@ -16,6 +17,12 @@ export type ProductFormAction = (
   formData: FormData,
 ) => Promise<ProductFormState>;
 
+export interface ProductFormCategory {
+  id: string;
+  name: string;
+  parentId: string | null;
+}
+
 const EMPTY: ProductFormState = { errors: {} };
 
 /** Pence to a plain editable string: 2400 -> "24.00", null -> "". */
@@ -27,16 +34,20 @@ function poundsValue(pence: number | null | undefined): string {
 export function ProductForm({
   action,
   product,
+  categories = [],
   initialState = EMPTY,
   submitLabel = "Save product",
 }: {
   action: ProductFormAction;
   product?: ProductInput;
+  categories?: ProductFormCategory[];
   initialState?: ProductFormState;
   submitLabel?: string;
 }) {
   const [state, formAction, isPending] = useActionState(action, initialState);
   const errors = state.errors;
+  const inCategories = new Set(product?.categoryIds ?? []);
+  const categoryTree = flattenTree(categories);
 
   return (
     <form action={formAction} className="flex max-w-2xl flex-col gap-8">
@@ -256,6 +267,35 @@ export function ProductForm({
           Feature on the front page
         </label>
       </section>
+
+      <fieldset className="flex flex-col gap-3">
+        <legend className="text-sm font-semibold">Categories</legend>
+        {errors.categoryIds ? (
+          <p className="text-xs text-red-600 dark:text-red-400">{errors.categoryIds}</p>
+        ) : null}
+        {categoryTree.length === 0 ? (
+          <p className="text-sm text-black/60 dark:text-white/60">
+            No categories yet. Add some under Categories and they will appear here.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-1.5">
+            {categoryTree.map(({ row, depth }) => (
+              <li key={row.id} style={{ paddingLeft: depth * 1.5 + "rem" }}>
+                <label className="flex items-center gap-2.5 text-sm">
+                  <input
+                    type="checkbox"
+                    name="categoryIds"
+                    value={row.id}
+                    defaultChecked={inCategories.has(row.id)}
+                    className="size-4"
+                  />
+                  {row.name}
+                </label>
+              </li>
+            ))}
+          </ul>
+        )}
+      </fieldset>
 
       <div className="flex items-center gap-3 border-t border-black/10 pt-6 dark:border-white/10">
         <button

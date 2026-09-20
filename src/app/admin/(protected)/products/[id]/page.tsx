@@ -13,10 +13,16 @@ export default async function EditProductPage({
 }) {
   const { id } = await params;
 
-  const product = await db.product.findUnique({
-    where: { id },
-    include: { images: { orderBy: { position: "asc" } } },
-  });
+  const [product, categories] = await Promise.all([
+    db.product.findUnique({
+      where: { id },
+      include: {
+        images: { orderBy: { position: "asc" } },
+        categories: { select: { categoryId: true } },
+      },
+    }),
+    db.category.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, parentId: true } }),
+  ]);
   if (!product) notFound();
 
   // Narrow the database row to exactly what the form needs, so a column added
@@ -38,6 +44,7 @@ export default async function EditProductPage({
     oneOfAKind: product.oneOfAKind,
     madeToOrder: product.madeToOrder,
     leadTimeDays: product.leadTimeDays,
+    categoryIds: product.categories.map((link) => link.categoryId),
   };
 
   return (
@@ -54,7 +61,7 @@ export default async function EditProductPage({
 
       <div className="mt-6 flex flex-col gap-10">
         <EditProductImages productId={product.id} images={product.images} />
-        <EditProductForm id={product.id} product={initial} />
+        <EditProductForm id={product.id} product={initial} categories={categories} />
       </div>
     </>
   );
