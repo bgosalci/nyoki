@@ -115,6 +115,12 @@ TypeScript, deployed to Vercel.
 
 ## Accounts
 
+- `requireAdmin()` reads the account live from the database on every request:
+  the cookie proves who signed in, the row says whether they still may and as
+  what. A promotion applies on the next request; a removed account is sent to
+  `/admin/sign-out` (a route handler, since cookies cannot be cleared during a
+  page render) and lands on login without looping.
+
 - Settings lets anyone change their own password and lets an OWNER add, edit
   (name, role, password reset) or remove accounts. `removalBlockedBecause()` in `src/lib/admin/removal.ts` is
   the rule: no removing yourself, no removing the last owner, staff remove
