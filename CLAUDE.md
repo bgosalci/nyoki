@@ -284,12 +284,6 @@ TypeScript, deployed to Vercel.
   tables share it and a row that does not answer the pointer leaves you
   counting columns to be sure which one you are on. The brand tests check the
   hover grounds are ones the page's own text still reads on.
-- With `preview`, resting the pointer on a thumbnail shows a 288px copy
-  beside it. It is **rendered only while hovered** - two hundred hidden large
-  images would be fetched whether or not anyone looked at one - and it is
-  `pointer-events-none`, or it would end the hover that opened it and flicker.
-  A pointer-only enhancement by design: the row's name links to the product,
-  where the photo is shown in full to everyone.
 - The categories list collapses per group, remembered per browser. What a
   shut parent hides - everything beneath it however deep, whether or not
   those rows are themselves open - is `visibleBranches` in

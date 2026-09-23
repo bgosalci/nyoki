@@ -154,7 +154,7 @@ export function ProductTable({
                   />
                 </td>
                 <td className="py-2 pr-3">
-                  <ProductThumbnail image={row.image} size="large" preview />
+                  <ProductThumbnail image={row.image} size="large" />
                 </td>
                 <td className="py-3 pr-4">
                   <Link href={`/admin/products/${row.id}`} className="font-medium underline-offset-4 hover:underline">
