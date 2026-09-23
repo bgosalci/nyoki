@@ -92,7 +92,10 @@ export function nothsBreakdown({ pricePence, costPence, vatRate }: PriceInput): 
 export interface LadderStep {
   percent: number;
   salePricePence: number;
+  /** Left on the shop's own site. */
   profitPence: number;
+  /** Left on Not On The High Street, at the same price less their commission. */
+  nothsProfitPence: number;
 }
 
 /** Her lists work each piece down in tens, as far as half price. */
@@ -109,10 +112,88 @@ export function discountLadder(input: PriceInput): LadderStep[] {
   return LADDER.map((percent) => {
     const salePricePence = input.pricePence - discountPenceFor(input.pricePence, { type: "PERCENTAGE", value: percent });
 
+    const onSale = { ...input, pricePence: salePricePence };
+
     return {
       percent,
       salePricePence,
-      profitPence: priceBreakdown({ ...input, pricePence: salePricePence }).profitPence,
+      profitPence: priceBreakdown(onSale).profitPence,
+      nothsProfitPence: nothsBreakdown(onSale).profitPence,
     };
   });
+}
+
+/**
+ * Profit as a share of what is kept after VAT - margin in its ordinary sense.
+ *
+ * Not the same thing as her sheets' "online margin", which is the multiple on
+ * cost: a piece kept at £4.58 on £2.74 of cost is ×1.67 on cost, and a 40%
+ * margin. Null when nothing is kept, rather than a division by nothing.
+ */
+export function marginPercent(breakdown: PriceBreakdown): number | null {
+  if (breakdown.exVatPence <= 0) return null;
+  return (breakdown.profitPence / breakdown.exVatPence) * 100;
+}
+
+/** How a worked-out price is tidied: to 99p, to 50p, or whichever comes first. */
+export type PriceEnding = "either" | "99" | "50";
+
+const ENDINGS: Record<PriceEnding, readonly number[]> = {
+  "99": [99],
+  "50": [50],
+  either: [50, 99],
+};
+
+/** The first price at or above `pence` whose pence end as asked. */
+export function roundUpToEnding(pence: number, ending: PriceEnding): number {
+  const allowed = ENDINGS[ending];
+  const pounds = Math.floor(pence / 100);
+
+  for (const candidatePounds of [pounds, pounds + 1]) {
+    for (const tail of allowed) {
+      const candidate = candidatePounds * 100 + tail;
+      if (candidate >= pence) return candidate;
+    }
+  }
+
+  // Unreachable: the pound above always has an allowed ending above `pence`.
+  return (pounds + 1) * 100 + allowed[allowed.length - 1];
+}
+
+/**
+ * The tidy price, VAT included, that leaves at least the margin asked for.
+ *
+ * Worked from cost up: what must be kept after VAT for the margin to hold,
+ * then VAT on top, then up to the next tidy ending - up, never down, so tidying
+ * cannot cost margin. VAT on the result is rounded to the penny, which can
+ * shave a fraction off; every answer is checked in whole pence and stepped up
+ * a tidy price if it falls short. The margin is in tenths of a percent, like
+ * every other percentage the admin types.
+ *
+ * Null with no costs to work from, or for a margin of 100% or more, which no
+ * price can reach.
+ */
+export function priceForMargin({
+  costPence,
+  vatRate,
+  marginTenths,
+  ending,
+}: {
+  costPence: number;
+  vatRate: number;
+  marginTenths: number;
+  ending: PriceEnding;
+}): number | null {
+  if (costPence <= 0 || marginTenths < 0 || marginTenths >= 1000) return null;
+
+  // Kept after VAT = cost / (1 - margin); price = kept x (1 + VAT). Multiplied
+  // out so there is one division, then up to the whole penny.
+  const least = Math.ceil((costPence * 1000 * (100 + vatRate)) / ((1000 - marginTenths) * 100));
+
+  let price = roundUpToEnding(least, ending);
+  for (;;) {
+    const { profitPence, exVatPence } = priceBreakdown({ pricePence: price, costPence, vatRate });
+    if (profitPence * 1000 >= marginTenths * exVatPence) return price;
+    price = roundUpToEnding(price + 1, ending);
+  }
 }

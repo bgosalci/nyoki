@@ -9,13 +9,17 @@ import {
   NOTHS_FEE_PERCENT,
   discountLadder,
   lineCostPence,
+  marginPercent,
   nothsBreakdown,
   priceBreakdown,
+  priceForMargin,
   productionCostPence,
+  type PriceEnding,
 } from "@/lib/costing/costing";
 import type { EntryLine } from "@/lib/costing/import";
 import { VAT_RATES, parseQuantityToHundredths, type PricingErrors } from "@/lib/costing/validate";
 import { formatPence, parsePoundsToPence } from "@/lib/money";
+import { parsePercentToTenths } from "@/lib/products/repricing";
 
 export interface PricingState {
   errors: PricingErrors;
@@ -51,6 +55,12 @@ interface Row {
 }
 
 const VAT_LABEL: Record<number, string> = { 20: "20% - standard", 5: "5% - reduced", 0: "Zero-rated" };
+
+const ENDING_LABEL: Record<PriceEnding, string> = {
+  either: "50p or 99p, whichever comes first",
+  "99": "99p",
+  "50": "50p",
+};
 
 const pounds = (pence: number) => (pence / 100).toFixed(2);
 const hundredthsText = (h: number) => (h % 100 === 0 ? String(h / 100) : (h / 100).toFixed(2).replace(/0$/, ""));
@@ -101,13 +111,38 @@ export function PricingEditor({
   const [state, formAction, isPending] = useActionState(action, initialState);
 
   const [rows, setRows] = useState<Row[]>(() => lines.map(toRow));
-  const [price, setPrice] = useState(pounds(product.pricePence));
+  const [manualPrice, setManualPrice] = useState(pounds(product.pricePence));
+  const [margin, setMargin] = useState("");
+  const [ending, setEnding] = useState<PriceEnding>("either");
   const [vatRate, setVatRate] = useState(String(product.vatRate));
   const [fromEntry, setFromEntry] = useState<Suggestion | null>(null);
 
   const costPence = productionCostPence(rows.map((row) => ({ unitPence: rowCost(row), quantityHundredths: 100 })));
+
+  // While a margin is typed, the price is worked out from it - and keeps up
+  // with the costs and the VAT as they change, so the margin box never claims
+  // a margin the price does not give. Typing the price by hand lets go of it.
+  const marginTenths = margin.trim().length > 0 ? parsePercentToTenths(margin) : null;
+  const derivedPence =
+    marginTenths !== null ? priceForMargin({ costPence, vatRate: Number(vatRate), marginTenths, ending }) : null;
+  const price = derivedPence !== null ? pounds(derivedPence) : manualPrice;
+  const unreachable = marginTenths !== null && derivedPence === null && costPence > 0;
+
+  function changeMargin(next: string) {
+    // Clearing the margin, or making it unusable, leaves the worked-out price
+    // where it is rather than snapping back to an older one.
+    if (derivedPence !== null) setManualPrice(pounds(derivedPence));
+    setMargin(next);
+  }
+
+  function changePrice(next: string) {
+    setManualPrice(next);
+    setMargin("");
+  }
+
   const input = { pricePence: parsePoundsToPence(price) ?? 0, costPence, vatRate: Number(vatRate) };
   const breakdown = priceBreakdown(input);
+  const margined = marginPercent(breakdown);
   const noths = nothsBreakdown(input);
   const ladder = discountLadder(input);
 
@@ -206,11 +241,48 @@ export function PricingEditor({
 
           <div className="grid grid-cols-2 gap-4">
             <Field label="Price" name="price" error={state.errors.price} hint="What the shopper pays, VAT included.">
-              {(props) => <input {...props} inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} className={inputClass} />}
+              {(props) => <input {...props} inputMode="decimal" value={price} onChange={(e) => changePrice(e.target.value)} className={inputClass} />}
             </Field>
             <Field label="Was-price" name="compareAtPrice" error={state.errors.compareAtPrice} hint="Optional. Shown struck through.">
               {(props) => (
                 <input {...props} inputMode="decimal" defaultValue={product.compareAtPence !== null ? pounds(product.compareAtPence) : ""} className={inputClass} />
+              )}
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Field
+              label="Margin %"
+              name="margin"
+              hint={
+                costPence === 0
+                  ? "Add its costs first."
+                  : unreachable
+                    ? "No price reaches a margin of 100% or more."
+                    : "Works the price out. Profit as a share of what is kept after VAT."
+              }
+            >
+              {(props) => (
+                <input
+                  {...props}
+                  inputMode="decimal"
+                  value={margin}
+                  disabled={costPence === 0}
+                  onChange={(e) => changeMargin(e.target.value)}
+                  placeholder="e.g. 60"
+                  className={`${inputClass} disabled:opacity-50`}
+                />
+              )}
+            </Field>
+            <Field label="Round up to" name="ending" hint="Up, never down, so rounding cannot cost margin.">
+              {(props) => (
+                <select {...props} value={ending} onChange={(e) => setEnding(e.target.value as PriceEnding)} className={inputClass}>
+                  {(Object.keys(ENDING_LABEL) as PriceEnding[]).map((key) => (
+                    <option key={key} value={key}>
+                      {ENDING_LABEL[key]}
+                    </option>
+                  ))}
+                </select>
               )}
             </Field>
           </div>
@@ -237,6 +309,10 @@ export function PricingEditor({
               <Money pence={costPence} />
               <dt className="font-semibold">Profit</dt>
               <Money pence={breakdown.profitPence} loss />
+              <dt>Margin</dt>
+              <dd className={`text-right tabular-nums ${margined !== null && margined < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
+                {margined === null ? "—" : `${margined.toFixed(1)}%`}
+              </dd>
             </dl>
             {breakdown.costMultiple !== null ? (
               <p className={`mt-3 text-xs ${ui.mutedOnPanel}`}>
@@ -263,12 +339,13 @@ export function PricingEditor({
 
       <section>
         <h2 className="text-base font-semibold">If it goes on sale</h2>
-        <table aria-label="If it goes on sale" className="mt-3 w-full max-w-md border-collapse text-sm">
+        <table aria-label="If it goes on sale" className="mt-3 w-full max-w-2xl border-collapse text-sm">
           <thead>
             <tr className={`border-b text-left ${ui.tableHead}`}>
               <th className="py-2 pr-4 font-medium">Discount</th>
               <th className="py-2 pr-4 text-right font-medium">Sells for</th>
-              <th className="py-2 text-right font-medium">Profit</th>
+              <th className="py-2 pr-4 text-right font-medium">Profit on our shop</th>
+              <th className="py-2 text-right font-medium">Profit on Not On The High Street</th>
             </tr>
           </thead>
           <tbody>
@@ -276,8 +353,11 @@ export function PricingEditor({
               <tr key={step.percent} className={`border-b ${ui.tableRow}`}>
                 <td className="py-1.5 pr-4">{step.percent}% off</td>
                 <td className="py-1.5 pr-4 text-right tabular-nums">{formatPence(step.salePricePence)}</td>
-                <td className={`py-1.5 text-right tabular-nums ${step.profitPence < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
+                <td className={`py-1.5 pr-4 text-right tabular-nums ${step.profitPence < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
                   {formatPence(step.profitPence)}
+                </td>
+                <td className={`py-1.5 text-right tabular-nums ${step.nothsProfitPence < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
+                  {formatPence(step.nothsProfitPence)}
                 </td>
               </tr>
             ))}

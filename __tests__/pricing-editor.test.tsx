@@ -107,6 +107,71 @@ describe("PricingEditor", () => {
     expect(within(ladder).getByText("50% off")).toBeInTheDocument();
   });
 
+  it("shows the margin the price leaves, as a share of what is kept", () => {
+    setup();
+
+    // £6.62 profit on £10.82 kept.
+    expect(figure(/^margin/i)).toHaveTextContent("61.2%");
+  });
+
+  it("works the price out from a margin, rounded up to a tidy ending", async () => {
+    const { user } = setup();
+
+    await user.type(screen.getByLabelText(/^margin/i), "50");
+
+    // £4.20 of cost at 50% needs £10.08; the next tidy price is £10.50.
+    expect(screen.getByLabelText(/^price/i)).toHaveValue("10.50");
+  });
+
+  it("rounds to 99p when asked to", async () => {
+    const { user } = setup();
+
+    await user.selectOptions(screen.getByLabelText(/round up to/i), "99");
+    await user.type(screen.getByLabelText(/^margin/i), "50");
+
+    expect(screen.getByLabelText(/^price/i)).toHaveValue("10.99");
+  });
+
+  it("lets go of the margin once the price is typed by hand", async () => {
+    // The box would otherwise claim a margin the price no longer gives.
+    const { user } = setup();
+
+    await user.type(screen.getByLabelText(/^margin/i), "50");
+    const price = screen.getByLabelText(/^price/i);
+    await user.clear(price);
+    await user.type(price, "9.00");
+
+    expect(screen.getByLabelText(/^margin/i)).toHaveValue("");
+  });
+
+  it("cannot work from a margin before the piece is costed", () => {
+    setup({ lines: [] });
+
+    expect(screen.getByLabelText(/^margin/i)).toBeDisabled();
+    expect(screen.getByText(/add its costs first/i)).toBeInTheDocument();
+  });
+
+  it("says no price reaches a margin of 100% or more", async () => {
+    const { user } = setup();
+
+    // Pasted, not typed: key by key it would pass through 1% and 10%, which
+    // are reachable and rightly move the price on the way.
+    await user.click(screen.getByLabelText(/^margin/i));
+    await user.paste("100");
+
+    expect(screen.getByText(/no price reaches/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^price/i)).toHaveValue("12.99");
+  });
+
+  it("shows what Not On The High Street leaves at each step of a sale too", () => {
+    setup();
+
+    const ladder = screen.getByRole("table", { name: /on sale/i });
+    // £10.39 there: their 30% is £3.12, VAT £1.73, cost £4.20.
+    expect(within(ladder).getByText("20% off").closest("tr")).toHaveTextContent("£1.34");
+    expect(within(ladder).getByRole("columnheader", { name: /not on the high street/i })).toBeInTheDocument();
+  });
+
   it("shows what the same piece makes on Not On The High Street", () => {
     setup();
 
