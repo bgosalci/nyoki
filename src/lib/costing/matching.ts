@@ -116,7 +116,11 @@ export interface RankableEntry {
  * For choosing by eye: the ranking only has to put the right one near the
  * top, because Njomza is looking at the photograph and will know it.
  */
-export function rankEntriesFor<T extends RankableEntry>(product: MatchProduct, entries: readonly T[]): T[] {
+export function rankEntriesFor<T extends RankableEntry>(
+  product: MatchProduct,
+  entries: readonly T[],
+  { limit = HOW_MANY }: { limit?: number } = {},
+): T[] {
   const score = (entry: T) => {
     const distance =
       entry.photoHash && product.photoHashes.length > 0 ? nearest(entry.photoHash, product.photoHashes) : NO_PHOTO;
@@ -127,6 +131,6 @@ export function rankEntriesFor<T extends RankableEntry>(product: MatchProduct, e
   return [...entries]
     .map((entry) => ({ entry, score: score(entry) }))
     .sort((a, b) => a.score - b.score)
-    .slice(0, HOW_MANY)
+    .slice(0, limit)
     .map(({ entry }) => entry);
 }

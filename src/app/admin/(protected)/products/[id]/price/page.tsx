@@ -33,11 +33,14 @@ export default async function ProductPricePage({ params }: { params: Promise<{ i
             ...entry,
             filename: entry.photoFilename,
           })),
+          // Every row, best guess first: the chooser searches them all.
+          { limit: Infinity },
         ).map((entry) => ({
           id: entry.id,
           source: entry.source,
           note: entry.note,
           photoUrl: entry.photoUrl,
+          photoFilename: entry.photoFilename,
           pricePence: entry.pricePence,
           vatRate: entry.vatRate,
           lines: entry.lines as unknown as EntryLine[],

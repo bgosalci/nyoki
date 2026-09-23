@@ -162,11 +162,15 @@ TypeScript, deployed to Vercel.
   price can be linked to and the back button goes back a tab.
 - The Price tab holds the cost lines, VAT, price and was-price, and works
   every figure out live: profit, margin, what Not On The High Street leaves,
-  and each step of a sale on both. Type a target margin and the price is
-  worked out, rounded **up** to 50p or 99p (`priceForMargin`); typing the
-  price by hand lets go of the margin, so the margin box never claims what
-  the price does not give. Margin is profit as a share of what is kept after
-  VAT - not her sheets' "online margin", which is the multiple on cost.
+  and each step of a sale on both. Margin is profit as a share of what is
+  kept after VAT - not her sheets' "online margin", which is the multiple on
+  cost; both are shown.
+- **Price and margin drive each other**: whichever was typed last leads, and
+  the other follows it - and the costs and VAT - as they change. A typed
+  margin sets the price, rounded **up** to 50p or 99p (`priceForMargin`); a
+  typed price shows its margin. A typed margin stays as typed rather than
+  snapping to the slightly higher margin the tidy price gives: rewriting the
+  number under the cursor would fight the typing, and the figures show it.
 - **The Details tab has no price.** It shows it read-only with a link to the
   Price tab, and `validateProductInput` does not read one even if posted - a
   test forges exactly that - so saving details cannot change or reset it.
@@ -177,9 +181,11 @@ TypeScript, deployed to Vercel.
   "Change price". There was a separate Pricing section with its own list;
   it was folded into the product, and its "not yet costed" and "selling at a
   loss" views went with it.
-- A piece with no costs is offered the price-list rows most likely to be it
-  (`rankEntriesFor`). Choosing one fills the form to be checked; only saving
-  records it, and the row's id is re-checked on the server as unclaimed.
+- A piece with no costs can choose from **every** unmatched price-list row,
+  best guess first (`rankEntriesFor` with no limit), searchable by the words
+  in each photo's file name - often the only place a row says what it is.
+  Choosing fills the form to be checked; only saving records it, and the
+  row's id is re-checked on the server as unclaimed.
 
 ## Price list import
 
@@ -369,13 +375,16 @@ TypeScript, deployed to Vercel.
   the URL as you type (debounced) or change a select, so the server component
   re-renders and the view stays bookmarkable. No Filter buttons.
 
-## Picking a product
+## Choosing by photo
 
-- `ProductPicker` (`src/components/admin/product-picker.tsx`) is the shared
-  control for choosing a piece: a preview of what is chosen, a Choose button,
-  and a modal of thumbnails with a live search. Built to be reused wherever
-  the admin needs one product chosen; the home page's main photo is its first
-  use.
+- `PhotoChooser` (`src/components/admin/photo-chooser.tsx`) is the admin's
+  one modal for choosing a thing by looking at it: tiles of photos, a search
+  that matches every word typed in any order against whatever the caller says
+  an item can be found by, and a cap of 60 with a note to narrow. It knows
+  nothing about what it is choosing - it takes tiles and hands back an id.
+  The home page's main photo and a piece's price-list row both use it.
+- `ProductPicker` wraps it for a form field: a preview of what is chosen, a
+  Choose button, and the id in a hidden input.
 - **It labels itself** and is a `role="group"`, rather than sitting inside
   `Field`. A `<label for>` pointed at its Choose button renames that button to
   the field's label, so the button stops announcing what it does.
@@ -384,8 +393,6 @@ TypeScript, deployed to Vercel.
 - A chosen id that is no longer in the list is kept, not silently cleared -
   the list is filtered to what is eligible, and a piece archived since it was
   chosen must not be dropped by merely opening the form.
-- The grid is capped at 60 with a "type a word to narrow it" note: every tile
-  is an optimised image request, and the catalogue runs to a few hundred.
 
 ## Confirmations
 

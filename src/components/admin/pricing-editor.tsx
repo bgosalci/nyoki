@@ -1,9 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import { useActionState, useState } from "react";
 
 import { Field, inputClass } from "@/components/admin/field";
+import { PhotoChooser } from "@/components/admin/photo-chooser";
+import { ProductThumbnail } from "@/components/admin/product-thumbnail";
 import { ui } from "@/lib/brand/ui";
 import {
   NOTHS_FEE_PERCENT,
@@ -42,6 +43,8 @@ export interface Suggestion {
   source: string;
   note: string | null;
   photoUrl: string | null;
+  /** The photo's original file name, which often says what the piece is. */
+  photoFilename: string | null;
   pricePence: number;
   vatRate: number;
   lines: EntryLine[];
@@ -112,17 +115,18 @@ export function PricingEditor({
 
   const [rows, setRows] = useState<Row[]>(() => lines.map(toRow));
   const [manualPrice, setManualPrice] = useState(pounds(product.pricePence));
-  const [margin, setMargin] = useState("");
+  const [marginText, setMarginText] = useState("");
+  // Whichever of the two was typed last drives the other; the other follows
+  // it, and the costs and VAT, as they change.
+  const [driver, setDriver] = useState<"price" | "margin">("price");
   const [ending, setEnding] = useState<PriceEnding>("either");
   const [vatRate, setVatRate] = useState(String(product.vatRate));
   const [fromEntry, setFromEntry] = useState<Suggestion | null>(null);
+  const [choosing, setChoosing] = useState(false);
 
   const costPence = productionCostPence(rows.map((row) => ({ unitPence: rowCost(row), quantityHundredths: 100 })));
 
-  // While a margin is typed, the price is worked out from it - and keeps up
-  // with the costs and the VAT as they change, so the margin box never claims
-  // a margin the price does not give. Typing the price by hand lets go of it.
-  const marginTenths = margin.trim().length > 0 ? parsePercentToTenths(margin) : null;
+  const marginTenths = driver === "margin" && marginText.trim().length > 0 ? parsePercentToTenths(marginText) : null;
   const derivedPence =
     marginTenths !== null ? priceForMargin({ costPence, vatRate: Number(vatRate), marginTenths, ending }) : null;
   const price = derivedPence !== null ? pounds(derivedPence) : manualPrice;
@@ -132,24 +136,35 @@ export function PricingEditor({
     // Clearing the margin, or making it unusable, leaves the worked-out price
     // where it is rather than snapping back to an older one.
     if (derivedPence !== null) setManualPrice(pounds(derivedPence));
-    setMargin(next);
+    setDriver("margin");
+    setMarginText(next);
   }
 
   function changePrice(next: string) {
     setManualPrice(next);
-    setMargin("");
+    setDriver("price");
   }
 
   const input = { pricePence: parsePoundsToPence(price) ?? 0, costPence, vatRate: Number(vatRate) };
   const breakdown = priceBreakdown(input);
-  const margined = marginPercent(breakdown);
+  // With no costs, the whole of what is kept would read as profit - a 100%
+  // margin that means nothing - so there is no margin to show.
+  const margined = costPence > 0 ? marginPercent(breakdown) : null;
+
+  // Typed, the box keeps what was typed: the tidy price usually gives a little
+  // more, and rewriting the number under the cursor would fight the typing.
+  // Otherwise it shows the margin the price gives.
+  const marginShown = driver === "margin" ? marginText : margined !== null ? margined.toFixed(1) : "";
   const noths = nothsBreakdown(input);
   const ladder = discountLadder(input);
 
   const update = (key: number, patch: Partial<Row>) =>
     setRows((current) => current.map((row) => (row.key === key ? { ...row, ...patch } : row)));
 
-  function adopt(suggestion: Suggestion) {
+  function adopt(id: string) {
+    const suggestion = suggestions.find((entry) => entry.id === id);
+    setChoosing(false);
+    if (!suggestion) return;
     setRows(suggestion.lines.map(toRow));
     setVatRate(String(suggestion.vatRate));
     setFromEntry(suggestion);
@@ -259,14 +274,14 @@ export function PricingEditor({
                   ? "Add its costs first."
                   : unreachable
                     ? "No price reaches a margin of 100% or more."
-                    : "Works the price out. Profit as a share of what is kept after VAT."
+                    : "Type a margin to work the price out, or a price to see its margin."
               }
             >
               {(props) => (
                 <input
                   {...props}
                   inputMode="decimal"
-                  value={margin}
+                  value={marginShown}
                   disabled={costPence === 0}
                   onChange={(e) => changeMargin(e.target.value)}
                   placeholder="e.g. 60"
@@ -316,7 +331,8 @@ export function PricingEditor({
             </dl>
             {breakdown.costMultiple !== null ? (
               <p className={`mt-3 text-xs ${ui.mutedOnPanel}`}>
-                ×{breakdown.costMultiple.toFixed(2)} on cost - what her price lists call the online margin.
+                Margin is profit as a share of what is kept after VAT. ×{breakdown.costMultiple.toFixed(2)} on cost is
+                what your price lists call the online margin.
               </p>
             ) : (
               <p className={`mt-3 text-xs ${ui.mutedOnPanel}`}>Add its costs to see the margin.</p>
@@ -369,30 +385,47 @@ export function PricingEditor({
         <section>
           <h2 className="text-base font-semibold">From your price lists</h2>
           <p className={`mt-1 max-w-prose text-sm ${ui.mutedOnPage}`}>
-            These rows from your 2023 price lists might be this piece - best guess first. Choose one to fill its costs
-            in, then check them and save. Its old price is shown, but never copied.
+            {suggestions.length} rows of your 2023 price lists have not been matched to a piece yet. If one of them is
+            this piece, choose it to fill its costs in, then check them and save. Its old price is shown, but never
+            copied.
           </p>
 
-          <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {suggestions.map((suggestion) => (
-              <li key={suggestion.id} className={`flex flex-col gap-2 rounded-md border p-2 ${ui.rule} ${fromEntry?.id === suggestion.id ? ui.navActive : ""}`}>
-                <span className="relative block aspect-square overflow-hidden rounded bg-nyoki-soft-ash dark:bg-nyoki-navy">
-                  {suggestion.photoUrl ? (
-                    <Image src={suggestion.photoUrl} alt="" fill sizes="(min-width: 640px) 12rem, 45vw" className="object-cover" />
-                  ) : null}
-                </span>
-                <span className="text-xs font-medium">{suggestion.source}</span>
-                {suggestion.note ? <span className={`text-xs ${ui.mutedOnPage}`}>{suggestion.note}</span> : null}
-                <span className={`text-xs ${ui.mutedOnPage}`}>
-                  Costs {formatPence(productionCostPence(suggestion.lines))}
-                  {suggestion.pricePence > 0 ? ` · was ${formatPence(suggestion.pricePence)}` : ""}
-                </span>
-                <button type="button" onClick={() => adopt(suggestion)} className={`mt-auto rounded-md px-2 py-1.5 text-xs ${ui.buttonSecondary}`}>
-                  Use these costs
-                </button>
-              </li>
-            ))}
-          </ul>
+          <button
+            type="button"
+            onClick={() => setChoosing(true)}
+            className={`mt-4 rounded-md px-3 py-1.5 text-sm ${ui.buttonSecondary}`}
+          >
+            Choose from your price lists
+          </button>
+
+          <PhotoChooser
+            open={choosing}
+            title="Which row is this piece?"
+            items={suggestions.map((suggestion) => ({
+              id: suggestion.id,
+              title: suggestion.source,
+              details: [
+                `Costs ${formatPence(productionCostPence(suggestion.lines))}`,
+                ...(suggestion.pricePence > 0 ? [`Was ${formatPence(suggestion.pricePence)}`] : []),
+                ...(suggestion.note ? [suggestion.note] : []),
+              ],
+              imageUrl: suggestion.photoUrl,
+              // A file name like "pink_mohair_booties.png" is often the only
+              // place a row says what it is.
+              searchText: [suggestion.note ?? "", (suggestion.photoFilename ?? "").replace(/\.[a-z0-9]+$/i, "").replace(/[_\-.]+/g, " ")].join(" "),
+            }))}
+            selectedId={fromEntry?.id ?? null}
+            lead={
+              <div className="flex items-center gap-3">
+                <ProductThumbnail image={product.image} />
+                <p className="text-sm">
+                  Looking for <strong>{product.name}</strong> - best guess first.
+                </p>
+              </div>
+            }
+            onChoose={adopt}
+            onCancel={() => setChoosing(false)}
+          />
         </section>
       ) : null}
 

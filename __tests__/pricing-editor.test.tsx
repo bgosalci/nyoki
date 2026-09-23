@@ -3,6 +3,11 @@ import userEvent from "@testing-library/user-event";
 
 import { PricingEditor } from "@/components/admin/pricing-editor";
 
+beforeAll(() => {
+  HTMLDialogElement.prototype.showModal = function () { this.setAttribute("open", ""); };
+  HTMLDialogElement.prototype.close = function () { this.removeAttribute("open"); };
+});
+
 // Christening card: her sheet has it at £12.99 costing £4.20.
 const product = {
   id: "p1",
@@ -29,7 +34,13 @@ function setup(overrides: Partial<React.ComponentProps<typeof PricingEditor>> = 
   return { action, user: userEvent.setup() };
 }
 
-const figure = (name: RegExp) => within(screen.getByRole("group", { name: /what it makes/i })).getByText(name).nextSibling;
+/** A figure is a term and its value: find the term, return the value beside it. */
+const figure = (name: RegExp) => {
+  const terms = [...screen.getByRole("group", { name: /what it makes/i }).querySelectorAll("dt")];
+  const term = terms.find((dt) => name.test(dt.textContent ?? ""));
+  if (!term) throw new Error(`No figure called ${name}`);
+  return term.nextElementSibling;
+};
 
 describe("PricingEditor", () => {
   it("adds up what goes into the piece", () => {
@@ -114,10 +125,39 @@ describe("PricingEditor", () => {
     expect(figure(/^margin/i)).toHaveTextContent("61.2%");
   });
 
+  it("opens showing the margin the price gives now", () => {
+    setup();
+
+    expect(screen.getByLabelText(/^margin/i)).toHaveValue("61.2");
+  });
+
+  it("works the margin out as the price is typed", async () => {
+    const { user } = setup();
+
+    const price = screen.getByLabelText(/^price/i);
+    await user.clear(price);
+    await user.type(price, "9.00");
+
+    // £9.00: £7.50 kept, £3.30 profit - 44%.
+    expect(screen.getByLabelText(/^margin/i)).toHaveValue("44.0");
+  });
+
+  it("keeps the margin in step as the costs change, while the price is what was typed", async () => {
+    const { user } = setup();
+
+    await user.click(screen.getByRole("button", { name: /remove making cost/i }));
+
+    // £2.20 of cost now: £8.62 profit on £10.82 kept.
+    expect(screen.getByLabelText(/^margin/i)).toHaveValue("79.7");
+    expect(screen.getByLabelText(/^price/i)).toHaveValue("12.99");
+  });
+
   it("works the price out from a margin, rounded up to a tidy ending", async () => {
     const { user } = setup();
 
-    await user.type(screen.getByLabelText(/^margin/i), "50");
+    const margin = screen.getByLabelText(/^margin/i);
+    await user.clear(margin);
+    await user.type(margin, "50");
 
     // £4.20 of cost at 50% needs £10.08; the next tidy price is £10.50.
     expect(screen.getByLabelText(/^price/i)).toHaveValue("10.50");
@@ -127,21 +167,38 @@ describe("PricingEditor", () => {
     const { user } = setup();
 
     await user.selectOptions(screen.getByLabelText(/round up to/i), "99");
-    await user.type(screen.getByLabelText(/^margin/i), "50");
+    const margin = screen.getByLabelText(/^margin/i);
+    await user.clear(margin);
+    await user.type(margin, "50");
 
     expect(screen.getByLabelText(/^price/i)).toHaveValue("10.99");
   });
 
-  it("lets go of the margin once the price is typed by hand", async () => {
-    // The box would otherwise claim a margin the price no longer gives.
+  it("keeps the price in step as the costs change, while the margin is what was typed", async () => {
     const { user } = setup();
 
-    await user.type(screen.getByLabelText(/^margin/i), "50");
-    const price = screen.getByLabelText(/^price/i);
-    await user.clear(price);
-    await user.type(price, "9.00");
+    const margin = screen.getByLabelText(/^margin/i);
+    await user.clear(margin);
+    await user.type(margin, "50");
+    await user.click(screen.getByRole("button", { name: /remove making cost/i }));
 
-    expect(screen.getByLabelText(/^margin/i)).toHaveValue("");
+    // £2.20 of cost at 50% needs £5.28; the next tidy price is £5.50.
+    expect(screen.getByLabelText(/^price/i)).toHaveValue("5.50");
+    expect(margin).toHaveValue("50");
+  });
+
+  it("leaves the margin as typed rather than snapping it to what the tidy price gives", async () => {
+    // 50% asked for; £10.50 actually gives 52%. The box keeps the 50 that was
+    // typed - rewriting it under the cursor would fight the typing - and the
+    // figures below show the 52.
+    const { user } = setup();
+
+    const margin = screen.getByLabelText(/^margin/i);
+    await user.clear(margin);
+    await user.type(margin, "50");
+
+    expect(margin).toHaveValue("50");
+    expect(figure(/^margin/i)).toHaveTextContent("52.0%");
   });
 
   it("cannot work from a margin before the piece is costed", () => {
@@ -156,7 +213,8 @@ describe("PricingEditor", () => {
 
     // Pasted, not typed: key by key it would pass through 1% and 10%, which
     // are reachable and rightly move the price on the way.
-    await user.click(screen.getByLabelText(/^margin/i));
+    const margin = screen.getByLabelText(/^margin/i);
+    await user.clear(margin);
     await user.paste("100");
 
     expect(screen.getByText(/no price reaches/i)).toBeInTheDocument();
@@ -186,31 +244,72 @@ describe("PricingEditor", () => {
 });
 
 describe("PricingEditor, for a piece not yet costed", () => {
-  const suggestion = {
-    id: "e1",
-    source: "Cards / Christmas / row 30",
+  const suggestion = (id: string, source: string, photoFilename: string | null, unitPence = 22) => ({
+    id,
+    source,
     note: null,
-    photoUrl: "/uploads/price-lists/cards-030.jpg",
+    photoUrl: `/uploads/price-lists/${id}.jpg`,
+    photoFilename,
     pricePence: 790,
     vatRate: 20,
     lines: [
-      { label: "Card & envelope", unitPence: 22, quantityHundredths: 100 },
+      { label: "Card & envelope", unitPence, quantityHundredths: 100 },
       { label: "Making cost", unitPence: 100, quantityHundredths: 100 },
     ],
-  };
-
-  it("offers the price-list rows most likely to be it", () => {
-    setup({ lines: [], suggestions: [suggestion] });
-
-    expect(screen.getByRole("heading", { name: /from your price lists/i })).toBeInTheDocument();
-    expect(screen.getByText("Cards / Christmas / row 30")).toBeInTheDocument();
   });
 
-  it("fills the costs in from one, to be checked before it is saved", async () => {
-    const { user, action } = setup({ lines: [], suggestions: [suggestion] });
+  const rows = [
+    suggestion("e1", "Cards / Christmas / row 30", "christmas_dragonfly.jpg"),
+    suggestion("e2", "Clothes / Autumn/Winter / row 42", "pink_mohair_booties.png", 1644),
+    suggestion("e3", "Cards / Valentines / row 30", null),
+  ];
 
-    await user.click(screen.getByRole("button", { name: /use these costs/i }));
+  const openChooser = async (user: ReturnType<typeof userEvent.setup>) =>
+    user.click(screen.getByRole("button", { name: /choose from your price lists/i }));
 
+  it("offers every row of the price lists, rather than a few guesses", async () => {
+    const { user } = setup({ lines: [], suggestions: rows });
+
+    expect(screen.getByRole("heading", { name: /from your price lists/i })).toBeInTheDocument();
+    await openChooser(user);
+
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getAllByRole("button", { name: /row/i })).toHaveLength(3);
+  });
+
+  it("keeps the best guess first", async () => {
+    const { user } = setup({ lines: [], suggestions: rows });
+    await openChooser(user);
+
+    const [first] = within(screen.getByRole("dialog")).getAllByRole("button", { name: /row/i });
+    expect(first).toHaveTextContent("Cards / Christmas / row 30");
+  });
+
+  it("finds a row by the words in its photo's file name, which often say what it is", async () => {
+    const { user } = setup({ lines: [], suggestions: rows });
+    await openChooser(user);
+
+    await user.type(screen.getByRole("searchbox"), "booties");
+
+    const found = within(screen.getByRole("dialog")).getAllByRole("button", { name: /row/i });
+    expect(found).toHaveLength(1);
+    expect(found[0]).toHaveTextContent("Autumn/Winter");
+  });
+
+  it("shows the piece being matched, to compare the photographs against", async () => {
+    const { user } = setup({ lines: [], suggestions: rows });
+    await openChooser(user);
+
+    expect(within(screen.getByRole("dialog")).getByText(/christening card/i)).toBeInTheDocument();
+  });
+
+  it("fills the costs in from the row chosen, to be checked before it is saved", async () => {
+    const { user, action } = setup({ lines: [], suggestions: rows });
+    await openChooser(user);
+
+    await user.click(screen.getByRole("button", { name: /christmas \/ row 30/i }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(screen.getByText("Total cost").nextSibling).toHaveTextContent("£1.22");
     expect(action).not.toHaveBeenCalled();
     // And the save will record where the costs came from.
@@ -218,7 +317,7 @@ describe("PricingEditor, for a piece not yet costed", () => {
   });
 
   it("offers nothing once a piece has costs of its own", () => {
-    setup({ suggestions: [suggestion] });
+    setup({ suggestions: rows });
 
     expect(screen.queryByRole("heading", { name: /from your price lists/i })).not.toBeInTheDocument();
   });

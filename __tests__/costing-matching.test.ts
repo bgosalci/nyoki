@@ -110,4 +110,10 @@ describe("rankEntriesFor", () => {
 
     expect(rankEntriesFor(cardigan, many)).toHaveLength(8);
   });
+
+  it("ranks every row when asked, for choosing from all of them best guess first", () => {
+    const many = Array.from({ length: 40 }, (_, i) => entry(`e${i}`, null, null));
+
+    expect(rankEntriesFor(cardigan, many, { limit: Infinity })).toHaveLength(40);
+  });
 });
