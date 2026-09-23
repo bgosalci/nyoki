@@ -2,9 +2,10 @@
 
 import { ui } from "@/lib/brand/ui";
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useRef } from "react";
 
 import { Field, inputClass } from "@/components/admin/field";
+import { UnsavedChanges } from "@/components/admin/unsaved-changes";
 import { flattenTree } from "@/lib/categories/tree";
 import { formatPence } from "@/lib/money";
 import type { ProductErrors, ProductInput } from "@/lib/products/validate";
@@ -47,11 +48,15 @@ export function ProductForm({
 }) {
   const [state, formAction, isPending] = useActionState(action, initialState);
   const errors = state.errors;
+  const formRef = useRef<HTMLFormElement>(null);
   const inCategories = new Set(product?.categoryIds ?? []);
   const categoryTree = flattenTree(categories);
 
   return (
-    <form action={formAction} className="flex max-w-2xl flex-col gap-8">
+    <form ref={formRef} action={formAction} className="flex max-w-2xl flex-col gap-8">
+      {/* A new product is saved by leaving for its page, so only an edit reports a save. */}
+      <UnsavedChanges formRef={formRef} saved={Object.keys(errors).length === 0 ? state : null} />
+
       <section className="flex flex-col gap-5">
         <Field label="Name" name="name" error={errors.name}>
           {(props) => (

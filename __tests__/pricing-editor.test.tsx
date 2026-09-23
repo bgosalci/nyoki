@@ -1,5 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import Link from "next/link";
 
 import { PricingEditor } from "@/components/admin/pricing-editor";
 
@@ -240,6 +241,63 @@ describe("PricingEditor", () => {
     setup({ origin: { source: "Cards / Christening / row 6", pricePence: 1299 } });
 
     expect(screen.getByText(/cards \/ christening \/ row 6/i)).toBeInTheDocument();
+  });
+});
+
+describe("PricingEditor, leaving with changes not saved", () => {
+  function withLink(overrides: Partial<React.ComponentProps<typeof PricingEditor>> = {}) {
+    const follow = jest.fn();
+    const action = jest.fn(async () => ({ errors: {}, saved: true }));
+    render(
+      <>
+        <PricingEditor product={product} lines={lines} origin={null} suggestions={[]} action={action} {...overrides} />
+        <Link
+ href="/admin/products/p2" onClick={(event) => { event.preventDefault(); follow(); }}>Details</Link>
+      </>,
+    );
+    return { follow, action, user: userEvent.setup() };
+  }
+
+  it("asks before a link takes away a price not yet saved", async () => {
+    const { user, follow } = withLink();
+
+    await user.clear(screen.getByLabelText("Price"));
+    await user.type(screen.getByLabelText("Price"), "13.50");
+    await user.click(screen.getByRole("link", { name: "Details" }));
+
+    expect(screen.getByRole("dialog", { name: /leave without saving/i })).toBeInTheDocument();
+    expect(follow).not.toHaveBeenCalled();
+  });
+
+  it("asks when a cost line is taken away", async () => {
+    const { user } = withLink();
+
+    await user.click(screen.getAllByRole("button", { name: /remove/i })[0]);
+    await user.click(screen.getByRole("link", { name: "Details" }));
+
+    expect(screen.getByRole("dialog", { name: /leave without saving/i })).toBeInTheDocument();
+  });
+
+  it("does not ask over a rounding choice that changes nothing saved", async () => {
+    const { user, follow } = withLink();
+
+    await user.selectOptions(screen.getByLabelText(/round up to/i), "99");
+    await user.click(screen.getByRole("link", { name: "Details" }));
+
+    expect(follow).toHaveBeenCalled();
+  });
+
+  it("does not ask once the new price is saved", async () => {
+    const { user, follow, action } = withLink();
+    await user.clear(screen.getByLabelText("Price"));
+    await user.type(screen.getByLabelText("Price"), "13.50");
+
+    await user.click(screen.getByRole("button", { name: /^save$/i }));
+    expect(action).toHaveBeenCalled();
+    await screen.findByText(/saved\./i);
+    await user.click(screen.getByRole("link", { name: "Details" }));
+
+    expect(follow).toHaveBeenCalled();
   });
 });
 

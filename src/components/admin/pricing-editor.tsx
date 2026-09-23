@@ -1,10 +1,11 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 
 import { Field, inputClass } from "@/components/admin/field";
 import { PhotoField } from "@/components/admin/photo-field";
 import { ProductThumbnail } from "@/components/admin/product-thumbnail";
+import { UnsavedChanges } from "@/components/admin/unsaved-changes";
 import { ui } from "@/lib/brand/ui";
 import {
   NOTHS_FEE_PERCENT,
@@ -65,6 +66,9 @@ const ENDING_LABEL: Record<PriceEnding, string> = {
   "50": "50p",
 };
 
+/** Fields that only work the price out. Never saved, so changing them is no change. */
+const WORKING_OUT = ["margin", "ending"];
+
 const pounds = (pence: number) => (pence / 100).toFixed(2);
 const hundredthsText = (h: number) => (h % 100 === 0 ? String(h / 100) : (h / 100).toFixed(2).replace(/0$/, ""));
 
@@ -112,6 +116,7 @@ export function PricingEditor({
   initialState?: PricingState;
 }) {
   const [state, formAction, isPending] = useActionState(action, initialState);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const [rows, setRows] = useState<Row[]>(() => lines.map(toRow));
   const [manualPrice, setManualPrice] = useState(pounds(product.pricePence));
@@ -171,7 +176,9 @@ export function PricingEditor({
   const lineInput = `w-full rounded-md border px-2 py-1.5 text-sm outline-none ${ui.input}`;
 
   return (
-    <form action={formAction} className="mt-8 flex flex-col gap-10">
+    <form ref={formRef} action={formAction} className="mt-8 flex flex-col gap-10">
+      <UnsavedChanges formRef={formRef} saved={state.saved ? state : null} ignore={WORKING_OUT} />
+
       {state.saved ? (
         <p role="status" className={`rounded-md border px-3 py-2 text-sm ${ui.card} ${ui.rule}`}>
           Saved. The shop charges the new price now.

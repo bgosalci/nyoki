@@ -1,4 +1,6 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import Link from "next/link";
 
 import { ProductForm } from "@/components/admin/product-form";
 
@@ -132,4 +134,24 @@ describe("ProductForm", () => {
 
     expect(screen.getByLabelText(/^name/i)).not.toHaveAttribute("aria-invalid");
   });
+
+  it("asks before a link takes away changes not yet saved", async () => {
+    HTMLDialogElement.prototype.showModal = function () { this.setAttribute("open", ""); };
+    const follow = jest.fn();
+    render(
+      <>
+        <ProductForm action={noopAction} product={mug} categories={categories} />
+        <Link
+ href="/admin/products/p3" onClick={(event) => { event.preventDefault(); follow(); }}>Next</Link>
+      </>,
+    );
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText(/^name/i), " - Blue");
+    await user.click(screen.getByRole("link", { name: "Next" }));
+
+    expect(screen.getByRole("dialog", { name: /leave without saving/i })).toBeInTheDocument();
+    expect(follow).not.toHaveBeenCalled();
+  });
 });
+

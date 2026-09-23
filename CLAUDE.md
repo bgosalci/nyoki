@@ -177,9 +177,36 @@ TypeScript, deployed to Vercel.
   hydrates for real to hold this.
 - `parseProductList` treats storage as untrusted: the way back only ever
   leads to `/admin/products`.
-- **Unsaved edits are lost** by stepping, just as by going back - neither
-  form warns yet.
+- Leaving a product's Details or Price with unsaved edits asks first - see
+  Unsaved changes.
 - `BackLink` is a bordered button, not underlined text, on every item page.
+
+## Unsaved changes
+
+- `UnsavedChanges` (`src/components/admin/unsaved-changes.tsx`) guards a
+  form: a link away asks "Leave without saving?" in a `ConfirmDialog`, and
+  closing or reloading the tab gets the browser's own warning
+  (beforeunload - the browser allows nothing else there). Used by a
+  product's Details and Price forms.
+- **Changed** means the form would post something different from when the
+  page loaded or was last saved (`formSnapshot`, read from the form itself,
+  so controlled and uncontrolled inputs alike, and a removed row counts). A
+  change typed and put back is no change; fields in `ignore` - the margin and
+  rounding on the Price tab, which only work the price out - never count.
+- Links are caught by a click listener on the **window in the capture
+  phase**, which runs before React's root listener and so before next/link's
+  onClick. This covers every link on the page. Next's own recipe
+  (`onNavigate` on each Link, via context) only covers links someone
+  remembered to change. Choosing to leave clicks the same link again, so it
+  navigates exactly as it would have.
+- A form reports a save by passing a **new** `saved` object (the action
+  state when it succeeded, else null); what it holds then is the new
+  baseline. `ignore` must be a constant, since it is an effect dependency.
+- **Not covered: the browser's own Back button.** Next handles popstate
+  itself and there is no clean way to cancel it.
+- Known, separate: React 19 resets an uncontrolled form after its action
+  returns, even when the save was rejected, so a validation error on the
+  Details (or new product) form puts every field back to what was saved.
 
 ## A product's Price tab
 
