@@ -17,7 +17,8 @@
     "admin:create": "tsx --env-file=.env scripts/create-admin.ts",
     "brand:board": "tsx scripts/theme-board.ts",
     "import:shopify": "tsx --env-file=.env scripts/import-shopify.ts",
-    "categories:regroup": "tsx --env-file=.env scripts/regroup-categories.ts"
+    "categories:regroup": "tsx --env-file=.env scripts/regroup-categories.ts",
+    "prices:import": "tsx --env-file=.env scripts/import-price-lists.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",

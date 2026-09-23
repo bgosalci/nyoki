@@ -19,6 +19,8 @@ const eslintConfig = defineConfig([
     ".next/**",
     "out/**",
     "build/**",
+    // Written by `pnpm test:coverage`; generated, and gitignored already.
+    "coverage/**",
     "next-env.d.ts",
   ]),
 ]);

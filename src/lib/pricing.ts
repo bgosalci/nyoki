@@ -34,7 +34,7 @@ export interface EffectivePrice<T extends PricingSale = PricingSale> {
  * Always lands between 0 and the full price, so a misconfigured sale can
  * reduce an item to free but never below it, and never inflates the price.
  */
-export function discountPenceFor(pricePence: number, sale: PricingSale): number {
+export function discountPenceFor(pricePence: number, sale: Pick<PricingSale, "type" | "value">): number {
   const raw =
     sale.type === "PERCENTAGE"
       ? Math.round((pricePence * sale.value) / 100)

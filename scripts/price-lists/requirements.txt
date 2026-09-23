@@ -1,0 +1,5 @@
+# Reading Apple Numbers files. There is no maintained JavaScript library for
+# the format, which is why this one step is Python.
+numbers-parser>=4.16
+Pillow>=10
+imagehash>=4.3

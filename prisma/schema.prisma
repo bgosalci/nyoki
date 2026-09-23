@@ -85,11 +85,17 @@ model Product {
   madeToOrder  Boolean @default(false) @map("made_to_order")
   leadTimeDays Int?    @map("lead_time_days")
 
-  images     ProductImage[]
-  variants   ProductVariant[]
-  categories CategoryProduct[]
-  favourites Favourite[]
-  homeHeroFor HomePage[] @relation("HomeHero")
+  // VAT charged on this product, as a whole percent. Per product, not per
+  // shop: cards carry the standard 20%, children's clothing is zero-rated.
+  vatRate Int @default(20) @map("vat_rate")
+
+  images      ProductImage[]
+  variants    ProductVariant[]
+  categories  CategoryProduct[]
+  favourites  Favourite[]
+  homeHeroFor HomePage[]      @relation("HomeHero")
+  costLines   CostLine[]
+  priceListEntry PriceListEntry?
   sales      SaleProduct[]
   orderItems OrderItem[]
 
@@ -108,6 +114,11 @@ model ProductImage {
   position  Int     @default(0)
   width     Int?
   height    Int?
+
+  /// Perceptual hash, so a photo in Njomza's price lists can be matched to
+  /// this one. Filled by the price-list import; null for photos uploaded
+  /// since, which then match on their product's name alone.
+  phash String?
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
@@ -157,6 +168,66 @@ model Category {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("categories")
+}
+
+/**
+ * One thing that goes into making and sending a product: a card and
+ * envelope, a skein of yarn, the postage.
+ *
+ * The lines ARE the costing - a product with none has not been costed yet.
+ * The unit cost is in pence like every other amount; the quantity is in
+ * HUNDREDTHS, because yarn is bought by the half skein and 2.5 of them is a
+ * real quantity. Integer throughout, so a cost is exact by construction.
+ */
+model CostLine {
+  id        String @id @default(cuid())
+  productId String @map("product_id")
+  label     String
+
+  unitPence          Int @map("unit_pence")
+  quantityHundredths Int @default(100) @map("quantity_hundredths")
+  position           Int @default(0)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("cost_lines")
+}
+
+/**
+ * A costed row from Njomza's 2023 price lists, brought in so it can be matched
+ * to a product rather than typed in again.
+ *
+ * The lists identify each piece by photograph alone - there is no name or
+ * code column - so matching is by the photo. Confident matches are attached
+ * on import; the rest wait here to be chosen by eye.
+ */
+model PriceListEntry {
+  id String @id @default(cuid())
+
+  /// Where it came from, e.g. "Cards / Birthday Cards / row 8".
+  source String
+  /// Any words written in the photo column, which is all the naming there is.
+  note   String?
+
+  photoUrl      String? @map("photo_url")
+  /// Perceptual hash of the photo, compared against the catalogue's photos.
+  photoHash     String? @map("photo_hash")
+  photoFilename String? @map("photo_filename")
+
+  vatRate    Int  @map("vat_rate")
+  /// Her price at the time, inc VAT. Shown for reference; never applied.
+  pricePence Int  @map("price_pence")
+  /// [{ label, unitPence, quantityHundredths }]
+  lines      Json
+
+  /// Whose costing this became. Unique: one sheet row, one product.
+  productId String?  @unique @map("product_id")
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("price_list_entries")
 }
 
 /**

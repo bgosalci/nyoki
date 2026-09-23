@@ -128,6 +128,47 @@ TypeScript, deployed to Vercel.
   (the floor is a penny), and a was-price the new price has caught up with is
   cleared, since the product form rejects that combination anyway.
 
+## Pricing
+
+- A product's costing is its `CostLine` rows - a label, a unit cost in pence,
+  and a quantity in **hundredths** (yarn is bought by the half skein). A
+  product with no lines has not been costed. The maths is
+  `src/lib/costing/costing.ts`, pure and integer throughout, and its tests are
+  rows from Njomza's own price lists, so the admin provably agrees with them.
+- **VAT is per product** (`Product.vatRate`, a whole percent), not per shop:
+  cards carry 20%, and her clothes sheet zero-rates children's clothing. VAT is
+  taken out of a VAT-inclusive price with the VAT fraction (a sixth at 20%),
+  rounded to the nearest penny, as HMRC works it on a single price.
+- The discount ladder reuses the shop's own `discountPenceFor`, so "at 20% off
+  you make £4.46" is true of a real 20% sale, not an approximation of one.
+- Not On The High Street's 30% is taken off the price the shopper pays. Her
+  cards sheet works it that way; her clothes sheet divides by 1.3, which only
+  takes about 23%. The code follows the cards.
+
+## Price list import
+
+- Her three Numbers files name nothing: every piece is identified by a
+  photograph in column A. So matching is by **perceptual hash** of the photo,
+  with the filename as a second opinion.
+- `scripts/price-lists/extract.py` is Python because nothing in JavaScript
+  reads Numbers. It writes JSON and photos, and hashes the catalogue's photos
+  too; `pnpm prices:import <dir>` does the database work. `--dry-run` previews
+  every match without writing.
+- Measured thresholds, pinned by tests in `src/lib/costing/matching.ts`:
+  within 8 bits is the same photograph; 9-12 bits was right a third of the
+  time; beyond, nothing. A match also needs a clear margin over the next
+  product, because colourways shot alike hash alike - and a product claimed
+  by two rows gets neither. Everything short of certain waits as a
+  `PriceListEntry` to be chosen by eye.
+- **The import never changes a price.** It copies costs and the VAT rate; her
+  2023 price is kept on the entry for reference only. It never writes over
+  costs a product already has, and is idempotent by source.
+- Money arrives from Numbers as floats (5p is 0.049999999999999996) -
+  `src/lib/costing/import.ts` reads through the noise to the penny meant, and
+  rounds a genuine sub-penny cost *up*, since a cost understated is a margin
+  overstated. A pack size multiplies every line, postage included, as her
+  sheet does; the import reports it rather than correcting her maths.
+
 ## Orders
 
 - `/admin/orders` lists orders; an order has no page of its own yet, because
