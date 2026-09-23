@@ -2,7 +2,7 @@ import { ui } from "@/lib/brand/ui";
 import { filterHref } from "@/lib/products/filter-href";
 
 /**
- * Downloads the products list as a CSV file - as it is filtered, so a file of
+ * Exports the products as a CSV file - as the list is filtered, so a file of
  * just the Christmas cards is one click from the Christmas cards.
  *
  * A plain link rather than next/link: it fetches a file, not a page.
@@ -17,7 +17,7 @@ export function ExportLink({ q, status, category, count }: { q: string; status: 
       title={`${filtered ? `These ${count}` : `All ${count}`} ${count === 1 ? "product" : "products"}, as a spreadsheet file`}
       className={`rounded-md px-3.5 py-2 text-sm font-medium ${ui.buttonSecondary}`}
     >
-      Download CSV
+      Export CSV
     </a>
   );
 }

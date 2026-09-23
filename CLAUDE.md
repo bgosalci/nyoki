@@ -266,12 +266,16 @@ TypeScript, deployed to Vercel.
 
 ## CSV export
 
-- "Download CSV" on the products list downloads the list **as it is
-  filtered** (`/admin/products/export`, a route handler, which checks the
+- "Export CSV" on the products list exports **every product field** from
+  the database, for the list **as it is filtered** - unfiltered, the whole
+  catalogue (`/admin/products/export`, a route handler, which checks the
   account itself: a layout does not wrap a route handler).
 - One row per piece: price, VAT, costs, profit, margin, times cost, the NOTHS
-  fee and profit, stock, and the cost lines in one cell. Every figure comes
-  from `costing.ts`, so the file agrees with the Price tab.
+  fee and profit, stock, the cost lines in one cell, then every detail -
+  web address, description, materials, dimensions, care, weight, lead time,
+  flags - and the photos as full links (stored paths are made absolute with
+  the request's origin). Every figure comes from `costing.ts`, so the file
+  agrees with the Price tab.
 - A figure that needs a price, or a price and costs, is **blank** without
   them - an uncosted piece's whole price would otherwise read as profit.
 - `src/lib/export/csv.ts`: a byte-order mark so Excel reads £ as UTF-8,
