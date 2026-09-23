@@ -208,10 +208,14 @@ TypeScript, deployed to Vercel.
 
 ## Storefront pages
 
-- A category page opens on a quiet band (`ui.shopBandQuiet`): name, a line
-  about it, and pills straight into the types beneath. Then picture tiles for
-  those same types, then everything in it. The promise strip is the home
-  page's alone - it was tried here and was not wanted.
+- A category page opens on a quiet band (`ui.shopBandQuiet`): breadcrumb,
+  name, a line about it, the count. Then picture tiles for the types beneath,
+  then everything in it. The promise strip is the home page's alone - it was
+  tried here and was not wanted.
+- **No text pills for the types.** They were tried twice. Only the three
+  group pages ever had them, and Clothes has thirty types: four rows of
+  shouting capitals above tiles that lead to the same places with a photo
+  attached. The tiles do the job.
 - **The band carries no photograph.** One was tried wide, then upright, then
   cropped and zoomed; the catalogue is shot on white with margins running from
   nothing to 42% of the frame, so no crop suited them all and it was dropped.
