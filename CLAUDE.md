@@ -22,6 +22,12 @@ TypeScript, deployed to Vercel.
   (`onlyBuiltDependencies`) is silently ignored by pnpm 11 and will make
   `pnpm install` exit 1 on Vercel.
 
+## Stopping the dev server
+
+- Stop it by its **listening** socket: `lsof -ti:3000 -sTCP:LISTEN`. Plain
+  `lsof -ti:3000` also lists every process *connected* to the port - the
+  browser and the Claude app among them - and killing that list kills them.
+
 ## Testing on the network
 
 - `next dev` serves to the whole LAN, but Next blocks its own dev resources -
@@ -116,6 +122,9 @@ TypeScript, deployed to Vercel.
   price and code it sold at, and its product reference is SetNull rather than
   cascading - but it also removes the photos from storage, so it asks first.
 
+- **Prices are not changed on the products list.** Its bulk bar has no
+  "Change price"; that lives on the pricing list now, so a price changes in
+  one place. "Make active" skips anything not yet priced and says which.
 - **Bulk price changes** live in `src/lib/products/repricing.ts`, which is
   pure. Percentages are carried as TENTHS of a percent, so 12.5% is exact -
   unlike a sale, where a fractional percentage would produce sub-penny
@@ -144,6 +153,25 @@ TypeScript, deployed to Vercel.
 - Not On The High Street's 30% is taken off the price the shopper pays. Her
   cards sheet works it that way; her clothes sheet divides by 1.3, which only
   takes about 23%. The code follows the cards.
+
+## The pricing page
+
+- `/admin/pricing` lists every piece not archived with its cost, price, profit
+  and multiple on cost, and can narrow to "not yet costed" or "selling at a
+  loss". `/admin/pricing/[id]` is where a price is set: cost lines, VAT,
+  price and was-price, with every figure worked out live as it is typed - the
+  profit, what Not On The High Street leaves, and each step of a sale.
+- **The product form has no price.** It shows the price read-only with a link
+  here, and `validateProductInput` does not read one even if it is posted -
+  a test forges exactly that - so `updateProduct` cannot change or reset it.
+- A new product is created at 0p and **cannot be made active until priced**
+  (`activationBlockedBecause`), checked on create, on edit, and in the bulk
+  action; otherwise it would be on the shop for free.
+- A piece not yet costed shows no profit on the list. Without costs the whole
+  price after VAT would read as profit: flattering, and meaningless.
+- A piece with no costs is offered the price-list rows most likely to be it
+  (`rankEntriesFor`). Choosing one fills the form to be checked; only saving
+  records it, and the row's id is re-checked on the server as unclaimed.
 
 ## Price list import
 

@@ -13,16 +13,19 @@ import type { ProductInput } from "@/lib/products/validate";
 export function EditProductForm({
   id,
   product,
+  pricing,
   categories,
 }: {
   id: string;
   product: ProductInput;
+  pricing: { productId: string; pricePence: number; compareAtPence: number | null };
   categories: ProductFormCategory[];
 }) {
   return (
     <ProductForm
       action={updateProduct.bind(null, id)}
       product={product}
+      pricing={pricing}
       categories={categories}
       submitLabel="Save changes"
     />

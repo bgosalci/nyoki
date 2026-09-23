@@ -15,20 +15,12 @@ const rows: ProductRow[] = [
 ];
 
 function setup(overrides: Partial<React.ComponentProps<typeof ProductTable>> = {}) {
-  const setStatus = jest.fn(async () => {});
+  const setStatus = jest.fn(async () => ({ unpriced: [] as string[] }));
   const remove = jest.fn(async () => {});
-  const reprice = jest.fn(async () => {});
   render(
-    <ProductTable
-      rows={rows}
-      header={<h1>Products</h1>}
-      setStatus={setStatus}
-      remove={remove}
-      reprice={reprice}
-      {...overrides}
-    />,
+    <ProductTable rows={rows} header={<h1>Products</h1>} setStatus={setStatus} remove={remove} {...overrides} />,
   );
-  return { setStatus, remove, reprice, user: userEvent.setup() };
+  return { setStatus, remove, user: userEvent.setup() };
 }
 
 describe("ProductTable", () => {
@@ -112,34 +104,33 @@ describe("ProductTable", () => {
     expect(screen.getByText(/1 selected/i)).toBeInTheDocument();
   });
 
-  it("previews a price change before applying it to what was chosen", async () => {
-    const { user, reprice } = setup();
-
+  it("leaves price changes to the pricing page", async () => {
+    // One place changes a price, beside what the piece costs to make.
+    const { user } = setup();
     await user.click(screen.getByRole("checkbox", { name: /snowflake card/i }));
-    await user.click(screen.getByRole("checkbox", { name: /bud vase/i }));
-    await user.click(screen.getByRole("button", { name: /change price/i }));
 
-    await user.type(screen.getByLabelText(/by how much/i), "10");
-    expect(screen.getByRole("dialog")).toHaveTextContent(/2 products/i);
-    expect(reprice).not.toHaveBeenCalled();
-
-    await user.click(screen.getByRole("button", { name: /change 2 prices/i }));
-
-    expect(reprice).toHaveBeenCalledWith(
-      ["p1", "p3"],
-      { mode: "INCREASE", unit: "PERCENT", value: "10", rounding: "EXACT" },
-    );
+    expect(screen.queryByRole("button", { name: /change price/i })).not.toBeInTheDocument();
   });
 
-  it("leaves prices alone when the change is called off", async () => {
-    const { user, reprice } = setup();
+  it("says which pieces it could not put on the shop, and why", async () => {
+    const setStatus = jest.fn(async () => ({ unpriced: ["Stocking Card"] }));
+    const { user } = setup({ setStatus });
 
-    await user.click(screen.getByRole("checkbox", { name: /snowflake card/i }));
-    await user.click(screen.getByRole("button", { name: /change price/i }));
-    await user.click(screen.getByRole("button", { name: /cancel/i }));
+    await user.click(screen.getByRole("checkbox", { name: /select all/i }));
+    await user.click(screen.getByRole("button", { name: /make active/i }));
 
-    expect(reprice).not.toHaveBeenCalled();
-    expect(screen.getByText(/1 selected/i)).toBeInTheDocument();
+    const notice = await screen.findByRole("status");
+    expect(notice).toHaveTextContent("Stocking Card");
+    expect(notice).toHaveTextContent(/pricing page/i);
+  });
+
+  it("says nothing when everything asked for was done", async () => {
+    const { user } = setup();
+
+    await user.click(screen.getByRole("checkbox", { name: /stocking card/i }));
+    await user.click(screen.getByRole("button", { name: /make active/i }));
+
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
   it("pins the bulk actions with the header, so they do not scroll away from the rows they act on", async () => {
@@ -150,7 +141,7 @@ describe("ProductTable", () => {
     // the column headers settle beneath it. No second sticky layer to keep in
     // step with the first.
     const pinned = screen.getByRole("heading", { name: "Products" }).closest(".sticky");
-    expect(pinned).toContainElement(screen.getByRole("button", { name: /change price/i }));
+    expect(pinned).toContainElement(screen.getByRole("button", { name: /make active/i }));
   });
 
   it("renders the page's own header above the table", () => {

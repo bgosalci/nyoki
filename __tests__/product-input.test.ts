@@ -4,7 +4,6 @@ function form(overrides: Record<string, string | string[]> = {}): FormData {
   const data = new FormData();
   const base: Record<string, string | string[]> = {
     name: "Hand-thrown Mug",
-    price: "24.00",
     stock: "3",
     status: "DRAFT",
     ...overrides,
@@ -26,7 +25,6 @@ describe("validateProductInput", () => {
     if (!result.ok) return;
     expect(result.data).toMatchObject({
       name: "Hand-thrown Mug",
-      pricePence: 2400,
       stock: 3,
       status: "DRAFT",
     });
@@ -58,46 +56,20 @@ describe("validateProductInput", () => {
     expect(!result.ok && result.errors.name).toBeTruthy();
   });
 
-  it("requires a price", () => {
-    const result = validateProductInput(form({ price: "" }));
-
-    expect(!result.ok && result.errors.price).toMatch(/price/i);
-  });
-
-  it("rejects an unparseable price", () => {
-    const result = validateProductInput(form({ price: "twenty quid" }));
-
-    expect(!result.ok && result.errors.price).toBeTruthy();
-  });
-
-  it("rejects a sub-penny price rather than rounding it", () => {
-    const result = validateProductInput(form({ price: "24.999" }));
-
-    expect(!result.ok && result.errors.price).toBeTruthy();
-  });
-
-  it("accepts an optional compare-at price above the price", () => {
-    const result = validateProductInput(
-      form({ price: "24.00", compareAtPrice: "30.00" }),
-    );
-
-    expect(result.ok && result.data.compareAtPence).toBe(3000);
-  });
-
-  it("rejects a compare-at price at or below the price", () => {
-    // A struck-through price that is lower than what you pay reads as an
-    // increase, and at best looks like a mistake.
-    const result = validateProductInput(
-      form({ price: "24.00", compareAtPrice: "20.00" }),
-    );
-
-    expect(!result.ok && result.errors.compareAtPrice).toBeTruthy();
-  });
-
-  it("leaves compare-at unset when blank", () => {
+  it("has nothing to say about price, which is set on the pricing page", () => {
     const result = validateProductInput(form());
 
-    expect(result.ok && result.data.compareAtPence).toBeNull();
+    expect(result.ok && "pricePence" in result.data).toBe(false);
+    expect(result.ok && "compareAtPence" in result.data).toBe(false);
+  });
+
+  it("ignores a price posted to it anyway", () => {
+    // The price box is gone from the form, but a request can still carry one.
+    // It must not reach the product: the pricing page is the only way in.
+    const result = validateProductInput(form({ price: "0.01", compareAtPrice: "999.00" }));
+
+    expect(result.ok).toBe(true);
+    expect(result.ok && JSON.stringify(result.data)).not.toMatch(/0\.01|999|pricePence|compareAtPence/);
   });
 
   it("rejects negative stock", () => {
@@ -170,11 +142,11 @@ describe("validateProductInput", () => {
 
   it("reports every problem at once rather than one at a time", () => {
     const result = validateProductInput(
-      form({ name: "", price: "nope", stock: "-2" }),
+      form({ name: "", weightGrams: "heavy", stock: "-2" }),
     );
 
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(Object.keys(result.errors).sort()).toEqual(["name", "price", "stock"]);
+    expect(Object.keys(result.errors).sort()).toEqual(["name", "stock", "weightGrams"]);
   });
 });

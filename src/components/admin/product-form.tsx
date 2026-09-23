@@ -26,21 +26,21 @@ export interface ProductFormCategory {
 
 const EMPTY: ProductFormState = { errors: {} };
 
-/** Pence to a plain editable string: 2400 -> "24.00", null -> "". */
-function poundsValue(pence: number | null | undefined): string {
-  if (pence === null || pence === undefined) return "";
-  return formatPence(pence).replace("£", "").replaceAll(",", "");
-}
-
 export function ProductForm({
   action,
   product,
+  pricing,
   categories = [],
   initialState = EMPTY,
   submitLabel = "Save product",
 }: {
   action: ProductFormAction;
   product?: ProductInput;
+  /**
+   * The price as it stands, to show - never to edit. Absent for a product not
+   * yet saved, which has nowhere on the pricing page to point to.
+   */
+  pricing?: { productId: string; pricePence: number; compareAtPence: number | null };
   categories?: ProductFormCategory[];
   initialState?: ProductFormState;
   submitLabel?: string;
@@ -94,35 +94,32 @@ export function ProductForm({
       </section>
 
       <section className="grid gap-5 sm:grid-cols-2">
-        <Field label="Price (£)" name="price" error={errors.price}>
-          {(props) => (
-            <input
-              {...props}
-              type="text"
-              inputMode="decimal"
-              defaultValue={poundsValue(product?.pricePence)}
-              placeholder="24.00"
-              className={inputClass}
-            />
+        {/* Shown, not edited. The price is set on the pricing page, beside
+            what the piece costs to make, so there is one place it changes. */}
+        <div role="group" aria-labelledby="product-price-label" className="flex flex-col gap-1.5 sm:col-span-2">
+          <p id="product-price-label" className="text-sm font-medium">
+            Price
+          </p>
+          {pricing === undefined ? (
+            <p className={`text-sm ${ui.mutedOnPage}`}>
+              Set on the pricing page once the product is saved. It stays off the shop until then.
+            </p>
+          ) : (
+            <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm">
+              {pricing.pricePence > 0 ? (
+                <span className="text-base font-medium tabular-nums">{formatPence(pricing.pricePence)}</span>
+              ) : (
+                <span className="font-medium">Not priced yet</span>
+              )}
+              {pricing.compareAtPence !== null ? (
+                <span className={`tabular-nums ${ui.mutedOnPage}`}>was {formatPence(pricing.compareAtPence)}</span>
+              ) : null}
+              <Link href={`/admin/pricing/${pricing.productId}`} className={ui.link}>
+                Change it on the pricing page
+              </Link>
+            </p>
           )}
-        </Field>
-
-        <Field
-          label="Was-price (£)"
-          name="compareAtPrice"
-          error={errors.compareAtPrice}
-          hint="Shown struck through. Leave blank if there isn't one."
-        >
-          {(props) => (
-            <input
-              {...props}
-              type="text"
-              inputMode="decimal"
-              defaultValue={poundsValue(product?.compareAtPence)}
-              className={inputClass}
-            />
-          )}
-        </Field>
+        </div>
 
         <Field label="Stock" name="stock" error={errors.stock}>
           {(props) => (

@@ -7,6 +7,7 @@ import type { ProductFormState } from "@/components/admin/product-form";
 import { requireAdmin } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
 import { repriceProduct, validateRepriceInput, type RepriceFields } from "@/lib/products/repricing";
+import { activationBlockedBecause } from "@/lib/products/activation";
 import { validateProductInput, type ProductStatus } from "@/lib/products/validate";
 import { isUniqueViolationOn } from "@/lib/db-errors";
 import { uniqueSlug } from "@/lib/slug";
@@ -39,6 +40,11 @@ export async function createProduct(
   const result = validateProductInput(formData);
   if (!result.ok) return { errors: result.errors };
 
+  // A new product has no price until the pricing page gives it one, so it
+  // cannot start out on the shop.
+  const blocked = result.data.status === "ACTIVE" ? activationBlockedBecause({ pricePence: 0 }) : null;
+  if (blocked) return { errors: { status: blocked } };
+
   const slug = uniqueSlug(result.data.slug, await takenSlugs(result.data.slug));
   const { categoryIds, ...fields } = result.data;
 
@@ -47,6 +53,7 @@ export async function createProduct(
     const created = await db.product.create({
       data: {
         ...fields,
+        pricePence: 0,
         slug,
         categories: { create: categoryIds.map((categoryId) => ({ categoryId })) },
       },
@@ -74,6 +81,14 @@ export async function updateProduct(
   const result = validateProductInput(formData);
   if (!result.ok) return { errors: result.errors };
 
+  if (result.data.status === "ACTIVE") {
+    const current = await db.product.findUnique({ where: { id }, select: { pricePence: true } });
+    const blocked = current ? activationBlockedBecause(current) : null;
+    if (blocked) return { errors: { status: blocked } };
+  }
+
+  // The price is not among these fields, so saving the product form cannot
+  // change it or reset it - only the pricing page can.
   const slug = uniqueSlug(result.data.slug, await takenSlugs(result.data.slug, id));
   const { categoryIds, ...fields } = result.data;
 
@@ -119,14 +134,29 @@ export async function archiveProduct(id: string): Promise<void> {
   redirect("/admin/products");
 }
 
-/** Applies a status to several products at once, from the list's bulk actions. */
-export async function setProductsStatus(ids: string[], status: ProductStatus): Promise<void> {
+/**
+ * Applies a status to several products at once, from the list's bulk actions.
+ *
+ * Making products active skips any not yet priced, and says which, rather
+ * than putting them on the shop for free or quietly doing nothing.
+ */
+export async function setProductsStatus(ids: string[], status: ProductStatus): Promise<{ unpriced: string[] }> {
   await requireAdmin();
-  if (ids.length === 0) return;
+  if (ids.length === 0) return { unpriced: [] };
 
-  await db.product.updateMany({ where: { id: { in: ids } }, data: { status } });
+  const unpriced =
+    status === "ACTIVE"
+      ? await db.product.findMany({ where: { id: { in: ids }, pricePence: { lte: 0 } }, select: { name: true } })
+      : [];
+
+  await db.product.updateMany({
+    where: { id: { in: ids }, ...(status === "ACTIVE" ? { pricePence: { gt: 0 } } : {}) },
+    data: { status },
+  });
 
   revalidatePath("/admin/products");
+
+  return { unpriced: unpriced.map((product) => product.name) };
 }
 
 /**

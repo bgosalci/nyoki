@@ -32,8 +32,6 @@ export default async function EditProductPage({
     slug: product.slug,
     description: product.description,
     status: product.status,
-    pricePence: product.pricePence,
-    compareAtPence: product.compareAtPence,
     sku: product.sku,
     stock: product.stock,
     weightGrams: product.weightGrams,
@@ -56,7 +54,12 @@ export default async function EditProductPage({
 
       <div className="mt-6 flex flex-col gap-10">
         <EditProductImages productId={product.id} images={product.images} />
-        <EditProductForm id={product.id} product={initial} categories={categories} />
+        <EditProductForm
+          id={product.id}
+          product={initial}
+          pricing={{ productId: product.id, pricePence: product.pricePence, compareAtPence: product.compareAtPence }}
+          categories={categories}
+        />
       </div>
     </>
   );

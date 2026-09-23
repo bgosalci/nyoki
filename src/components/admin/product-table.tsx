@@ -3,14 +3,12 @@
 import Link from "next/link";
 import { useState } from "react";
 
-import { BulkPriceDialog } from "@/components/admin/bulk-price-dialog";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { PinnedHeight } from "@/components/admin/pinned-height";
 import { ProductThumbnail } from "@/components/admin/product-thumbnail";
 import { PINNED_BLOCK_CLASS, Th } from "@/components/admin/th";
 import { ui } from "@/lib/brand/ui";
 import { formatPence } from "@/lib/money";
-import type { RepriceFields } from "@/lib/products/repricing";
 import type { ProductStatus } from "@/lib/products/validate";
 
 export interface ProductRow {
@@ -41,8 +39,8 @@ const STATUS_LABEL: Record<ProductStatus, string> = {
  * already measured means the column headers settle beneath it without a
  * second sticky layer to keep in step with the first.
  *
- * Changing a price in bulk previews itself first: the old prices are kept
- * nowhere, so there is nothing to undo it with.
+ * Prices are not changed here. That is the pricing page's job, beside what
+ * each piece costs to make, so there is one place a price changes.
  *
  * Archiving and deleting are both offered because they are different things:
  * archiving takes a product off the shop and can be undone, deleting removes
@@ -55,18 +53,17 @@ export function ProductTable({
   header,
   setStatus,
   remove,
-  reprice,
 }: {
   rows: ProductRow[];
   /** Rendered by the page, pinned here so the bulk bar can share the block. */
   header?: React.ReactNode;
-  setStatus: (ids: string[], status: ProductStatus) => Promise<void>;
+  /** Returns the names of any it would not make active, for want of a price. */
+  setStatus: (ids: string[], status: ProductStatus) => Promise<{ unpriced: string[] }>;
   remove: (ids: string[]) => Promise<void>;
-  reprice: (ids: string[], fields: RepriceFields) => Promise<void>;
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirming, setConfirming] = useState(false);
-  const [pricing, setPricing] = useState(false);
+  const [unpriced, setUnpriced] = useState<string[]>([]);
 
   // Kept in the table's order, so an action reads the same way the list does.
   const chosen = rows.filter((row) => selected.has(row.id)).map((row) => row.id);
@@ -81,8 +78,16 @@ export function ProductTable({
     });
   }
 
-  async function apply(action: () => Promise<void>) {
+  async function apply(action: () => Promise<unknown>) {
+    setUnpriced([]);
     await action();
+    setSelected(new Set());
+  }
+
+  async function changeStatus(status: ProductStatus) {
+    setUnpriced([]);
+    const result = await setStatus(chosen, status);
+    setUnpriced(result?.unpriced ?? []);
     setSelected(new Set());
   }
 
@@ -97,27 +102,31 @@ export function ProductTable({
           <div className={`mt-4 flex flex-wrap items-center gap-3 rounded-md border p-3 ${ui.card} ${ui.ruleOnPage}`}>
             <p className="text-sm font-medium">{chosen.length} selected</p>
             <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={() => setPricing(true)} className={actionClass}>
-                Change price
-            </button>
-              <button type="button" onClick={() => apply(() => setStatus(chosen, "ACTIVE"))} className={actionClass}>
+              <button type="button" onClick={() => changeStatus("ACTIVE")} className={actionClass}>
                 Make active
-            </button>
-              <button type="button" onClick={() => apply(() => setStatus(chosen, "DRAFT"))} className={actionClass}>
+              </button>
+              <button type="button" onClick={() => changeStatus("DRAFT")} className={actionClass}>
                 Make draft
-            </button>
-              <button type="button" onClick={() => apply(() => setStatus(chosen, "ARCHIVED"))} className={actionClass}>
+              </button>
+              <button type="button" onClick={() => changeStatus("ARCHIVED")} className={actionClass}>
                 Archive
-            </button>
+              </button>
               <button
                 type="button"
                 onClick={() => setConfirming(true)}
                 className="rounded-md px-3 py-1.5 text-sm text-red-700 underline underline-offset-4 dark:text-red-300"
-            >
+              >
                 Delete
-            </button>
+              </button>
             </div>
           </div>
+        ) : null}
+
+        {unpriced.length > 0 ? (
+          <p role="status" className={`mt-4 rounded-md border p-3 text-sm ${ui.card} ${ui.ruleOnPage}`}>
+            Left as {unpriced.length === 1 ? "a draft" : "drafts"}, because {unpriced.length === 1 ? "it has" : "they have"} no
+            price yet: {unpriced.join(", ")}. Price {unpriced.length === 1 ? "it" : "them"} on the pricing page first.
+          </p>
         ) : null}
       </PinnedHeight>
 
@@ -170,16 +179,6 @@ export function ProductTable({
           </tbody>
         </table>
       </div>
-
-      <BulkPriceDialog
-        open={pricing}
-        rows={rows.filter((row) => selected.has(row.id))}
-        onCancel={() => setPricing(false)}
-        onApply={(fields) => {
-          setPricing(false);
-          return apply(() => reprice(chosen, fields));
-        }}
-      />
 
       <ConfirmDialog
         open={confirming}

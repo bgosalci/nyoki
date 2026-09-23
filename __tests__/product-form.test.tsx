@@ -15,8 +15,6 @@ const mug = {
   slug: "hand-thrown-mug",
   description: null,
   status: "ACTIVE" as const,
-  pricePence: 2400,
-  compareAtPence: 3000,
   sku: null,
   stock: 3,
   weightGrams: null,
@@ -35,7 +33,6 @@ describe("ProductForm", () => {
     render(<ProductForm action={noopAction} />);
 
     expect(screen.getByLabelText(/^name/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/^price/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^stock$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/status/i)).toBeInTheDocument();
   });
@@ -50,64 +47,42 @@ describe("ProductForm", () => {
     expect(screen.getByLabelText(/made to order/i)).toBeInTheDocument();
   });
 
-  it("shows prices in pounds, not the pence we store", () => {
-    render(
-      <ProductForm
-        action={noopAction}
-        product={{
-          name: "Hand-thrown Mug",
-          slug: "hand-thrown-mug",
-          description: null,
-          status: "ACTIVE",
-          pricePence: 2400,
-          compareAtPence: 3000,
-          sku: null,
-          stock: 3,
-          weightGrams: null,
-          featured: false,
-          dimensions: null,
-          materials: null,
-          careInstructions: null,
-          oneOfAKind: false,
-          madeToOrder: false,
-          leadTimeDays: null,
-          categoryIds: [],
-        }}
-      />,
-    );
+  it("has no box for a price, which is set on the pricing page", () => {
+    render(<ProductForm action={noopAction} product={mug} pricing={{ productId: "p1", pricePence: 2400, compareAtPence: 3000 }} />);
 
-    expect(screen.getByLabelText(/^price/i)).toHaveValue("24.00");
-    expect(screen.getByLabelText(/was.price|compare/i)).toHaveValue("30.00");
-    expect(screen.getByLabelText(/^name/i)).toHaveValue("Hand-thrown Mug");
+    // The price is shown, and labelled - but nothing about it can be typed in.
+    expect(screen.queryByRole("textbox", { name: /price/i })).not.toBeInTheDocument();
+    expect(document.querySelector('input[name="price"]')).toBeNull();
+    expect(document.querySelector('input[name="compareAtPrice"]')).toBeNull();
   });
 
-  it("leaves an unset compare-at price blank rather than showing £0.00", () => {
-    render(
-      <ProductForm
-        action={noopAction}
-        product={{
-          name: "Mug",
-          slug: "mug",
-          description: null,
-          status: "DRAFT",
-          pricePence: 2400,
-          compareAtPence: null,
-          sku: null,
-          stock: 0,
-          weightGrams: null,
-          featured: false,
-          dimensions: null,
-          materials: null,
-          careInstructions: null,
-          oneOfAKind: false,
-          madeToOrder: false,
-          leadTimeDays: null,
-          categoryIds: [],
-        }}
-      />,
-    );
+  it("shows the price as it stands, and where to change it", () => {
+    render(<ProductForm action={noopAction} product={mug} pricing={{ productId: "p1", pricePence: 2400, compareAtPence: 3000 }} />);
 
-    expect(screen.getByLabelText(/was.price|compare/i)).toHaveValue("");
+    const price = screen.getByRole("group", { name: /price/i });
+    expect(price).toHaveTextContent("£24.00");
+    expect(price).toHaveTextContent(/was £30\.00/i);
+    expect(screen.getByRole("link", { name: /change it on the pricing page/i })).toHaveAttribute("href", "/admin/pricing/p1");
+  });
+
+  it("mentions no was-price when there is not one", () => {
+    render(<ProductForm action={noopAction} product={mug} pricing={{ productId: "p1", pricePence: 2400, compareAtPence: null }} />);
+
+    expect(screen.getByRole("group", { name: /price/i })).not.toHaveTextContent(/was/i);
+  });
+
+  it("says a piece has no price yet, rather than showing £0.00 as though it were one", () => {
+    render(<ProductForm action={noopAction} product={mug} pricing={{ productId: "p1", pricePence: 0, compareAtPence: null }} />);
+
+    const price = screen.getByRole("group", { name: /price/i });
+    expect(price).toHaveTextContent(/not priced yet/i);
+    expect(price).not.toHaveTextContent("£0.00");
+  });
+
+  it("tells a new product it is priced once it has been saved", () => {
+    render(<ProductForm action={noopAction} />);
+
+    expect(screen.getByRole("group", { name: /price/i })).toHaveTextContent(/pricing page once/i);
   });
 
   it("lists every category as a checkbox, nested ones indented under their parent", () => {
@@ -140,18 +115,16 @@ describe("ProductForm", () => {
     render(
       <ProductForm
         action={noopAction}
-        initialState={{ errors: { price: "Give the product a price." } }}
+        initialState={{ errors: { name: "Give the product a name." } }}
       />,
     );
 
-    const priceField = screen.getByLabelText(/^price/i);
-    const errorId = priceField.getAttribute("aria-describedby");
+    const nameField = screen.getByLabelText(/^name/i);
+    const errorId = nameField.getAttribute("aria-describedby");
 
     expect(errorId).toBeTruthy();
-    expect(document.getElementById(errorId!)).toHaveTextContent(
-      "Give the product a price.",
-    );
-    expect(priceField).toHaveAttribute("aria-invalid", "true");
+    expect(document.getElementById(errorId!)).toHaveTextContent("Give the product a name.");
+    expect(nameField).toHaveAttribute("aria-invalid", "true");
   });
 
   it("does not mark a field invalid when it has no error", () => {

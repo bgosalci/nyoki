@@ -1,4 +1,3 @@
-import { parsePoundsToPence } from "@/lib/money";
 import { slugify } from "@/lib/slug";
 
 export type ProductStatus = "DRAFT" | "ACTIVE" | "ARCHIVED";
@@ -10,8 +9,6 @@ export interface ProductInput {
   slug: string;
   description: string | null;
   status: ProductStatus;
-  pricePence: number;
-  compareAtPence: number | null;
   sku: string | null;
   stock: number;
   weightGrams: number | null;
@@ -26,17 +23,17 @@ export interface ProductInput {
 }
 
 /**
- * Errors are keyed by FORM FIELD name, which is not the same as the model key:
- * the form has `price` and `compareAtPrice` in pounds, while the model stores
- * `pricePence` and `compareAtPence`.
+ * Errors are keyed by form field name.
+ *
+ * There is no price here. Prices are set on the pricing page, where they sit
+ * beside what the piece costs to make; the product form neither shows a box
+ * for one nor reads one if it is posted anyway.
  */
 export type ProductField =
   | "name"
   | "slug"
   | "description"
   | "status"
-  | "price"
-  | "compareAtPrice"
   | "sku"
   | "stock"
   | "weightGrams"
@@ -102,31 +99,6 @@ export function validateProductInput(form: FormData): ProductValidation {
     errors.name = "That name has no letters or numbers to build a web address from.";
   }
 
-  const priceRaw = text(form, "price");
-  const pricePence = priceRaw.length > 0 ? parsePoundsToPence(priceRaw) : null;
-
-  if (priceRaw.length === 0) {
-    errors.price = "Give the product a price.";
-  } else if (pricePence === null) {
-    errors.price = "Write the price as pounds and pence, like 24.00.";
-  }
-
-  const compareRaw = text(form, "compareAtPrice");
-  let compareAtPence: number | null = null;
-
-  if (compareRaw.length > 0) {
-    const parsed = parsePoundsToPence(compareRaw);
-
-    if (parsed === null) {
-      errors.compareAtPrice = "Write the price as pounds and pence, like 30.00.";
-    } else if (pricePence !== null && parsed <= pricePence) {
-      errors.compareAtPrice =
-        "The was-price has to be higher than the price, or there is nothing to show.";
-    } else {
-      compareAtPence = parsed;
-    }
-  }
-
   const stockParsed = count(text(form, "stock"));
   if (stockParsed === null) {
     errors.stock = "Stock has to be a whole number, zero or more.";
@@ -165,8 +137,6 @@ export function validateProductInput(form: FormData): ProductValidation {
       slug,
       description: optionalText(form, "description"),
       status: statusRaw as ProductStatus,
-      pricePence: pricePence!,
-      compareAtPence,
       sku: optionalText(form, "sku"),
       // There is exactly one of a one-of-a-kind piece, whatever was typed.
       stock: oneOfAKind ? 1 : (stockParsed ?? 0),
