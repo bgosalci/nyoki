@@ -22,6 +22,22 @@ TypeScript, deployed to Vercel.
   (`onlyBuiltDependencies`) is silently ignored by pnpm 11 and will make
   `pnpm install` exit 1 on Vercel.
 
+## Testing on the network
+
+- `next dev` serves to the whole LAN, but Next blocks its own dev resources -
+  `/_next/hmr`, the client chunks, the fonts - from any host but localhost
+  unless it is listed in `allowedDevOrigins` (next.config.ts). Unlisted, a
+  page opened from another device **server-renders correctly and never
+  hydrates**: the bulk bar, live filtering and the hearts all go dead while
+  the page looks perfect. The only clue is a warning in the dev server log.
+  Dev-only setting; it does not exist in a build.
+- Cookies are scoped per hostname, so `localhost` and `<mac>.local` are two
+  separate sessions. Being signed in on one says nothing about the other.
+- Use `next dev` for LAN testing, never `pnpm build && pnpm start`: a
+  production build refuses to boot without `BLOB_READ_WRITE_TOKEN`, and its
+  session cookies are `secure`, so nobody could stay signed in over plain
+  http on a LAN address.
+
 ## Domain rules
 
 - **Money is always an integer number of pence.** Never a float, never pounds.
