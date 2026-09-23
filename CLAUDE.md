@@ -275,7 +275,15 @@ TypeScript, deployed to Vercel.
   under `src/lib`, never in a "use client" file.
 - List thumbnails go through `next/image` (`ProductThumbnail`). The imported
   catalogue has photos up to ~4,900px wide, so a plain `<img>` would download
-  the full original for a 56px square, 240-odd times on one page.
+  the full original for a small square, 240-odd times on one page.
+- Two sizes: `row` (56px) and `large` (112px, the products list). The class
+  cannot be built from the number - Tailwind reads the source for whole class
+  names, so `size-${n}` would never be generated - which is why `SIZES` pairs
+  each measurement with its class.
+- `ui.tableRow` carries the hover ground as well as the borders, because six
+  tables share it and a row that does not answer the pointer leaves you
+  counting columns to be sure which one you are on. The brand tests check the
+  hover grounds are ones the page's own text still reads on.
 - With `preview`, resting the pointer on a thumbnail shows a 288px copy
   beside it. It is **rendered only while hovered** - two hundred hidden large
   images would be fetched whether or not anyone looked at one - and it is

@@ -93,5 +93,8 @@ export const ui = {
   shopCard: "overflow-hidden rounded-lg border border-nyoki-light-slate bg-nyoki-white",
   pill: "border border-nyoki-light-slate bg-nyoki-white text-nyoki-navy hover:border-nyoki-navy dark:border-nyoki-night-rule dark:bg-nyoki-night dark:text-nyoki-blue-grey dark:hover:border-nyoki-beige dark:hover:text-nyoki-beige",
   pillActive: "border border-nyoki-navy bg-nyoki-navy text-nyoki-beige dark:border-nyoki-navy dark:bg-nyoki-navy dark:text-nyoki-beige",
-  tableRow: "border-nyoki-accent-beige dark:border-nyoki-night-rule",
+  // Six tables share this, hover included: a row that does not answer the
+  // pointer leaves you counting columns to be sure which one you are on.
+  tableRow:
+    "border-nyoki-accent-beige hover:bg-nyoki-beige dark:border-nyoki-night-rule dark:hover:bg-nyoki-night-panel",
 } as const;

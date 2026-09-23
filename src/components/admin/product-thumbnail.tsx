@@ -5,8 +5,18 @@ import { useState } from "react";
 
 import { ui } from "@/lib/brand/ui";
 
-/** The size the thumbnail is served and displayed at. */
-const SIZE = 56;
+/**
+ * The sizes a thumbnail is served and drawn at.
+ *
+ * The class cannot be built from the number: Tailwind reads the source for
+ * whole class names, so `size-${n}` would never be generated.
+ */
+const SIZES = {
+  row: { px: 56, className: "size-14" },
+  large: { px: 112, className: "size-28" },
+} as const;
+
+export type ThumbnailSize = keyof typeof SIZES;
 
 /** Big enough to read a card's greeting without leaving the list. */
 const PREVIEW = 288;
@@ -24,9 +34,11 @@ const PREVIEW = 288;
  */
 export function ProductThumbnail({
   image,
+  size = "row",
   preview = false,
 }: {
   image: { url: string; alt: string | null } | null;
+  size?: ThumbnailSize;
   /**
    * Show a larger copy while the pointer rests on it. A deliberate
    * enhancement for mice rather than the only way to see the photograph:
@@ -35,10 +47,14 @@ export function ProductThumbnail({
   preview?: boolean;
 }) {
   const [showing, setShowing] = useState(false);
+  const { px, className } = SIZES[size];
 
   if (!image) {
     return (
-      <div aria-hidden="true" className="size-14 shrink-0 rounded-md bg-nyoki-soft-ash dark:bg-nyoki-navy" />
+      <div
+        aria-hidden="true"
+        className={`${className} shrink-0 rounded-md bg-nyoki-soft-ash dark:bg-nyoki-navy`}
+      />
     );
   }
 
@@ -51,9 +67,9 @@ export function ProductThumbnail({
       <Image
         src={image.url}
         alt=""
-        width={SIZE}
-        height={SIZE}
-        className="size-14 shrink-0 rounded-md bg-nyoki-soft-ash object-cover dark:bg-nyoki-navy"
+        width={px}
+        height={px}
+        className={`${className} shrink-0 rounded-md bg-nyoki-soft-ash object-cover dark:bg-nyoki-navy`}
       />
 
       {showing ? (

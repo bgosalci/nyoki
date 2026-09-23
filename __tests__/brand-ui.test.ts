@@ -98,6 +98,19 @@ describe("CMS class recipes", () => {
     expect(ui.shopBandQuiet).toMatch(/\btext-nyoki-navy\b/);
   });
 
+  it("lifts a table row under the pointer, onto a ground its text still reads on", () => {
+    // Six tables share this recipe, so the hover belongs here rather than
+    // being remembered separately on each of them.
+    const light = /(?:^|\s)hover:bg-(nyoki-[a-z-]+)/.exec(ui.tableRow)?.[1];
+    const dark = /(?:^|\s)dark:hover:bg-(nyoki-[a-z-]+)/.exec(ui.tableRow)?.[1];
+
+    expect({ light, dark }).toMatchObject({ light: expect.any(String), dark: expect.any(String) });
+
+    // A row carries the page's own text: navy in light, beige in dark.
+    expect(approved).toContain(`${hexOfToken.get("nyoki-navy")} on ${hexOfToken.get(light!)}`);
+    expect(approved).toContain(`${hexOfToken.get("nyoki-beige")} on ${hexOfToken.get(dark!)}`);
+  });
+
   it("nothing ever puts white or navy text on sage", () => {
     for (const classes of Object.values(ui)) {
       const onSage = /\bbg-nyoki-sage\b/.test(classes);

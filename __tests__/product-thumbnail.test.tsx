@@ -14,6 +14,18 @@ describe("ProductThumbnail", () => {
     expect(container.querySelector("img")).toHaveClass("size-14");
   });
 
+  it("can be twice that where the photographs are the point", () => {
+    const { container } = render(<ProductThumbnail image={image} size="large" />);
+
+    expect(container.querySelector("img")).toHaveClass("size-28");
+  });
+
+  it("asks for a photo the size it will draw it, not a thumbnail stretched", () => {
+    const { container } = render(<ProductThumbnail image={image} size="large" />);
+
+    expect(container.querySelector("img")).toHaveAttribute("width", "112");
+  });
+
   it("leaves the photo out of the row's label, which the name already carries", () => {
     const { container } = render(<ProductThumbnail image={image} />);
 
@@ -79,5 +91,13 @@ describe("ProductThumbnail", () => {
     await user.hover(container.querySelector("div")!);
 
     expect(images(container)).toHaveLength(0);
+  });
+});
+
+describe("the space held for a missing photo", () => {
+  it("matches whatever size the row is drawing", () => {
+    const { container } = render(<ProductThumbnail image={null} size="large" />);
+
+    expect(container.querySelector("div")).toHaveClass("size-28");
   });
 });
