@@ -275,7 +275,13 @@ TypeScript, deployed to Vercel.
   under `src/lib`, never in a "use client" file.
 - List thumbnails go through `next/image` (`ProductThumbnail`). The imported
   catalogue has photos up to ~4,900px wide, so a plain `<img>` would download
-  the full original for a 44px square, 240-odd times on one page.
+  the full original for a 56px square, 240-odd times on one page.
+- With `preview`, resting the pointer on a thumbnail shows a 288px copy
+  beside it. It is **rendered only while hovered** - two hundred hidden large
+  images would be fetched whether or not anyone looked at one - and it is
+  `pointer-events-none`, or it would end the hover that opened it and flicker.
+  A pointer-only enhancement by design: the row's name links to the product,
+  where the photo is shown in full to everyone.
 - The categories list collapses per group, remembered per browser. What a
   shut parent hides - everything beneath it however deep, whether or not
   those rows are themselves open - is `visibleBranches` in
