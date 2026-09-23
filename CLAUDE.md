@@ -122,6 +122,7 @@ TypeScript, deployed to Vercel.
   price and code it sold at, and its product reference is SetNull rather than
   cascading - but it also removes the photos from storage, so it asks first.
 
+- The bulk bar carries "Clear selection" beside the count, away from Delete.
 - The bulk bar changes prices across many pieces at once; a single piece is
   priced on its own Price tab. "Make active" skips anything not yet priced
   and says which.

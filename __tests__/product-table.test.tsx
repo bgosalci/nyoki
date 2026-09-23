@@ -53,6 +53,19 @@ describe("ProductTable", () => {
     expect(screen.queryByText(/selected/i)).not.toBeInTheDocument();
   });
 
+  it("clears the selection in one go", async () => {
+    const { user } = setup();
+    await user.click(screen.getByRole("checkbox", { name: /snowflake card/i }));
+    await user.click(screen.getByRole("checkbox", { name: /bud vase/i }));
+
+    await user.click(screen.getByRole("button", { name: /clear selection/i }));
+
+    expect(screen.queryByText(/selected/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: /snowflake card/i })).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /bud vase/i })).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /select all/i })).not.toBeChecked();
+  });
+
   it("counts what is chosen", async () => {
     const { user } = setup();
 

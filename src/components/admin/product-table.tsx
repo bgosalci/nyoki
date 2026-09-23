@@ -117,6 +117,14 @@ export function ProductTable({
         {chosen.length > 0 ? (
           <div className={`mt-4 flex flex-wrap items-center gap-3 rounded-md border p-3 ${ui.card} ${ui.ruleOnPage}`}>
             <p className="text-sm font-medium">{chosen.length} selected</p>
+            {/* Beside the count it undoes, and away from Delete. */}
+            <button
+              type="button"
+              onClick={() => setSelected(new Set())}
+              className={`-ml-1 rounded-md px-2 py-1.5 text-sm underline underline-offset-4 ${ui.mutedOnPage}`}
+            >
+              Clear selection
+            </button>
             <div className="flex flex-wrap gap-2">
               <button type="button" onClick={() => setPricing(true)} className={actionClass}>
                 Change price
