@@ -264,13 +264,15 @@ describe("PricingEditor, for a piece not yet costed", () => {
     suggestion("e3", "Cards / Valentines / row 30", null),
   ];
 
+  const field = () => screen.getByRole("group", { name: /from your price lists/i });
+
   const openChooser = async (user: ReturnType<typeof userEvent.setup>) =>
-    user.click(screen.getByRole("button", { name: /choose from your price lists/i }));
+    user.click(within(field()).getByRole("button", { name: "Choose" }));
 
   it("offers every row of the price lists, rather than a few guesses", async () => {
     const { user } = setup({ lines: [], suggestions: rows });
 
-    expect(screen.getByRole("heading", { name: /from your price lists/i })).toBeInTheDocument();
+    expect(field()).toBeInTheDocument();
     await openChooser(user);
 
     const dialog = screen.getByRole("dialog");
@@ -316,9 +318,35 @@ describe("PricingEditor, for a piece not yet costed", () => {
     expect(document.querySelector('input[name="fromEntry"]')).toHaveValue("e1");
   });
 
+  it("shows the row chosen in its field, the way the home page shows its main photo", async () => {
+    const { user } = setup({ lines: [], suggestions: rows });
+    expect(within(field()).getByText(/none chosen/i)).toBeInTheDocument();
+
+    await openChooser(user);
+    await user.click(screen.getByRole("button", { name: /christmas \/ row 30/i }));
+
+    expect(within(field()).getByText("Cards / Christmas / row 30")).toBeInTheDocument();
+    expect(within(field()).getByText(/not saved yet/i)).toBeInTheDocument();
+  });
+
+  it("takes the costs back out when the choice is cleared", async () => {
+    const zeroRated = { ...rows[1], vatRate: 0 };
+    const { user } = setup({ lines: [], suggestions: [zeroRated] });
+    await openChooser(user);
+    await user.click(screen.getByRole("button", { name: /autumn\/winter/i }));
+    expect(screen.getByLabelText(/vat/i)).toHaveValue("0");
+
+    await user.click(within(field()).getByRole("button", { name: /clear/i }));
+
+    expect(screen.getByText("Total cost").nextSibling).toHaveTextContent("£0.00");
+    expect(screen.getByLabelText(/vat/i)).toHaveValue("20");
+    expect(document.querySelector('input[name="fromEntry"]')).toHaveValue("");
+    expect(within(field()).getByText(/none chosen/i)).toBeInTheDocument();
+  });
+
   it("offers nothing once a piece has costs of its own", () => {
     setup({ suggestions: rows });
 
-    expect(screen.queryByRole("heading", { name: /from your price lists/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: /from your price lists/i })).not.toBeInTheDocument();
   });
 });

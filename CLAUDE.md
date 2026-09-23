@@ -184,8 +184,10 @@ TypeScript, deployed to Vercel.
 - A piece with no costs can choose from **every** unmatched price-list row,
   best guess first (`rankEntriesFor` with no limit), searchable by the words
   in each photo's file name - often the only place a row says what it is.
-  Choosing fills the form to be checked; only saving records it, and the
-  row's id is re-checked on the server as unclaimed.
+  The field sits at the top of "What it costs", since that is what it fills.
+  Choosing fills the form to be checked and Clear takes the costs and VAT
+  back out; only saving records it, and the row's id is re-checked on the
+  server as unclaimed.
 
 ## Price list import
 
@@ -382,14 +384,18 @@ TypeScript, deployed to Vercel.
   that matches every word typed in any order against whatever the caller says
   an item can be found by, and a cap of 60 with a note to narrow. It knows
   nothing about what it is choosing - it takes tiles and hands back an id.
-  The home page's main photo and a piece's price-list row both use it.
-- `ProductPicker` wraps it for a form field: a preview of what is chosen, a
-  Choose button, and the id in a hidden input.
+- `PhotoField` (`photo-field.tsx`) is the form field around it: a box showing
+  what is chosen by its photo and name, Choose, and Clear. **Every
+  choose-by-photo field is one**, so they all look alike - the home page's
+  main photo (through `ProductPicker`) and a piece's price-list row. It holds
+  no value itself: the caller keeps it, because choosing a price-list row does
+  more than record an id.
 - **It labels itself** and is a `role="group"`, rather than sitting inside
   `Field`. A `<label for>` pointed at its Choose button renames that button to
   the field's label, so the button stops announcing what it does.
-- The value is a hidden input, so the surrounding form posts it like any other
-  field and the picker needs to know nothing about what it is for.
+- Given a `name`, it posts the id in a hidden input, so the surrounding form
+  posts it like any other field and the field needs to know nothing about
+  what it is for.
 - A chosen id that is no longer in the list is kept, not silently cleared -
   the list is filtered to what is eligible, and a piece archived since it was
   chosen must not be dropped by merely opening the form.

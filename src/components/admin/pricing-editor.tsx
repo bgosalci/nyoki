@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 
 import { Field, inputClass } from "@/components/admin/field";
-import { PhotoChooser } from "@/components/admin/photo-chooser";
+import { PhotoField } from "@/components/admin/photo-field";
 import { ProductThumbnail } from "@/components/admin/product-thumbnail";
 import { ui } from "@/lib/brand/ui";
 import {
@@ -122,7 +122,6 @@ export function PricingEditor({
   const [ending, setEnding] = useState<PriceEnding>("either");
   const [vatRate, setVatRate] = useState(String(product.vatRate));
   const [fromEntry, setFromEntry] = useState<Suggestion | null>(null);
-  const [choosing, setChoosing] = useState(false);
 
   const costPence = productionCostPence(rows.map((row) => ({ unitPence: rowCost(row), quantityHundredths: 100 })));
 
@@ -161,12 +160,11 @@ export function PricingEditor({
   const update = (key: number, patch: Partial<Row>) =>
     setRows((current) => current.map((row) => (row.key === key ? { ...row, ...patch } : row)));
 
-  function adopt(id: string) {
-    const suggestion = suggestions.find((entry) => entry.id === id);
-    setChoosing(false);
-    if (!suggestion) return;
-    setRows(suggestion.lines.map(toRow));
-    setVatRate(String(suggestion.vatRate));
+  /** Fills the costs in from a row, or - cleared - takes them back out. */
+  function adopt(id: string | null) {
+    const suggestion = suggestions.find((entry) => entry.id === id) ?? null;
+    setRows((suggestion?.lines ?? lines).map(toRow));
+    setVatRate(String(suggestion?.vatRate ?? product.vatRate));
     setFromEntry(suggestion);
   }
 
@@ -174,8 +172,6 @@ export function PricingEditor({
 
   return (
     <form action={formAction} className="mt-8 flex flex-col gap-10">
-      <input type="hidden" name="fromEntry" value={fromEntry?.id ?? ""} />
-
       {state.saved ? (
         <p role="status" className={`rounded-md border px-3 py-2 text-sm ${ui.card} ${ui.rule}`}>
           Saved. The shop charges the new price now.
@@ -186,10 +182,47 @@ export function PricingEditor({
         <section>
           <h2 className="text-base font-semibold">What it costs</h2>
 
-          {fromEntry ? (
-            <p className={`mt-2 text-sm ${ui.mutedOnPage}`}>
-              Filled in from <strong>{fromEntry.source}</strong>. Not saved yet - check them first.
-            </p>
+          {lines.length === 0 && suggestions.length > 0 ? (
+            <div className="mt-4">
+              <PhotoField
+                label="From your price lists"
+                name="fromEntry"
+                items={suggestions.map((suggestion) => ({
+                  id: suggestion.id,
+                  title: suggestion.source,
+                  details: [
+                    `Costs ${formatPence(productionCostPence(suggestion.lines))}`,
+                    ...(suggestion.pricePence > 0 ? [`was ${formatPence(suggestion.pricePence)}`] : []),
+                    ...(suggestion.note ? [suggestion.note] : []),
+                  ],
+                  imageUrl: suggestion.photoUrl,
+                  // A file name like "pink_mohair_booties.png" is often the
+                  // only place a row says what it is.
+                  searchText: [
+                    suggestion.note ?? "",
+                    (suggestion.photoFilename ?? "").replace(/\.[a-z0-9]+$/i, "").replace(/[_\-.]+/g, " "),
+                  ].join(" "),
+                }))}
+                value={fromEntry?.id ?? null}
+                onChange={adopt}
+                emptyLabel="None chosen"
+                missingLabel="A row no longer offered"
+                chooserTitle="Which row is this piece?"
+                lead={
+                  <div className="flex items-center gap-3">
+                    <ProductThumbnail image={product.image} />
+                    <p className="text-sm">
+                      Looking for <strong>{product.name}</strong> - best guess first.
+                    </p>
+                  </div>
+                }
+                hint={
+                  fromEntry
+                    ? "Its costs are filled in below. Not saved yet - check them, then save. Its old price is never copied."
+                    : `${suggestions.length} ${suggestions.length === 1 ? "row" : "rows"} of your 2023 price lists ${suggestions.length === 1 ? "is" : "are"} not matched to a piece yet. If one is this piece, choose it to fill its costs in.`
+                }
+              />
+            </div>
           ) : origin ? (
             <p className={`mt-2 text-sm ${ui.mutedOnPage}`}>
               Brought in from <strong>{origin.source}</strong>, where it was priced at {formatPence(origin.pricePence)}.
@@ -380,54 +413,6 @@ export function PricingEditor({
           </tbody>
         </table>
       </section>
-
-      {lines.length === 0 && suggestions.length > 0 ? (
-        <section>
-          <h2 className="text-base font-semibold">From your price lists</h2>
-          <p className={`mt-1 max-w-prose text-sm ${ui.mutedOnPage}`}>
-            {suggestions.length} rows of your 2023 price lists have not been matched to a piece yet. If one of them is
-            this piece, choose it to fill its costs in, then check them and save. Its old price is shown, but never
-            copied.
-          </p>
-
-          <button
-            type="button"
-            onClick={() => setChoosing(true)}
-            className={`mt-4 rounded-md px-3 py-1.5 text-sm ${ui.buttonSecondary}`}
-          >
-            Choose from your price lists
-          </button>
-
-          <PhotoChooser
-            open={choosing}
-            title="Which row is this piece?"
-            items={suggestions.map((suggestion) => ({
-              id: suggestion.id,
-              title: suggestion.source,
-              details: [
-                `Costs ${formatPence(productionCostPence(suggestion.lines))}`,
-                ...(suggestion.pricePence > 0 ? [`Was ${formatPence(suggestion.pricePence)}`] : []),
-                ...(suggestion.note ? [suggestion.note] : []),
-              ],
-              imageUrl: suggestion.photoUrl,
-              // A file name like "pink_mohair_booties.png" is often the only
-              // place a row says what it is.
-              searchText: [suggestion.note ?? "", (suggestion.photoFilename ?? "").replace(/\.[a-z0-9]+$/i, "").replace(/[_\-.]+/g, " ")].join(" "),
-            }))}
-            selectedId={fromEntry?.id ?? null}
-            lead={
-              <div className="flex items-center gap-3">
-                <ProductThumbnail image={product.image} />
-                <p className="text-sm">
-                  Looking for <strong>{product.name}</strong> - best guess first.
-                </p>
-              </div>
-            }
-            onChoose={adopt}
-            onCancel={() => setChoosing(false)}
-          />
-        </section>
-      ) : null}
 
       <button
         type="submit"
