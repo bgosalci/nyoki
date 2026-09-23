@@ -42,9 +42,8 @@ export default async function ProductsPage({
     db.product.count(),
   ]);
 
-  return (
+  const HEADER = (
     <>
-      <PinnedHeight className={PINNED_BLOCK_CLASS}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold tracking-tight">Products</h1>
 
@@ -62,24 +61,32 @@ export default async function ProductsPage({
       <p className={`mt-4 text-sm ${ui.mutedOnPage}`}>
         {filtering ? `${products.length} of ${total} products` : `${total} products`}
       </p>
-      </PinnedHeight>
+    </>
+  );
 
-      {products.length === 0 && !filtering ? (
-        <div className={`mt-8 rounded-lg border border-dashed p-10 text-center ${ui.ruleOnPage}`}>
-          <p className={`text-sm ${ui.mutedOnPage}`}>
-            No products yet.
-          </p>
-          <Link
-            href="/admin/products/new"
-            className="mt-2 inline-block text-sm underline underline-offset-4"
-          >
-            Add the first one
-          </Link>
-        </div>
-      ) : products.length === 0 ? (
-        <p className={`mt-8 text-sm ${ui.mutedOnPage}`}>Nothing matches that. Try a shorter search, or clear the status.</p>
+  return (
+    <>
+      {products.length === 0 ? (
+        <>
+          {/* No rows, so nothing to select: the header pins on its own. */}
+          <PinnedHeight className={PINNED_BLOCK_CLASS}>{HEADER}</PinnedHeight>
+
+          {filtering ? (
+            <p className={`mt-8 text-sm ${ui.mutedOnPage}`}>
+              Nothing matches that. Try a shorter search, or clear the status.
+            </p>
+          ) : (
+            <div className={`mt-8 rounded-lg border border-dashed p-10 text-center ${ui.ruleOnPage}`}>
+              <p className={`text-sm ${ui.mutedOnPage}`}>No products yet.</p>
+              <Link href="/admin/products/new" className="mt-2 inline-block text-sm underline underline-offset-4">
+                Add the first one
+              </Link>
+            </div>
+          )}
+        </>
       ) : (
         <ProductTable
+          header={HEADER}
           rows={products.map((product) => ({
             id: product.id,
             name: product.name,

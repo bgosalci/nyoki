@@ -5,8 +5,9 @@ import { useState } from "react";
 
 import { BulkPriceDialog } from "@/components/admin/bulk-price-dialog";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
+import { PinnedHeight } from "@/components/admin/pinned-height";
 import { ProductThumbnail } from "@/components/admin/product-thumbnail";
-import { Th } from "@/components/admin/th";
+import { PINNED_BLOCK_CLASS, Th } from "@/components/admin/th";
 import { ui } from "@/lib/brand/ui";
 import { formatPence } from "@/lib/money";
 import type { RepriceFields } from "@/lib/products/repricing";
@@ -33,6 +34,13 @@ const STATUS_LABEL: Record<ProductStatus, string> = {
  * The products list, with a checkbox per row and actions that apply to
  * whatever is chosen.
  *
+ * The page's own header - title, filters, count - is passed in and rendered
+ * inside the pinned block together with the bulk bar. The bar belongs there
+ * rather than above the rows: scrolled away from the rows it acts on, "1
+ * selected" is a claim you cannot check. Putting it inside the block that is
+ * already measured means the column headers settle beneath it without a
+ * second sticky layer to keep in step with the first.
+ *
  * Changing a price in bulk previews itself first: the old prices are kept
  * nowhere, so there is nothing to undo it with.
  *
@@ -44,11 +52,14 @@ const STATUS_LABEL: Record<ProductStatus, string> = {
  */
 export function ProductTable({
   rows,
+  header,
   setStatus,
   remove,
   reprice,
 }: {
   rows: ProductRow[];
+  /** Rendered by the page, pinned here so the bulk bar can share the block. */
+  header?: React.ReactNode;
   setStatus: (ids: string[], status: ProductStatus) => Promise<void>;
   remove: (ids: string[]) => Promise<void>;
   reprice: (ids: string[], fields: RepriceFields) => Promise<void>;
@@ -79,34 +90,38 @@ export function ProductTable({
 
   return (
     <>
-      {chosen.length > 0 ? (
-        <div className={`mt-4 flex flex-wrap items-center gap-3 rounded-md border p-3 ${ui.card} ${ui.ruleOnPage}`}>
-          <p className="text-sm font-medium">{chosen.length} selected</p>
-          <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => setPricing(true)} className={actionClass}>
-              Change price
-            </button>
-            <button type="button" onClick={() => apply(() => setStatus(chosen, "ACTIVE"))} className={actionClass}>
-              Make active
-            </button>
-            <button type="button" onClick={() => apply(() => setStatus(chosen, "DRAFT"))} className={actionClass}>
-              Make draft
-            </button>
-            <button type="button" onClick={() => apply(() => setStatus(chosen, "ARCHIVED"))} className={actionClass}>
-              Archive
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirming(true)}
-              className="rounded-md px-3 py-1.5 text-sm text-red-700 underline underline-offset-4 dark:text-red-300"
-            >
-              Delete
-            </button>
-          </div>
-        </div>
-      ) : null}
+      <PinnedHeight className={PINNED_BLOCK_CLASS}>
+        {header}
 
-      <div className="mt-4">
+        {chosen.length > 0 ? (
+          <div className={`mt-4 flex flex-wrap items-center gap-3 rounded-md border p-3 ${ui.card} ${ui.ruleOnPage}`}>
+            <p className="text-sm font-medium">{chosen.length} selected</p>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={() => setPricing(true)} className={actionClass}>
+                Change price
+            </button>
+              <button type="button" onClick={() => apply(() => setStatus(chosen, "ACTIVE"))} className={actionClass}>
+                Make active
+            </button>
+              <button type="button" onClick={() => apply(() => setStatus(chosen, "DRAFT"))} className={actionClass}>
+                Make draft
+            </button>
+              <button type="button" onClick={() => apply(() => setStatus(chosen, "ARCHIVED"))} className={actionClass}>
+                Archive
+            </button>
+              <button
+                type="button"
+                onClick={() => setConfirming(true)}
+                className="rounded-md px-3 py-1.5 text-sm text-red-700 underline underline-offset-4 dark:text-red-300"
+            >
+                Delete
+            </button>
+            </div>
+          </div>
+        ) : null}
+      </PinnedHeight>
+
+      <div>
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr>

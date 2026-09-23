@@ -18,7 +18,16 @@ function setup(overrides: Partial<React.ComponentProps<typeof ProductTable>> = {
   const setStatus = jest.fn(async () => {});
   const remove = jest.fn(async () => {});
   const reprice = jest.fn(async () => {});
-  render(<ProductTable rows={rows} setStatus={setStatus} remove={remove} reprice={reprice} {...overrides} />);
+  render(
+    <ProductTable
+      rows={rows}
+      header={<h1>Products</h1>}
+      setStatus={setStatus}
+      remove={remove}
+      reprice={reprice}
+      {...overrides}
+    />,
+  );
   return { setStatus, remove, reprice, user: userEvent.setup() };
 }
 
@@ -131,6 +140,23 @@ describe("ProductTable", () => {
 
     expect(reprice).not.toHaveBeenCalled();
     expect(screen.getByText(/1 selected/i)).toBeInTheDocument();
+  });
+
+  it("pins the bulk actions with the header, so they do not scroll away from the rows they act on", async () => {
+    const { user } = setup();
+    await user.click(screen.getByRole("checkbox", { name: /snowflake card/i }));
+
+    // Inside the pinned block, its measured height already covers the bar and
+    // the column headers settle beneath it. No second sticky layer to keep in
+    // step with the first.
+    const pinned = screen.getByRole("heading", { name: "Products" }).closest(".sticky");
+    expect(pinned).toContainElement(screen.getByRole("button", { name: /change price/i }));
+  });
+
+  it("renders the page's own header above the table", () => {
+    setup();
+
+    expect(screen.getByRole("heading", { name: "Products" })).toBeInTheDocument();
   });
 
   it("still lists every product with its price and status", () => {

@@ -261,6 +261,12 @@ TypeScript, deployed to Vercel.
   `--pinned-height` and each `Th` sticks just beneath it. A table must not sit
   in an overflow container, or its header would stick to that instead of the
   page.
+- **The products list's bulk bar lives inside that block**, which is why
+  `ProductTable` takes the page's header as a prop and pins it: scrolled away
+  from the rows it acts on, "12 selected" is a claim you cannot check. Being
+  inside the measured block means the bar's height is already in
+  `--pinned-height` and the column headers settle beneath it - no second
+  sticky layer to keep in step with the first.
 - The products list filters by category with rows of pills (`CategoryPills`,
   server-rendered links): groups, then the chosen group's types, down to the
   selection. The slug lives in the URL as `category`; the page resolves it to
