@@ -4,8 +4,8 @@ import { HomeForm } from "@/components/admin/home-form";
 import { HOME_DEFAULTS } from "@/lib/home/content";
 
 const products = [
-  { id: "p1", name: "Green Cardigan" },
-  { id: "p2", name: "Snowflake Card" },
+  { id: "p1", name: "Green Cardigan", image: { url: "/green.jpg", alt: null } },
+  { id: "p2", name: "Snowflake Card", image: null },
 ];
 
 function setup(overrides: Partial<React.ComponentProps<typeof HomeForm>> = {}) {
@@ -22,13 +22,13 @@ describe("HomeForm", () => {
     expect(screen.getByLabelText(/^button/i)).toHaveValue(HOME_DEFAULTS.ctaLabel);
   });
 
-  it("offers every piece for the main photo, and choosing none as an option", () => {
+  it("picks the main photo by looking at it, not from a list of names", () => {
     setup();
 
-    const hero = screen.getByLabelText(/main photo/i);
-    expect(hero).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: /green cardigan/i })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: /newest/i })).toBeInTheDocument();
+    // A dropdown of a few hundred names is no way to choose a photograph.
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /choose/i })).toBeInTheDocument();
+    expect(screen.getByText(/newest piece with a photo/i)).toBeInTheDocument();
   });
 
   it("gives each promise its own box, so one can be emptied to drop it", () => {

@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 
 import { Field, inputClass } from "@/components/admin/field";
+import { ProductPicker, type PickerProduct } from "@/components/admin/product-picker";
 import { ui } from "@/lib/brand/ui";
 import type { HomeContent, HomeErrors } from "@/lib/home/content";
 
@@ -26,7 +27,7 @@ export function HomeForm({
 }: {
   content: HomeContent;
   /** Pieces that could lead the page: on the shop, and with a photo. */
-  products: { id: string; name: string }[];
+  products: PickerProduct[];
   action: HomeAction;
   initialState?: HomeState;
 }) {
@@ -57,22 +58,13 @@ export function HomeForm({
         {(props) => <input {...props} type="text" defaultValue={content.ctaLabel} required className={inputClass} />}
       </Field>
 
-      <Field
-        label="Main photo"
+      <ProductPicker
         name="heroProductId"
-        hint="The newest piece with a photo, unless you choose one."
-      >
-        {(props) => (
-          <select {...props} defaultValue={content.heroProductId ?? ""} className={inputClass}>
-            <option value="">The newest piece with a photo</option>
-            {products.map((product) => (
-              <option key={product.id} value={product.id}>
-                {product.name}
-              </option>
-            ))}
-          </select>
-        )}
-      </Field>
+        label="Main photo"
+        products={products}
+        value={content.heroProductId}
+        emptyLabel="The newest piece with a photo"
+      />
 
       <fieldset className="flex flex-col gap-3">
         <legend className="text-sm font-medium">Our promises</legend>

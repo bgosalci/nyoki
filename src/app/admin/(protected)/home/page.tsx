@@ -11,7 +11,11 @@ export default async function AdminHomePage() {
     db.product.findMany({
       where: { status: "ACTIVE", images: { some: {} } },
       orderBy: { name: "asc" },
-      select: { id: true, name: true },
+      select: {
+        id: true,
+        name: true,
+        images: { orderBy: { position: "asc" }, take: 1, select: { url: true, alt: true } },
+      },
     }),
   ]);
 
@@ -23,7 +27,11 @@ export default async function AdminHomePage() {
         the product itself; mark none and it shows the newest.
       </p>
 
-      <HomeForm content={row ?? HOME_DEFAULTS} products={products} action={saveHome} />
+      <HomeForm
+        content={row ?? HOME_DEFAULTS}
+        products={products.map(({ id, name, images }) => ({ id, name, image: images[0] ?? null }))}
+        action={saveHome}
+      />
     </>
   );
 }

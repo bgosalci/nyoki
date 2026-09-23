@@ -278,6 +278,24 @@ TypeScript, deployed to Vercel.
   the URL as you type (debounced) or change a select, so the server component
   re-renders and the view stays bookmarkable. No Filter buttons.
 
+## Picking a product
+
+- `ProductPicker` (`src/components/admin/product-picker.tsx`) is the shared
+  control for choosing a piece: a preview of what is chosen, a Choose button,
+  and a modal of thumbnails with a live search. Built to be reused wherever
+  the admin needs one product chosen; the home page's main photo is its first
+  use.
+- **It labels itself** and is a `role="group"`, rather than sitting inside
+  `Field`. A `<label for>` pointed at its Choose button renames that button to
+  the field's label, so the button stops announcing what it does.
+- The value is a hidden input, so the surrounding form posts it like any other
+  field and the picker needs to know nothing about what it is for.
+- A chosen id that is no longer in the list is kept, not silently cleared -
+  the list is filtered to what is eligible, and a piece archived since it was
+  chosen must not be dropped by merely opening the form.
+- The grid is capped at 60 with a "type a word to narrow it" note: every tile
+  is an optimised image request, and the catalogue runs to a few hundred.
+
 ## Confirmations
 
 - Destructive actions confirm through `ConfirmDialog`, never `window.confirm`
