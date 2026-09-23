@@ -2,6 +2,13 @@ import type { ProductStatus } from "@/lib/products/validate";
 
 const STATUSES: readonly ProductStatus[] = ["DRAFT", "ACTIVE", "ARCHIVED"];
 
+/**
+ * The products list's order: by status, then what was edited last. The list
+ * and a product page's Previous and Next both use it, so stepping through
+ * pieces follows the list.
+ */
+export const PRODUCT_LIST_ORDER: [{ status: "asc" }, { updatedAt: "desc" }] = [{ status: "asc" }, { updatedAt: "desc" }];
+
 export interface ProductFilter {
   q: string | null;
   status: ProductStatus | null;

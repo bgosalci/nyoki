@@ -164,9 +164,19 @@ TypeScript, deployed to Vercel.
   the list is sorted by what was edited last, so saving a piece moves it to
   the top, and a "next" recalculated after every save sends you back to the
   start. See `src/lib/products/browse.ts`.
-- A piece not reached from the list has no steps, and its way back is the
-  whole list. `parseProductList` treats storage as untrusted: the way back
-  only ever leads to `/admin/products`.
+- **The steps are always there.** A piece opened some other way - a reload, a
+  bookmark, a new tab - steps through the whole list in its usual order
+  (`PRODUCT_LIST_ORDER`, shared with the list page), which the layout sends
+  as `fallback`; that is then remembered too, so a save cannot reorder it.
+  It first shipped with no fallback, and a reloaded page simply had no
+  buttons.
+- The server cannot see sessionStorage, so the page arrives with the whole
+  list and switches after hydration. The effect that remembers the fallback
+  reads storage afresh: the render during hydration is the server's, and
+  trusting it would overwrite the list the piece really came from. A test
+  hydrates for real to hold this.
+- `parseProductList` treats storage as untrusted: the way back only ever
+  leads to `/admin/products`.
 - **Unsaved edits are lost** by stepping, just as by going back - neither
   form warns yet.
 - `BackLink` is a bordered button, not underlined text, on every item page.

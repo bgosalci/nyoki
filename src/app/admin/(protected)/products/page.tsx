@@ -9,7 +9,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { CategoryPills } from "@/components/admin/category-pills";
 import { subtreeIds } from "@/lib/products/category-pills";
-import { parseProductFilter, productWhere } from "@/lib/products/filter";
+import { PRODUCT_LIST_ORDER, parseProductFilter, productWhere } from "@/lib/products/filter";
 
 export default async function ProductsPage({
   searchParams,
@@ -36,7 +36,7 @@ export default async function ProductsPage({
   const [products, total] = await Promise.all([
     db.product.findMany({
       where: productWhere(filter, categoryIds),
-      orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
+      orderBy: PRODUCT_LIST_ORDER,
       include: { images: { orderBy: { position: "asc" }, take: 1 } },
     }),
     db.product.count(),

@@ -9,8 +9,10 @@
  * that.
  *
  * It is remembered per tab (sessionStorage), since two tabs can hold two
- * different filtered lists. Nothing here must be relied on: a piece opened
- * some other way simply has no steps.
+ * different filtered lists. A piece opened some other way - a reload, a
+ * bookmark, a new tab - steps through the whole list in its usual order
+ * instead, which the server sends, and that is remembered in turn so a save
+ * cannot reorder it either.
  */
 
 export interface ListedProduct {
@@ -93,10 +95,21 @@ export function readProductList(): string | null {
   }
 }
 
+const listeners = new Set<() => void>();
+
+/** For useSyncExternalStore: told whenever a list is remembered. */
+export function subscribeToProductList(onChange: () => void): () => void {
+  listeners.add(onChange);
+  return () => {
+    listeners.delete(onChange);
+  };
+}
+
 export function rememberProductList(list: ProductList): void {
   try {
     window.sessionStorage.setItem(PRODUCT_LIST_KEY, JSON.stringify(list));
   } catch {
-    // Not remembering costs the steps, nothing more.
+    // Not remembering costs a stable order, nothing more.
   }
+  for (const listener of listeners) listener();
 }
