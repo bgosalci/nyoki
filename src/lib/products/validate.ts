@@ -25,7 +25,7 @@ export interface ProductInput {
 /**
  * Errors are keyed by form field name.
  *
- * There is no price here. Prices are set on the pricing page, where they sit
+ * There is no price here. Prices are set on the Price tab, where they sit
  * beside what the piece costs to make; the product form neither shows a box
  * for one nor reads one if it is posted anyway.
  */

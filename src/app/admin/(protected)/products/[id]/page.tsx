@@ -1,4 +1,3 @@
-import { BackLink } from "@/components/admin/back-link";
 import { notFound } from "next/navigation";
 
 import { EditProductForm } from "@/components/admin/edit-product-form";
@@ -47,11 +46,6 @@ export default async function EditProductPage({
 
   return (
     <>
-      <div className="flex flex-col gap-2">
-        <BackLink href="/admin/products">Back to all products</BackLink>
-        <h1 className="text-xl font-semibold tracking-tight">{product.name}</h1>
-      </div>
-
       <div className="mt-6 flex flex-col gap-10">
         <EditProductImages productId={product.id} images={product.images} />
         <EditProductForm

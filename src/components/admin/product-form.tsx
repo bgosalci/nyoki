@@ -38,7 +38,7 @@ export function ProductForm({
   product?: ProductInput;
   /**
    * The price as it stands, to show - never to edit. Absent for a product not
-   * yet saved, which has nowhere on the pricing page to point to.
+   * yet saved, which has no Price tab to point to.
    */
   pricing?: { productId: string; pricePence: number; compareAtPence: number | null };
   categories?: ProductFormCategory[];
@@ -94,15 +94,15 @@ export function ProductForm({
       </section>
 
       <section className="grid gap-5 sm:grid-cols-2">
-        {/* Shown, not edited. The price is set on the pricing page, beside
-            what the piece costs to make, so there is one place it changes. */}
+        {/* Shown, not edited. The price is set on the Price tab, beside what
+            the piece costs to make, so there is one place it changes. */}
         <div role="group" aria-labelledby="product-price-label" className="flex flex-col gap-1.5 sm:col-span-2">
           <p id="product-price-label" className="text-sm font-medium">
             Price
           </p>
           {pricing === undefined ? (
             <p className={`text-sm ${ui.mutedOnPage}`}>
-              Set on the pricing page once the product is saved. It stays off the shop until then.
+              Set on its Price tab once the product is saved. It stays off the shop until then.
             </p>
           ) : (
             <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm">
@@ -114,8 +114,8 @@ export function ProductForm({
               {pricing.compareAtPence !== null ? (
                 <span className={`tabular-nums ${ui.mutedOnPage}`}>was {formatPence(pricing.compareAtPence)}</span>
               ) : null}
-              <Link href={`/admin/pricing/${pricing.productId}`} className={ui.link}>
-                Change it on the pricing page
+              <Link href={`/admin/products/${pricing.productId}/price`} className={ui.link}>
+                Change it on the Price tab
               </Link>
             </p>
           )}

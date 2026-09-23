@@ -40,7 +40,7 @@ export async function createProduct(
   const result = validateProductInput(formData);
   if (!result.ok) return { errors: result.errors };
 
-  // A new product has no price until the pricing page gives it one, so it
+  // A new product has no price until its Price tab gives it one, so it
   // cannot start out on the shop.
   const blocked = result.data.status === "ACTIVE" ? activationBlockedBecause({ pricePence: 0 }) : null;
   if (blocked) return { errors: { status: blocked } };
@@ -88,7 +88,7 @@ export async function updateProduct(
   }
 
   // The price is not among these fields, so saving the product form cannot
-  // change it or reset it - only the pricing page can.
+  // change it or reset it - only the Price tab can.
   const slug = uniqueSlug(result.data.slug, await takenSlugs(result.data.slug, id));
   const { categoryIds, ...fields } = result.data;
 

@@ -1,16 +1,12 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { savePricing } from "@/app/admin/(protected)/pricing/actions";
-import { BackLink } from "@/components/admin/back-link";
+import { savePricing } from "@/app/admin/(protected)/products/[id]/price/actions";
 import { PricingEditor } from "@/components/admin/pricing-editor";
-import { ProductThumbnail } from "@/components/admin/product-thumbnail";
-import { ui } from "@/lib/brand/ui";
 import type { EntryLine } from "@/lib/costing/import";
 import { rankEntriesFor } from "@/lib/costing/matching";
 import { db } from "@/lib/db";
 
-export default async function PricingEditPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ProductPricePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   const product = await db.product.findUnique({
@@ -49,20 +45,9 @@ export default async function PricingEditPage({ params }: { params: Promise<{ id
 
   const image = product.images[0] ?? null;
 
+  // The layout carries the way back, the name and the tabs.
   return (
     <>
-      <BackLink href="/admin/pricing">All prices</BackLink>
-
-      <div className="mt-4 flex items-center gap-4">
-        <ProductThumbnail image={image ? { url: image.url, alt: image.alt } : null} />
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">{product.name}</h1>
-          <Link href={`/admin/products/${product.id}`} className={`text-sm underline underline-offset-4 ${ui.mutedOnPage}`}>
-            Edit the product itself
-          </Link>
-        </div>
-      </div>
-
       <PricingEditor
         product={{
           id: product.id,

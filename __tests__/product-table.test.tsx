@@ -17,10 +17,18 @@ const rows: ProductRow[] = [
 function setup(overrides: Partial<React.ComponentProps<typeof ProductTable>> = {}) {
   const setStatus = jest.fn(async () => ({ unpriced: [] as string[] }));
   const remove = jest.fn(async () => {});
+  const reprice = jest.fn(async () => {});
   render(
-    <ProductTable rows={rows} header={<h1>Products</h1>} setStatus={setStatus} remove={remove} {...overrides} />,
+    <ProductTable
+      rows={rows}
+      header={<h1>Products</h1>}
+      setStatus={setStatus}
+      remove={remove}
+      reprice={reprice}
+      {...overrides}
+    />,
   );
-  return { setStatus, remove, user: userEvent.setup() };
+  return { setStatus, remove, reprice, user: userEvent.setup() };
 }
 
 describe("ProductTable", () => {
@@ -104,12 +112,20 @@ describe("ProductTable", () => {
     expect(screen.getByText(/1 selected/i)).toBeInTheDocument();
   });
 
-  it("leaves price changes to the pricing page", async () => {
-    // One place changes a price, beside what the piece costs to make.
-    const { user } = setup();
-    await user.click(screen.getByRole("checkbox", { name: /snowflake card/i }));
+  it("changes the price of what is chosen, once the change has been previewed", async () => {
+    // With pricing on each product's own tab, this list is where a price
+    // changes across many pieces at once.
+    const { user, reprice } = setup();
 
-    expect(screen.queryByRole("button", { name: /change price/i })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("checkbox", { name: /snowflake card/i }));
+    await user.click(screen.getByRole("checkbox", { name: /bud vase/i }));
+    await user.click(screen.getByRole("button", { name: /change price/i }));
+    await user.type(screen.getByLabelText(/by how much/i), "10");
+    expect(reprice).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: /change 2 prices/i }));
+
+    expect(reprice).toHaveBeenCalledWith(["p1", "p3"], { mode: "INCREASE", unit: "PERCENT", value: "10", rounding: "EXACT" });
   });
 
   it("says which pieces it could not put on the shop, and why", async () => {
@@ -121,7 +137,7 @@ describe("ProductTable", () => {
 
     const notice = await screen.findByRole("status");
     expect(notice).toHaveTextContent("Stocking Card");
-    expect(notice).toHaveTextContent(/pricing page/i);
+    expect(notice).toHaveTextContent(/price tab/i);
   });
 
   it("says nothing when everything asked for was done", async () => {

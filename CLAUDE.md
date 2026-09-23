@@ -122,9 +122,9 @@ TypeScript, deployed to Vercel.
   price and code it sold at, and its product reference is SetNull rather than
   cascading - but it also removes the photos from storage, so it asks first.
 
-- **Prices are not changed on the products list.** Its bulk bar has no
-  "Change price"; that lives on the pricing list now, so a price changes in
-  one place. "Make active" skips anything not yet priced and says which.
+- The bulk bar changes prices across many pieces at once; a single piece is
+  priced on its own Price tab. "Make active" skips anything not yet priced
+  and says which.
 - **Bulk price changes** live in `src/lib/products/repricing.ts`, which is
   pure. Percentages are carried as TENTHS of a percent, so 12.5% is exact -
   unlike a sale, where a fractional percentage would produce sub-penny
@@ -154,21 +154,29 @@ TypeScript, deployed to Vercel.
   cards sheet works it that way; her clothes sheet divides by 1.3, which only
   takes about 23%. The code follows the cards.
 
-## The pricing page
+## A product's Price tab
 
-- `/admin/pricing` lists every piece not archived with its cost, price, profit
-  and multiple on cost, and can narrow to "not yet costed" or "selling at a
-  loss". `/admin/pricing/[id]` is where a price is set: cost lines, VAT,
-  price and was-price, with every figure worked out live as it is typed - the
-  profit, what Not On The High Street leaves, and each step of a sale.
-- **The product form has no price.** It shows the price read-only with a link
-  here, and `validateProductInput` does not read one even if it is posted -
-  a test forges exactly that - so `updateProduct` cannot change or reset it.
+- A product has two tabs, as routes: **Details** (`/admin/products/[id]`) and
+  **Price** (`/admin/products/[id]/price`), sharing a layout that carries the
+  way back, the name and the tabs. Routes rather than toggled panels, so a
+  price can be linked to and the back button goes back a tab.
+- The Price tab holds the cost lines, VAT, price and was-price, and works
+  every figure out live: profit, margin, what Not On The High Street leaves,
+  and each step of a sale on both. Type a target margin and the price is
+  worked out, rounded **up** to 50p or 99p (`priceForMargin`); typing the
+  price by hand lets go of the margin, so the margin box never claims what
+  the price does not give. Margin is profit as a share of what is kept after
+  VAT - not her sheets' "online margin", which is the multiple on cost.
+- **The Details tab has no price.** It shows it read-only with a link to the
+  Price tab, and `validateProductInput` does not read one even if posted - a
+  test forges exactly that - so saving details cannot change or reset it.
 - A new product is created at 0p and **cannot be made active until priced**
-  (`activationBlockedBecause`), checked on create, on edit, and in the bulk
-  action; otherwise it would be on the shop for free.
-- A piece not yet costed shows no profit on the list. Without costs the whole
-  price after VAT would read as profit: flattering, and meaningless.
+  (`activationBlockedBecause`), checked on create, on edit, and in bulk,
+  where unpriced pieces are skipped and named rather than listed for free.
+- A price changes across many pieces at once from the products list's bulk
+  "Change price". There was a separate Pricing section with its own list;
+  it was folded into the product, and its "not yet costed" and "selling at a
+  loss" views went with it.
 - A piece with no costs is offered the price-list rows most likely to be it
   (`rankEntriesFor`). Choosing one fills the form to be checked; only saving
   records it, and the row's id is re-checked on the server as unclaimed.

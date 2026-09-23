@@ -2,7 +2,7 @@ import { ui } from "@/lib/brand/ui";
 import { ProductFilterForm } from "@/components/admin/product-filter-form";
 import { PinnedHeight } from "@/components/admin/pinned-height";
 import { ProductTable } from "@/components/admin/product-table";
-import { deleteProducts, setProductsStatus } from "@/app/admin/(protected)/products/actions";
+import { deleteProducts, repriceProducts, setProductsStatus } from "@/app/admin/(protected)/products/actions";
 import { PINNED_BLOCK_CLASS } from "@/components/admin/th";
 import Link from "next/link";
 
@@ -99,6 +99,7 @@ export default async function ProductsPage({
           }))}
           setStatus={setProductsStatus}
           remove={deleteProducts}
+          reprice={repriceProducts}
         />
       )}
     </>

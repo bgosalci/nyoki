@@ -56,7 +56,7 @@ describe("validateProductInput", () => {
     expect(!result.ok && result.errors.name).toBeTruthy();
   });
 
-  it("has nothing to say about price, which is set on the pricing page", () => {
+  it("has nothing to say about price, which is set on the Price tab", () => {
     const result = validateProductInput(form());
 
     expect(result.ok && "pricePence" in result.data).toBe(false);

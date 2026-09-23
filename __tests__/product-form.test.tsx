@@ -47,7 +47,7 @@ describe("ProductForm", () => {
     expect(screen.getByLabelText(/made to order/i)).toBeInTheDocument();
   });
 
-  it("has no box for a price, which is set on the pricing page", () => {
+  it("has no box for a price, which is set on the Price tab", () => {
     render(<ProductForm action={noopAction} product={mug} pricing={{ productId: "p1", pricePence: 2400, compareAtPence: 3000 }} />);
 
     // The price is shown, and labelled - but nothing about it can be typed in.
@@ -62,7 +62,7 @@ describe("ProductForm", () => {
     const price = screen.getByRole("group", { name: /price/i });
     expect(price).toHaveTextContent("£24.00");
     expect(price).toHaveTextContent(/was £30\.00/i);
-    expect(screen.getByRole("link", { name: /change it on the pricing page/i })).toHaveAttribute("href", "/admin/pricing/p1");
+    expect(screen.getByRole("link", { name: /change it on the price tab/i })).toHaveAttribute("href", "/admin/products/p1/price");
   });
 
   it("mentions no was-price when there is not one", () => {
@@ -82,7 +82,7 @@ describe("ProductForm", () => {
   it("tells a new product it is priced once it has been saved", () => {
     render(<ProductForm action={noopAction} />);
 
-    expect(screen.getByRole("group", { name: /price/i })).toHaveTextContent(/pricing page once/i);
+    expect(screen.getByRole("group", { name: /price/i })).toHaveTextContent(/price tab once/i);
   });
 
   it("lists every category as a checkbox, nested ones indented under their parent", () => {

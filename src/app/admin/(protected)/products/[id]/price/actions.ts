@@ -45,9 +45,8 @@ export async function savePricing(productId: string, _state: PricingState, formD
       : []),
   ]);
 
-  revalidatePath("/admin/pricing");
-  revalidatePath(`/admin/pricing/${productId}`);
-  revalidatePath(`/admin/products/${productId}`);
+  revalidatePath("/admin/products");
+  revalidatePath(`/admin/products/${productId}`, "layout");
 
   return { errors: {}, saved: true };
 }

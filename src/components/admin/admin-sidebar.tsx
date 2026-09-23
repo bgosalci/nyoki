@@ -25,12 +25,6 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="m4 8.5 8 4.5 8-4.5M12 13v7" />
     </>
   ),
-  "/admin/pricing": (
-    <>
-      <path d="M3.5 12.2V4.5a1 1 0 0 1 1-1h7.7a1 1 0 0 1 .7.3l7.8 7.8a1 1 0 0 1 0 1.4l-7.7 7.7a1 1 0 0 1-1.4 0l-7.8-7.8a1 1 0 0 1-.3-.7Z" strokeLinejoin="round" />
-      <circle cx="8" cy="8" r="1.5" />
-    </>
-  ),
   "/admin/categories": (
     <>
       <path d="M3.5 6.5a1 1 0 0 1 1-1h4l1.5 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-14a1 1 0 0 1-1-1v-11Z" strokeLinejoin="round" />
