@@ -244,6 +244,41 @@ TypeScript, deployed to Vercel.
   back out; only saving records it, and the row's id is re-checked on the
   server as unclaimed.
 
+## Usual costs
+
+- A category can carry **usual costs** (`CategoryCostLine`, edited on its
+  page): the lines most of its pieces share. A piece with no costs of its own
+  is offered "Start from the usual costs for Cards" on its Price tab.
+- **Copied, never linked.** Starting from them fills the form, to be checked
+  and saved like any costing; changing a category's usual costs afterwards
+  changes nothing already priced. A shared materials list that reprices
+  every piece when envelopes go up is a different, bigger feature - it was
+  offered and not chosen.
+- Which set a piece is offered is `templatesFor`: each of its categories
+  looks to itself, then up the tree, and the nearest with lines answers - so
+  a type can have its own or fall back to its group's. Each set is offered
+  once; a tree that loops cannot hang it.
+- Starting from usual costs lets go of a price-list row chosen before, since
+  the costs no longer come from it; choosing a row lets go of the usual costs.
+- The cost table is one component, `CostLinesTable`, on both the Price tab
+  and the category page, and its posted lines are read by one function,
+  `parseCostLines`, so both follow the same rules.
+
+## CSV export
+
+- "Download CSV" on the products list downloads the list **as it is
+  filtered** (`/admin/products/export`, a route handler, which checks the
+  account itself: a layout does not wrap a route handler).
+- One row per piece: price, VAT, costs, profit, margin, times cost, the NOTHS
+  fee and profit, stock, and the cost lines in one cell. Every figure comes
+  from `costing.ts`, so the file agrees with the Price tab.
+- A figure that needs a price, or a price and costs, is **blank** without
+  them - an uncosted piece's whole price would otherwise read as profit.
+- `src/lib/export/csv.ts`: a byte-order mark so Excel reads £ as UTF-8,
+  RFC 4180 quoting, and text starting `= + - @` prefixed with an apostrophe
+  so a spreadsheet never runs a product name as a formula. Numbers are a
+  separate cell kind, so a loss (-1.70) is not mistaken for a formula.
+
 ## Price list import
 
 - Her three Numbers files name nothing: every piece is identified by a

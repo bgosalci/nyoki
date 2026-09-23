@@ -3,9 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import type { CategoryCostsState } from "@/components/admin/category-costs-form";
 import type { CategoryFormState } from "@/components/admin/category-form";
 import { requireAdmin } from "@/lib/auth/dal";
 import { validateCategoryInput, wouldCreateCycle } from "@/lib/categories/validate";
+import { parseCostLines } from "@/lib/costing/validate";
 import { db } from "@/lib/db";
 import { uniqueSlug } from "@/lib/slug";
 
@@ -74,6 +76,33 @@ export async function updateCategory(
   revalidatePath("/admin/categories");
   revalidatePath(`/admin/categories/${id}`);
   return { errors: {} };
+}
+
+/**
+ * Replace a category's usual costs, in one transaction so a failure cannot
+ * leave half a list. Nothing already priced changes: pieces copy these in.
+ */
+export async function saveCategoryCosts(
+  id: string,
+  _state: CategoryCostsState,
+  formData: FormData,
+): Promise<CategoryCostsState> {
+  await requireAdmin();
+
+  const result = parseCostLines(formData);
+  if (!result.ok) return { error: result.error };
+
+  if (!(await db.category.findUnique({ where: { id }, select: { id: true } }))) {
+    return { error: "That category no longer exists." };
+  }
+
+  await db.$transaction([
+    db.categoryCostLine.deleteMany({ where: { categoryId: id } }),
+    db.categoryCostLine.createMany({ data: result.lines.map((line, position) => ({ categoryId: id, position, ...line })) }),
+  ]);
+
+  revalidatePath(`/admin/categories/${id}`);
+  return { saved: true };
 }
 
 /**

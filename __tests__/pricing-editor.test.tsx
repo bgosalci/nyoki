@@ -244,6 +244,66 @@ describe("PricingEditor", () => {
   });
 });
 
+describe("PricingEditor, starting from a category's usual costs", () => {
+  const cards = {
+    categoryId: "cards",
+    categoryName: "Cards",
+    lines: [
+      { label: "Card & envelope", unitPence: 22, quantityHundredths: 100 },
+      { label: "Post & packaging", unitPence: 106, quantityHundredths: 100 },
+    ],
+  };
+
+  const whatLines = () => screen.getAllByLabelText<HTMLInputElement>("What").map((input) => input.value);
+
+  it("fills a piece not yet costed from its category's usual costs, to be checked before it is saved", async () => {
+    const { user, action } = setup({ lines: [], templates: [cards] });
+
+    await user.click(screen.getByRole("button", { name: /start from the usual costs for cards/i }));
+
+    expect(whatLines()).toEqual(["Card & envelope", "Post & packaging"]);
+    expect(screen.getByText("Total cost").nextSibling).toHaveTextContent("£1.28");
+    expect(screen.getByText(/filled in from the usual costs for/i)).toHaveTextContent(/cards.*not saved yet/i);
+    expect(action).not.toHaveBeenCalled();
+  });
+
+  it("offers each category's, for a piece in two", () => {
+    const clothes = { categoryId: "clothes", categoryName: "Clothes", lines: [{ label: "Yarn", unitPence: 450, quantityHundredths: 100 }] };
+    setup({ lines: [], templates: [cards, clothes] });
+
+    expect(screen.getByRole("button", { name: /usual costs for cards/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /usual costs for clothes/i })).toBeInTheDocument();
+  });
+
+  it("lets go of a price-list row chosen before, since the costs no longer come from it", async () => {
+    const row = {
+      id: "e1",
+      source: "Cards / Christmas / row 30",
+      note: null,
+      photoUrl: null,
+      photoFilename: null,
+      pricePence: 790,
+      vatRate: 20,
+      lines: [{ label: "Glitter", unitPence: 40, quantityHundredths: 100 }],
+    };
+    const { user } = setup({ lines: [], templates: [cards], suggestions: [row] });
+    await user.click(within(screen.getByRole("group", { name: /from your price lists/i })).getByRole("button", { name: "Choose" }));
+    await user.click(screen.getByRole("button", { name: /christmas \/ row 30/i }));
+    expect(document.querySelector('input[name="fromEntry"]')).toHaveValue("e1");
+
+    await user.click(screen.getByRole("button", { name: /start from the usual costs for cards/i }));
+
+    expect(document.querySelector('input[name="fromEntry"]')).toHaveValue("");
+    expect(whatLines()).toEqual(["Card & envelope", "Post & packaging"]);
+  });
+
+  it("offers nothing once a piece has costs of its own", () => {
+    setup({ templates: [cards] });
+
+    expect(screen.queryByRole("button", { name: /usual costs/i })).not.toBeInTheDocument();
+  });
+});
+
 describe("PricingEditor, leaving with changes not saved", () => {
   function withLink(overrides: Partial<React.ComponentProps<typeof PricingEditor>> = {}) {
     const follow = jest.fn();

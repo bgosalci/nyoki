@@ -164,6 +164,9 @@ model Category {
 
   products CategoryProduct[]
 
+  /// Its usual costs, copied into a piece to start that piece's costing from.
+  costLines CategoryCostLine[]
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -192,6 +195,26 @@ model CostLine {
 
   @@index([productId])
   @@map("cost_lines")
+}
+
+/**
+ * A line of a category's usual costs - card and envelope, bag, postage.
+ * Shaped like CostLine, since it is copied into one; never linked, so
+ * changing it changes nothing already priced.
+ */
+model CategoryCostLine {
+  id         String @id @default(cuid())
+  categoryId String @map("category_id")
+  label      String
+
+  unitPence          Int @map("unit_pence")
+  quantityHundredths Int @default(100) @map("quantity_hundredths")
+  position           Int @default(0)
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId])
+  @@map("category_cost_lines")
 }
 
 /**

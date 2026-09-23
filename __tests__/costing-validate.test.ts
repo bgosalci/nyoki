@@ -1,4 +1,4 @@
-import { VAT_RATES, parseQuantityToHundredths, validatePricingInput } from "@/lib/costing/validate";
+import { VAT_RATES, parseCostLines, parseQuantityToHundredths, validatePricingInput } from "@/lib/costing/validate";
 
 function form(fields: Record<string, string | string[]>): FormData {
   const data = new FormData();
@@ -28,6 +28,37 @@ describe("parseQuantityToHundredths", () => {
     expect(parseQuantityToHundredths("1.125")).toBeNull();
     expect(parseQuantityToHundredths("two")).toBeNull();
     expect(parseQuantityToHundredths("-1")).toBeNull();
+  });
+});
+
+describe("parseCostLines", () => {
+  function lines(rows: [string, string, string][]) {
+    const form = new FormData();
+    for (const [label, unit, quantity] of rows) {
+      form.append("lineLabel", label);
+      form.append("lineUnit", unit);
+      form.append("lineQuantity", quantity);
+    }
+    return parseCostLines(form);
+  }
+
+  it("reads the lines of a cost, on their own, for anything that has costs - a category's usual ones too", () => {
+    expect(lines([["Card & envelope", "0.22", "1"], ["Yarn", "4.00", "2.5"]])).toEqual({
+      ok: true,
+      lines: [
+        { label: "Card & envelope", unitPence: 22, quantityHundredths: 100 },
+        { label: "Yarn", unitPence: 400, quantityHundredths: 250 },
+      ],
+    });
+  });
+
+  it("skips a spare row left empty", () => {
+    expect(lines([["Bag", "0.05", "1"], ["", "", ""]])).toEqual({ ok: true, lines: [{ label: "Bag", unitPence: 5, quantityHundredths: 100 }] });
+  });
+
+  it("says which line is wrong", () => {
+    expect(lines([["Bag", "0.05", "1"], ["", "0.30", "1"]])).toEqual({ ok: false, error: "Line 2 has a cost but no name. Say what it is." });
+    expect(lines([["Bag", "5p", "1"]])).toEqual({ ok: false, error: "Line 1: write the cost as pounds and pence, like 0.22." });
   });
 });
 

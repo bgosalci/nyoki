@@ -46,6 +46,41 @@ function all(form: FormData, key: string): string[] {
 }
 
 /**
+ * The lines of what something costs, as posted by `CostLinesTable`: a piece's
+ * own costs, or a category's usual ones. The first line wrong is named.
+ */
+export function parseCostLines(form: FormData): { ok: true; lines: EntryLine[] } | { ok: false; error: string } {
+  const labels = all(form, "lineLabel");
+  const units = all(form, "lineUnit");
+  const quantities = all(form, "lineQuantity");
+
+  const lines: EntryLine[] = [];
+  for (let i = 0; i < labels.length; i += 1) {
+    const label = labels[i] ?? "";
+    const unit = units[i] ?? "";
+    const quantity = quantities[i] ?? "";
+
+    // A spare row left empty is not a line.
+    if (label.length === 0 && unit.length === 0 && quantity.length === 0) continue;
+
+    const where = `Line ${i + 1}`;
+    if (label.length === 0) return { ok: false, error: `${where} has a cost but no name. Say what it is.` };
+
+    const unitPence = parsePoundsToPence(unit.length > 0 ? unit : "0");
+    if (unitPence === null) return { ok: false, error: `${where}: write the cost as pounds and pence, like 0.22.` };
+
+    const quantityHundredths = quantity.length > 0 ? parseQuantityToHundredths(quantity) : 100;
+    if (quantityHundredths === null || quantityHundredths === 0) {
+      return { ok: false, error: `${where}: write the quantity as a number, like 1 or 2.5.` };
+    }
+
+    lines.push({ label, unitPence, quantityHundredths });
+  }
+
+  return { ok: true, lines };
+}
+
+/**
  * The pricing form: a price, a VAT rate, and the lines of what a piece costs.
  *
  * A piece may be priced before it is costed - most of the catalogue was - so
@@ -78,41 +113,10 @@ export function validatePricingInput(form: FormData): PricingValidation {
   const vatRate = Number.parseInt(text(form, "vatRate"), 10) as VatRate;
   if (!VAT_RATES.includes(vatRate)) errors.vatRate = "Choose 20%, 5% or zero-rated.";
 
-  const labels = all(form, "lineLabel");
-  const units = all(form, "lineUnit");
-  const quantities = all(form, "lineQuantity");
-
-  const lines: EntryLine[] = [];
-  for (let i = 0; i < labels.length; i += 1) {
-    const label = labels[i] ?? "";
-    const unit = units[i] ?? "";
-    const quantity = quantities[i] ?? "";
-
-    // A spare row left empty is not a line.
-    if (label.length === 0 && unit.length === 0 && quantity.length === 0) continue;
-
-    const where = `Line ${i + 1}`;
-    if (label.length === 0) {
-      errors.lines ??= `${where} has a cost but no name. Say what it is.`;
-      continue;
-    }
-
-    const unitPence = parsePoundsToPence(unit.length > 0 ? unit : "0");
-    if (unitPence === null) {
-      errors.lines ??= `${where}: write the cost as pounds and pence, like 0.22.`;
-      continue;
-    }
-
-    const quantityHundredths = quantity.length > 0 ? parseQuantityToHundredths(quantity) : 100;
-    if (quantityHundredths === null || quantityHundredths === 0) {
-      errors.lines ??= `${where}: write the quantity as a number, like 1 or 2.5.`;
-      continue;
-    }
-
-    lines.push({ label, unitPence, quantityHundredths });
-  }
+  const costs = parseCostLines(form);
+  if (!costs.ok) errors.lines = costs.error;
 
   if (Object.keys(errors).length > 0) return { ok: false, errors };
 
-  return { ok: true, data: { pricePence: pricePence!, compareAtPence, vatRate, lines } };
+  return { ok: true, data: { pricePence: pricePence!, compareAtPence, vatRate, lines: costs.ok ? costs.lines : [] } };
 }

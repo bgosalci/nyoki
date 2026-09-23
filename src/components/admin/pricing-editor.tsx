@@ -2,6 +2,7 @@
 
 import { useActionState, useRef, useState } from "react";
 
+import { CostLinesTable } from "@/components/admin/cost-lines-table";
 import { Field, inputClass } from "@/components/admin/field";
 import { PhotoField } from "@/components/admin/photo-field";
 import { ProductThumbnail } from "@/components/admin/product-thumbnail";
@@ -10,7 +11,6 @@ import { ui } from "@/lib/brand/ui";
 import {
   NOTHS_FEE_PERCENT,
   discountLadder,
-  lineCostPence,
   marginPercent,
   nothsBreakdown,
   priceBreakdown,
@@ -19,7 +19,9 @@ import {
   type PriceEnding,
 } from "@/lib/costing/costing";
 import type { EntryLine } from "@/lib/costing/import";
-import { VAT_RATES, parseQuantityToHundredths, type PricingErrors } from "@/lib/costing/validate";
+import { rowsCostPence, toCostRow, type CostRow } from "@/lib/costing/rows";
+import type { CostTemplate } from "@/lib/costing/templates";
+import { VAT_RATES, type PricingErrors } from "@/lib/costing/validate";
 import { formatPence, parsePoundsToPence } from "@/lib/money";
 import { parsePercentToTenths } from "@/lib/products/repricing";
 
@@ -51,13 +53,6 @@ export interface Suggestion {
   lines: EntryLine[];
 }
 
-interface Row {
-  key: number;
-  label: string;
-  unit: string;
-  quantity: string;
-}
-
 const VAT_LABEL: Record<number, string> = { 20: "20% - standard", 5: "5% - reduced", 0: "Zero-rated" };
 
 const ENDING_LABEL: Record<PriceEnding, string> = {
@@ -70,22 +65,6 @@ const ENDING_LABEL: Record<PriceEnding, string> = {
 const WORKING_OUT = ["margin", "ending"];
 
 const pounds = (pence: number) => (pence / 100).toFixed(2);
-const hundredthsText = (h: number) => (h % 100 === 0 ? String(h / 100) : (h / 100).toFixed(2).replace(/0$/, ""));
-
-let nextKey = 0;
-const toRow = (line: EntryLine): Row => ({
-  key: nextKey++,
-  label: line.label,
-  unit: pounds(line.unitPence),
-  quantity: hundredthsText(line.quantityHundredths),
-});
-
-/** What a row costs as typed so far - nothing, until it can be read. */
-function rowCost(row: Row): number {
-  const unitPence = parsePoundsToPence(row.unit.length > 0 ? row.unit : "0") ?? 0;
-  const quantityHundredths = row.quantity.trim().length > 0 ? (parseQuantityToHundredths(row.quantity) ?? 0) : 100;
-  return lineCostPence({ unitPence, quantityHundredths });
-}
 
 function Money({ pence, loss = false }: { pence: number; loss?: boolean }) {
   return <dd className={`text-right tabular-nums ${loss && pence < 0 ? "text-red-600 dark:text-red-400" : ""}`}>{formatPence(pence)}</dd>;
@@ -104,6 +83,7 @@ export function PricingEditor({
   lines,
   origin,
   suggestions,
+  templates = [],
   action,
   initialState = { errors: {} },
 }: {
@@ -112,13 +92,15 @@ export function PricingEditor({
   /** The price-list row these costs came from, if any. */
   origin: { source: string; pricePence: number } | null;
   suggestions: Suggestion[];
+  /** The usual costs of the categories it is in, to start from. */
+  templates?: CostTemplate[];
   action: PricingAction;
   initialState?: PricingState;
 }) {
   const [state, formAction, isPending] = useActionState(action, initialState);
   const formRef = useRef<HTMLFormElement>(null);
 
-  const [rows, setRows] = useState<Row[]>(() => lines.map(toRow));
+  const [rows, setRows] = useState<CostRow[]>(() => lines.map(toCostRow));
   const [manualPrice, setManualPrice] = useState(pounds(product.pricePence));
   const [marginText, setMarginText] = useState("");
   // Whichever of the two was typed last drives the other; the other follows
@@ -127,8 +109,9 @@ export function PricingEditor({
   const [ending, setEnding] = useState<PriceEnding>("either");
   const [vatRate, setVatRate] = useState(String(product.vatRate));
   const [fromEntry, setFromEntry] = useState<Suggestion | null>(null);
+  const [fromTemplate, setFromTemplate] = useState<CostTemplate | null>(null);
 
-  const costPence = productionCostPence(rows.map((row) => ({ unitPence: rowCost(row), quantityHundredths: 100 })));
+  const costPence = rowsCostPence(rows);
 
   const marginTenths = driver === "margin" && marginText.trim().length > 0 ? parsePercentToTenths(marginText) : null;
   const derivedPence =
@@ -162,18 +145,21 @@ export function PricingEditor({
   const noths = nothsBreakdown(input);
   const ladder = discountLadder(input);
 
-  const update = (key: number, patch: Partial<Row>) =>
-    setRows((current) => current.map((row) => (row.key === key ? { ...row, ...patch } : row)));
-
   /** Fills the costs in from a row, or - cleared - takes them back out. */
   function adopt(id: string | null) {
     const suggestion = suggestions.find((entry) => entry.id === id) ?? null;
-    setRows((suggestion?.lines ?? lines).map(toRow));
+    setRows((suggestion?.lines ?? lines).map(toCostRow));
     setVatRate(String(suggestion?.vatRate ?? product.vatRate));
     setFromEntry(suggestion);
+    setFromTemplate(null);
   }
 
-  const lineInput = `w-full rounded-md border px-2 py-1.5 text-sm outline-none ${ui.input}`;
+  /** Copies a category's usual costs in. The costs no longer come from a price-list row. */
+  function startFrom(template: CostTemplate) {
+    setRows(template.lines.map(toCostRow));
+    setFromEntry(null);
+    setFromTemplate(template);
+  }
 
   return (
     <form ref={formRef} action={formAction} className="mt-8 flex flex-col gap-10">
@@ -188,6 +174,29 @@ export function PricingEditor({
       <div className="grid gap-10 lg:grid-cols-[3fr_2fr]">
         <section>
           <h2 className="text-base font-semibold">What it costs</h2>
+
+          {lines.length === 0 && templates.length > 0 ? (
+            <div className="mt-4 flex flex-col gap-2">
+              <div className="flex flex-wrap gap-2">
+                {templates.map((template) => (
+                  <button
+                    key={template.categoryId}
+                    type="button"
+                    onClick={() => startFrom(template)}
+                    className={`rounded-md px-3 py-1.5 text-sm ${ui.buttonSecondary}`}
+                  >
+                    Start from the usual costs for {template.categoryName}
+                  </button>
+                ))}
+              </div>
+              {fromTemplate ? (
+                <p className={`text-xs ${ui.mutedOnPage}`}>
+                  Filled in from the usual costs for <strong>{fromTemplate.categoryName}</strong>. Not saved yet - check
+                  them, then save.
+                </p>
+              ) : null}
+            </div>
+          ) : null}
 
           {lines.length === 0 && suggestions.length > 0 ? (
             <div className="mt-4">
@@ -236,59 +245,7 @@ export function PricingEditor({
             </p>
           ) : null}
 
-          <table className="mt-4 w-full border-collapse text-sm">
-            <thead>
-              <tr className={`border-b text-left ${ui.tableHead}`}>
-                <th className="py-2 pr-2 font-medium">What</th>
-                <th className="w-28 py-2 pr-2 font-medium">Cost each</th>
-                <th className="w-20 py-2 pr-2 font-medium">How many</th>
-                <th className="w-24 py-2 pr-2 text-right font-medium">Cost</th>
-                <th className="w-10" />
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.key} className={`border-b ${ui.tableRow}`}>
-                  <td className="py-1.5 pr-2">
-                    <input aria-label="What" name="lineLabel" value={row.label} onChange={(e) => update(row.key, { label: e.target.value })} className={lineInput} />
-                  </td>
-                  <td className="py-1.5 pr-2">
-                    <input aria-label="Cost each" name="lineUnit" inputMode="decimal" value={row.unit} onChange={(e) => update(row.key, { unit: e.target.value })} className={lineInput} />
-                  </td>
-                  <td className="py-1.5 pr-2">
-                    <input aria-label="How many" name="lineQuantity" inputMode="decimal" value={row.quantity} onChange={(e) => update(row.key, { quantity: e.target.value })} className={lineInput} />
-                  </td>
-                  <td className="py-1.5 pr-2 text-right tabular-nums">{formatPence(rowCost(row))}</td>
-                  <td className="py-1.5 text-right">
-                    <button
-                      type="button"
-                      aria-label={`Remove ${row.label || "this line"}`}
-                      onClick={() => setRows((current) => current.filter((r) => r.key !== row.key))}
-                      className={`rounded px-2 py-1 ${ui.navItem}`}
-                    >
-                      ×
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {state.errors.lines ? <p className="mt-2 text-sm text-red-600 dark:text-red-400">{state.errors.lines}</p> : null}
-
-          <div className="mt-3 flex items-center justify-between gap-4">
-            <button
-              type="button"
-              onClick={() => setRows((current) => [...current, { key: nextKey++, label: "", unit: "", quantity: "1" }])}
-              className={`rounded-md px-3 py-1.5 text-sm ${ui.buttonSecondary}`}
-            >
-              Add a line
-            </button>
-            <dl className="flex items-baseline gap-4 text-sm font-semibold">
-              <dt>Total cost</dt>
-              <Money pence={costPence} />
-            </dl>
-          </div>
+          <CostLinesTable rows={rows} onChange={setRows} error={state.errors.lines} />
         </section>
 
         <section className="flex flex-col gap-5">

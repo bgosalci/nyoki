@@ -4,6 +4,7 @@ import { savePricing } from "@/app/admin/(protected)/products/[id]/price/actions
 import { PricingEditor } from "@/components/admin/pricing-editor";
 import type { EntryLine } from "@/lib/costing/import";
 import { rankEntriesFor } from "@/lib/costing/matching";
+import { templatesFor } from "@/lib/costing/templates";
 import { db } from "@/lib/db";
 
 export default async function ProductPricePage({ params }: { params: Promise<{ id: string }> }) {
@@ -15,9 +16,26 @@ export default async function ProductPricePage({ params }: { params: Promise<{ i
       images: { orderBy: { position: "asc" }, select: { url: true, alt: true, phash: true } },
       costLines: { orderBy: { position: "asc" } },
       priceListEntry: { select: { source: true, pricePence: true } },
+      categories: { select: { categoryId: true } },
     },
   });
   if (!product) notFound();
+
+  // Only a piece with no costs of its own is offered a category's usual ones.
+  const templates =
+    product.costLines.length > 0
+      ? []
+      : templatesFor(
+          product.categories.map((link) => link.categoryId),
+          (
+            await db.category.findMany({
+              select: { id: true, name: true, parentId: true, costLines: { orderBy: { position: "asc" } } },
+            })
+          ).map(({ costLines, ...category }) => ({
+            ...category,
+            lines: costLines.map(({ label, unitPence, quantityHundredths }) => ({ label, unitPence, quantityHundredths })),
+          })),
+        );
 
   // Only a piece with no costs of its own is offered rows to choose from.
   const suggestions =
@@ -63,6 +81,7 @@ export default async function ProductPricePage({ params }: { params: Promise<{ i
         lines={product.costLines.map(({ label, unitPence, quantityHundredths }) => ({ label, unitPence, quantityHundredths }))}
         origin={product.priceListEntry}
         suggestions={suggestions}
+        templates={templates}
         action={savePricing.bind(null, product.id)}
       />
     </>
