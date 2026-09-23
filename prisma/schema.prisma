@@ -89,6 +89,7 @@ model Product {
   variants   ProductVariant[]
   categories CategoryProduct[]
   favourites Favourite[]
+  homeHeroFor HomePage[] @relation("HomeHero")
   sales      SaleProduct[]
   orderItems OrderItem[]
 
@@ -156,6 +157,34 @@ model Category {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("categories")
+}
+
+/**
+ * The home page's editable content: one row, always id "home".
+ *
+ * A singleton table rather than a key-value settings bag, so each field has a
+ * type and the form can be validated like any other. Everything the page
+ * shows that is not simply the catalogue lives here.
+ */
+model HomePage {
+  id String @id @default("home")
+
+  headline        String
+  intro           String?
+  ctaLabel        String  @map("cta_label")
+  featuredHeading String  @map("featured_heading")
+
+  /// Shown on the sage strip. Empty hides the strip entirely.
+  promises String[]
+
+  /// Whose photo leads the page. Null, archived or photoless falls back to
+  /// the newest piece that has one, so the page cannot end up blank.
+  heroProductId String?  @map("hero_product_id")
+  heroProduct   Product? @relation("HomeHero", fields: [heroProductId], references: [id], onDelete: SetNull)
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("home_page")
 }
 
 /**

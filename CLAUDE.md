@@ -206,6 +206,23 @@ TypeScript, deployed to Vercel.
 - No cart yet: product pages say ordering is coming soon rather than showing a
   button that does nothing.
 
+## Home page
+
+- Everything on it that is not simply the catalogue lives in the `HomePage`
+  singleton (one row, id `home`) and is edited at `/admin/home`: headline,
+  opening paragraph, button label, the promises, the heading above the
+  pieces, and which piece leads with its photo.
+- `HOME_DEFAULTS` is a **complete page**, not placeholder text. A shop that
+  has never opened that screen still reads as written, and the row is only
+  created on the first save.
+- The chosen hero is scoped to ACTIVE and must still have a photo;
+  `heroImageFor` falls back to the newest piece with one. A piece archived
+  months after it was picked must not keep leading the page, or empty it.
+- The row of pieces shows whatever is marked **featured** on the product,
+  falling back to the newest when nothing is. That checkbox existed on the
+  product form from the start and did nothing until now.
+- Emptying all three promise boxes takes the sage strip off the page.
+
 ## Storefront pages
 
 - A category page opens on a quiet band (`ui.shopBandQuiet`): breadcrumb,

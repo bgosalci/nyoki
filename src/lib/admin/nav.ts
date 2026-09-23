@@ -10,6 +10,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { href: "/admin/sales", label: "Sales" },
   { href: "/admin/codes", label: "Promo codes" },
   { href: "/admin/orders", label: "Orders" },
+  { href: "/admin/home", label: "Home page" },
   { href: "/admin/settings", label: "Settings" },
 ];
 

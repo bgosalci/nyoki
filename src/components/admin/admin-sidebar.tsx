@@ -49,6 +49,12 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M9 8V6a3 3 0 0 1 6 0v2" strokeLinecap="round" />
     </>
   ),
+  "/admin/home": (
+    <>
+      <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-9.5Z" strokeLinejoin="round" />
+      <path d="M9.5 21v-6h5v6" strokeLinejoin="round" />
+    </>
+  ),
   "/admin/settings": (
     <>
       <circle cx="12" cy="12" r="3" />
