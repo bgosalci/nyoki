@@ -1,10 +1,13 @@
 import { notFound } from "next/navigation";
 
-import { BackLink } from "@/components/admin/back-link";
+import { ProductSteps } from "@/components/admin/product-steps";
 import { ProductTabs } from "@/components/admin/product-tabs";
 import { db } from "@/lib/db";
 
-/** What both of a product's tabs share: the way back, its name, and the tabs. */
+/**
+ * What both of a product's tabs share: the way back, the way on to the pieces
+ * either side of it, its name, and the tabs.
+ */
 export default async function ProductLayout({
   params,
   children,
@@ -18,8 +21,8 @@ export default async function ProductLayout({
 
   return (
     <>
-      <div className="flex flex-col gap-2">
-        <BackLink href="/admin/products">Back to all products</BackLink>
+      <div className="flex flex-col gap-3">
+        <ProductSteps productId={product.id} />
         <h1 className="text-xl font-semibold tracking-tight">{product.name}</h1>
       </div>
 

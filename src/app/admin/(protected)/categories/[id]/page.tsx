@@ -24,7 +24,7 @@ export default async function EditCategoryPage({ params }: { params: Promise<{ i
 
   return (
     <>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         <BackLink href="/admin/categories">Back to all categories</BackLink>
         <h1 className="text-xl font-semibold tracking-tight">{category.name}</h1>
       </div>

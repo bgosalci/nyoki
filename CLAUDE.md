@@ -154,6 +154,23 @@ TypeScript, deployed to Vercel.
   cards sheet works it that way; her clothes sheet divides by 1.3, which only
   takes about 23%. The code follows the cards.
 
+## Stepping between products
+
+- A product's page has **Previous** and **Next**, stepping through the list
+  it was opened from - in that order, under those filters - on the same tab,
+  so pieces can be priced one after another without going through the list.
+- The list is remembered by `ProductTable` as it renders (`rememberProductList`,
+  sessionStorage, per tab) rather than worked out again on the product page:
+  the list is sorted by what was edited last, so saving a piece moves it to
+  the top, and a "next" recalculated after every save sends you back to the
+  start. See `src/lib/products/browse.ts`.
+- A piece not reached from the list has no steps, and its way back is the
+  whole list. `parseProductList` treats storage as untrusted: the way back
+  only ever leads to `/admin/products`.
+- **Unsaved edits are lost** by stepping, just as by going back - neither
+  form warns yet.
+- `BackLink` is a bordered button, not underlined text, on every item page.
+
 ## A product's Price tab
 
 - A product has two tabs, as routes: **Details** (`/admin/products/[id]`) and

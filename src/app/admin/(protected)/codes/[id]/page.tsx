@@ -23,7 +23,7 @@ export default async function EditCodePage({ params }: { params: Promise<{ id: s
 
   return (
     <>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         <BackLink href="/admin/codes">Back to all codes</BackLink>
         <h1 className="font-mono text-xl font-semibold tracking-wider">{code.code}</h1>
       </div>

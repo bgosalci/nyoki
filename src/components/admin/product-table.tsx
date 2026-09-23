@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { BulkPriceDialog } from "@/components/admin/bulk-price-dialog";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
@@ -10,6 +10,7 @@ import { ProductThumbnail } from "@/components/admin/product-thumbnail";
 import { PINNED_BLOCK_CLASS, Th } from "@/components/admin/th";
 import { ui } from "@/lib/brand/ui";
 import { formatPence } from "@/lib/money";
+import { rememberProductList } from "@/lib/products/browse";
 import type { RepriceFields } from "@/lib/products/repricing";
 import type { ProductStatus } from "@/lib/products/validate";
 
@@ -70,6 +71,15 @@ export function ProductTable({
   const [confirming, setConfirming] = useState(false);
   const [pricing, setPricing] = useState(false);
   const [unpriced, setUnpriced] = useState<string[]>([]);
+
+  // What a product page steps through with Previous and Next: this list as it
+  // is shown now, in this order and under these filters.
+  useEffect(() => {
+    rememberProductList({
+      href: window.location.pathname + window.location.search,
+      items: rows.map(({ id, name }) => ({ id, name })),
+    });
+  }, [rows]);
 
   // Kept in the table's order, so an action reads the same way the list does.
   const chosen = rows.filter((row) => selected.has(row.id)).map((row) => row.id);

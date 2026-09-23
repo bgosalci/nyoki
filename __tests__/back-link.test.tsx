@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 
 import { BackLink } from "@/components/admin/back-link";
+import { ui } from "@/lib/brand/ui";
 
 describe("BackLink", () => {
   it("links back to the list it names", () => {
@@ -15,5 +16,14 @@ describe("BackLink", () => {
 
     expect(screen.getByText("←")).toHaveAttribute("aria-hidden", "true");
     expect(screen.getByRole("link").textContent).toContain("Back to all products");
+  });
+
+  it("is a button with room to hit, not a line of small underlined text", () => {
+    render(<BackLink href="/admin/products">Back to all products</BackLink>);
+
+    const link = screen.getByRole("link");
+    expect(link.className).toContain(ui.buttonSecondary);
+    expect(link).toHaveClass("py-2");
+    expect(link.className).not.toContain("underline");
   });
 });

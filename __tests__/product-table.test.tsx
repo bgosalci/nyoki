@@ -2,6 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { ProductTable, type ProductRow } from "@/components/admin/product-table";
+import { parseProductList, PRODUCT_LIST_KEY } from "@/lib/products/browse";
 
 beforeAll(() => {
   HTMLDialogElement.prototype.showModal = function () { this.setAttribute("open", ""); };
@@ -32,6 +33,19 @@ function setup(overrides: Partial<React.ComponentProps<typeof ProductTable>> = {
 }
 
 describe("ProductTable", () => {
+  it("remembers the list it shows, in its order and with its filters, for stepping through from a product", () => {
+    window.history.pushState({}, "", "/admin/products?q=card");
+    setup();
+
+    const remembered = parseProductList(window.sessionStorage.getItem(PRODUCT_LIST_KEY));
+    expect(remembered?.href).toBe("/admin/products?q=card");
+    expect(remembered?.items).toEqual([
+      { id: "p1", name: "Snowflake Card" },
+      { id: "p2", name: "Stocking Card" },
+      { id: "p3", name: "Bud Vase" },
+    ]);
+  });
+
   it("offers nothing to act on until something is chosen", () => {
     setup();
 

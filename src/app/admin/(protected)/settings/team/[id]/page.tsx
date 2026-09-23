@@ -15,7 +15,7 @@ export default async function EditTeamMemberPage({ params }: { params: Promise<{
 
   return (
     <>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         <BackLink href="/admin/settings">Back to settings</BackLink>
         <div>
           <h1 className="text-xl font-semibold tracking-tight">{admin.name}</h1>

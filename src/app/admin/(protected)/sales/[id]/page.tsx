@@ -31,7 +31,7 @@ export default async function EditSalePage({ params }: { params: Promise<{ id: s
 
   return (
     <>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         <BackLink href="/admin/sales">Back to all sales</BackLink>
         <h1 className="text-xl font-semibold tracking-tight">{sale.name}</h1>
       </div>
