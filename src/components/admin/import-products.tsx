@@ -16,14 +16,17 @@ export interface ImportResult {
   changed: number;
 }
 
-/** Well inside the server's limit on a request; a whole catalogue is a few hundred KB. */
+/** Well inside the server's limit on a request; a whole catalogue is well under 1MB in any format. */
 const MAX_CSV_BYTES = 5 * 1024 * 1024;
+
+const FORMAT_NAME = { csv: "CSV", json: "JSON", xml: "XML" } as const;
 
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
 
 /**
- * Importing products from a CSV file: choose it, see exactly what it would
- * change, then import - or not.
+ * Importing products from a CSV, JSON or XML file - told apart by what it
+ * holds, not what it is called: choose it, see exactly what it would change,
+ * then import - or not.
  *
  * The file is checked the moment it is chosen. Nothing is written until the
  * preview has been seen and the import confirmed, and then the server works
@@ -93,10 +96,10 @@ export function ImportProducts({
       <FilePicker
         id="import-file"
         name="file"
-        label="CSV file"
-        prompt="Choose a CSV file"
-        accept=".csv,text/csv"
-        hint="The file Export CSV makes is the easiest to start from: export, change it in a spreadsheet, and bring it back. Nothing changes until you have seen what will."
+        label="Product file"
+        prompt="Choose a CSV, JSON or XML file"
+        accept=".csv,.json,.xml,text/csv,application/json,application/xml,text/xml"
+        hint="The file Export makes is the easiest to start from, in any of the three: export, change it, and bring it back. Nothing changes until you have seen what will."
         onFiles={read}
       />
 
@@ -123,6 +126,7 @@ export function ImportProducts({
           <p className="text-sm">
             {counts.added} new, {counts.changed} to change, {counts.unchanged} unchanged.
           </p>
+          {preview.format ? <p className={`text-xs ${ui.mutedOnPage}`}>Read as {FORMAT_NAME[preview.format]}.</p> : null}
 
           <div className={`flex flex-col gap-1 text-xs ${ui.mutedOnPage}`}>
             {preview.columns.workedOut.length > 0 ? <p>Worked out, so not imported: {preview.columns.workedOut.join(", ")}.</p> : null}
@@ -139,7 +143,7 @@ export function ImportProducts({
                 {problemRows.flatMap((row) =>
                   row.problems.map((problem) => (
                     <li key={`${row.row}-${problem}`}>
-                      Row {row.row} ({row.name}): {problem}
+                      {preview.unit} {row.row} ({row.name}): {problem}
                     </li>
                   )),
                 )}
@@ -158,7 +162,9 @@ export function ImportProducts({
                 <li key={row.row} className="flex flex-col gap-1 px-3 py-2">
                   <p className="flex flex-wrap items-baseline gap-x-2">
                     <strong className="font-medium">{row.name}</strong>
-                    <span className={`text-xs ${ui.mutedOnPage}`}>Row {row.row}</span>
+                    <span className={`text-xs ${ui.mutedOnPage}`}>
+                      {preview.unit} {row.row}
+                    </span>
                   </p>
                   {row.kind === "new" ? <p className="text-xs font-medium">New</p> : null}
                   <ul className={`flex flex-col text-xs ${ui.mutedOnPage}`}>

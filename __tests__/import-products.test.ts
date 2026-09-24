@@ -1,4 +1,4 @@
-import { productsCsv } from "@/lib/export/products";
+import { exportProducts } from "@/lib/export/products";
 import { planImport, planSignature, toPreview, type ExistingProduct } from "@/lib/import/products";
 
 const categories = [
@@ -67,19 +67,21 @@ const only = (rows: string[][], products = existing) => {
 };
 
 describe("planImport, reading back our own export", () => {
-  it("changes nothing when the export is imported untouched", () => {
-    const exported = productsCsv(
+  it.each(["csv", "json", "xml"] as const)("changes nothing when the %s export is imported untouched", (format) => {
+    const exported = exportProducts(
+      format,
       existing.map((product) => ({
         ...product,
         categories: product.categoryIds.map((id) => categories.find((category) => category.id === id)!.name),
         photos: ["/uploads/a.jpg"],
       })),
-      { origin: "http://localhost:3000" },
+      { origin: "http://localhost:3000", exportedAt: new Date("2026-09-24T09:30:00Z") },
     );
 
     const result = planImport(exported, existing, categories);
 
     expect(result.error).toBeNull();
+    expect(result.format).toBe(format);
     expect(result.rows.flatMap((row) => row.problems)).toEqual([]);
     expect(result.rows.map((row) => row.kind)).toEqual(["unchanged", "unchanged"]);
     expect(result.counts).toEqual({ added: 0, changed: 0, unchanged: 2, withProblems: 0 });
@@ -240,6 +242,54 @@ describe("planSignature", () => {
 
     expect(planSignature(plan(rows))).toBe(planSignature(plan(rows)));
     expect(planSignature(plan(rows))).not.toBe(planSignature(plan(rows, [{ ...snowflake, pricePence: 650 }, cardigan])));
+  });
+});
+
+describe("planImport, JSON and XML", () => {
+  it("changes a product from a JSON file, naming it by its place in the list", () => {
+    const result = planImport(JSON.stringify({ products: [{ webAddress: "snowflake-card", price: "6.50", categories: ["Cards", "Clothes"] }] }), existing, categories);
+
+    expect(result).toMatchObject({ format: "json", unit: "Product" });
+    expect(result.rows[0]).toMatchObject({ row: 1, kind: "update", productId: "p1" });
+    expect(result.rows[0].changes).toEqual([
+      { label: "Categories", from: "Cards; Christmas Cards", to: "Cards; Clothes" },
+      { label: "Price", from: "£6.00", to: "£6.50" },
+    ]);
+  });
+
+  it("leaves a field alone when one product in the list does not mention it, though another does", () => {
+    const result = planImport(
+      JSON.stringify([{ webAddress: "snowflake-card", stock: 9 }, { webAddress: "bamboo-cardigan", description: "Knitted." }]),
+      existing,
+      categories,
+    );
+
+    expect(result.rows[0].values).toMatchObject({ stock: 9, description: snowflake.description });
+    expect(result.rows[1].values).toMatchObject({ stock: 0, description: "Knitted." });
+  });
+
+  it("changes a product from an XML file", () => {
+    const xml = "<products><product><webAddress>snowflake-card</webAddress><featured>false</featured><costLines/></product></products>";
+    const [row] = planImport(xml, existing, categories).rows;
+
+    expect(row.changes).toEqual([
+      { label: "Costs", from: "2 lines, £1.28", to: "(none)" },
+      { label: "Featured", from: "Yes", to: "No" },
+    ]);
+  });
+
+  it("names a repeated product by its place in the list", () => {
+    const result = planImport(JSON.stringify([{ webAddress: "snowflake-card" }, { webAddress: "snowflake-card" }]), existing, categories);
+
+    expect(result.rows[1].problems).toEqual(["Product 1 is already snowflake-card."]);
+  });
+
+  it("says why a JSON or XML file cannot be used at all", () => {
+    expect(planImport('{"products": [', existing, categories).error).toMatch(/^The file is not valid JSON/);
+    expect(planImport("<!DOCTYPE x><products/>", existing, categories).error).toBe("The file declares a DOCTYPE, which is not read, for safety.");
+    expect(planImport('[{"colour":"blue"}]', existing, categories).error).toBe(
+      "The file needs a Name or a Web address field, to know which products it is about.",
+    );
   });
 });
 

@@ -294,11 +294,22 @@ TypeScript, deployed to Vercel.
   and the category page, and its posted lines are read by one function,
   `parseCostLines`, so both follow the same rules.
 
-## CSV export
+## Export
 
-- "Export CSV" on the products list **asks first** - a `ConfirmDialog`
-  naming how many products the file holds and that it carries the shop's
-  costs and margins - then downloads through a hidden `download` link.
+- "Export" on the products list writes **CSV, JSON or XML**, chosen in the
+  `ConfirmDialog` it asks with - naming how many products the file holds and
+  that it carries the shop's costs and margins - then downloads through a
+  hidden `download` link (`?format=json|xml`; CSV when absent).
+- All three are written from one `ExportRecord` per product (`toRecord` in
+  `src/lib/export/products.ts`), so they cannot disagree. CSV is flat, for a
+  spreadsheet; JSON (`{ shop, exported, products }`) and XML (`<products>`,
+  one `<product>` each) carry lists as lists - categories, cost lines,
+  photos - and the worked-out figures apart under `workedOut`.
+- **Money is text in JSON and XML** ("12.99"), as Shopify's own API writes
+  it, never a decimal number: a float can come back a penny out. Nothing is
+  `null` in JSON, an empty element in XML.
+- XML leaves out the characters XML 1.0 cannot hold at all, even escaped,
+  rather than write a file nothing can read.
 - It exports **every product field** from
   the database, for the list **as it is filtered** - unfiltered, the whole
   catalogue (`/admin/products/export`, a route handler, which checks the
@@ -316,11 +327,32 @@ TypeScript, deployed to Vercel.
   so a spreadsheet never runs a product name as a formula. Numbers are a
   separate cell kind, so a loss (-1.70) is not mistaken for a formula.
 
-## CSV import
+## Import
 
-- "Import CSV" on the products list (`/admin/products/import`) reads a CSV -
-  our own export, edited in a spreadsheet, or one typed from scratch - and
-  shows **exactly what it would change** before anything is written.
+- "Import" on the products list (`/admin/products/import`) reads a **CSV,
+  JSON or XML** file - our own export, edited, or one made from scratch -
+  and shows **exactly what it would change** before anything is written.
+- **The format is told by what the file holds** (`detectFormat`: `{` or `[`
+  is JSON, `<` is XML, anything else CSV), not its name, and the preview
+  says how it was read. `readProducts` (`src/lib/import/source.ts`) turns
+  all three into one shape - a record per product, field name to text - so
+  everything after it is the same whatever the format. Lists become the text
+  a spreadsheet holds ("Cards; Christmas Cards", "Bag 0.05 × 1").
+- Field names match however a format writes them: `key()` lowercases and
+  drops everything but letters, digits and `%`, so "Product code" is
+  `productCode`, and "VAT %" (the rate) is not "VAT" (the amount).
+- A field a JSON or XML product **does not mention is left as it is**, per
+  product; a CSV row has every column. Rows are "Row n" (spreadsheet
+  numbering) and JSON/XML entries "Product n", in every message.
+- An XML product giving a field twice is refused, naming it: kept quietly,
+  one would be ignored, and a price edited by adding a second `<price>`
+  imported as no change - found by editing the real export. JSON cannot be
+  checked so: `JSON.parse` keeps the last of two repeated keys.
+- XML is read by `parseXml` (`src/lib/import/xml.ts`), ours rather than a
+  library: elements, attributes, the five entities, character references,
+  CDATA, comments. **A DOCTYPE is refused outright** - it is how XML defines
+  entities that expand into gigabytes or read other files - and a reader
+  that has no DTD support cannot be tricked by one.
 - `planImport` (`src/lib/import/products.ts`) is pure: file, products and
   categories in, a plan out - row by row, new or changed or unchanged, the
   changes as "Price: £6.00 → £6.50", and every problem named by row.
@@ -343,16 +375,20 @@ TypeScript, deployed to Vercel.
   the plan out afresh and applies it only if its hash matches what was
   seen (`planSignature`) - a product saved in between is not overwritten by
   a preview that no longer holds.
-- **Round trip:** importing our own export untouched must change nothing.
-  A test holds this, and it was checked on the real catalogue (237
-  unchanged).
+- **Round trip:** importing our own export untouched must change nothing,
+  in each format. A test holds this for all three, and it was checked on
+  the real catalogue (237 unchanged as CSV, JSON and XML; one price edited
+  in each gave exactly that one change).
 - `parseCsv` (`src/lib/import/csv.ts`) reads RFC 4180 as Excel and Numbers
   write it: BOM, quoted cells with commas, quotes and line breaks, CRLF or
   LF, empty rows skipped; an unclosed quote is an error naming its row.
 - The export's apostrophe before text a spreadsheet would run (`'=...`) is
   taken back on import.
-- Write `\uFEFF` as the escape in source, never the character itself: a
-  BOM pasted literally is invisible, and one was.
+- Write `\uFEFF` (and every invisible or non-character) as the escape in
+  source, never the character itself. Something between the writing tools
+  and the file turns escapes into the characters they stand for; it did so
+  four times. `__tests__/source-hygiene.test.ts` fails on any that land in
+  `src`, `__tests__` or `scripts`.
 
 ## Price list import
 

@@ -2,13 +2,13 @@ import type { NextRequest } from "next/server";
 
 import { requireAdmin } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
-import { exportFilename, productsCsv } from "@/lib/export/products";
+import { EXPORT_FORMATS, exportFilename, exportProducts, type ExportFormat } from "@/lib/export/products";
 import { subtreeIds } from "@/lib/products/category-pills";
 import { PRODUCT_LIST_ORDER, parseProductFilter, productWhere } from "@/lib/products/filter";
 
 /**
- * Every product as the database holds it, as a CSV file - filtered as the
- * list was, so with no filter it is the whole catalogue.
+ * Every product as the database holds it, as CSV, JSON or XML - filtered as
+ * the list was, so with no filter it is the whole catalogue.
  *
  * A route handler is not wrapped by the protected layout, so it checks the
  * account itself: the file holds every cost and margin in the shop.
@@ -17,6 +17,8 @@ export async function GET(request: NextRequest) {
   await requireAdmin();
 
   const filter = parseProductFilter(Object.fromEntries(request.nextUrl.searchParams));
+  const asked = request.nextUrl.searchParams.get("format");
+  const format: ExportFormat = asked === "json" || asked === "xml" ? asked : "csv";
 
   const categories = await db.category.findMany({ select: { id: true, slug: true, name: true, parentId: true } });
   const selected = filter.category ? categories.find((category) => category.slug === filter.category) : undefined;
@@ -32,7 +34,8 @@ export async function GET(request: NextRequest) {
     },
   });
 
-  const csv = productsCsv(
+  const body = exportProducts(
+    format,
     products.map((product) => ({
       name: product.name,
       slug: product.slug,
@@ -55,13 +58,13 @@ export async function GET(request: NextRequest) {
       photos: product.images.map((image) => image.url),
       lines: product.costLines.map(({ label, unitPence, quantityHundredths }) => ({ label, unitPence, quantityHundredths })),
     })),
-    { origin: request.nextUrl.origin },
+    { origin: request.nextUrl.origin, exportedAt: new Date() },
   );
 
-  return new Response(csv, {
+  return new Response(body, {
     headers: {
-      "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="${exportFilename(new Date())}"`,
+      "Content-Type": EXPORT_FORMATS[format].contentType,
+      "Content-Disposition": `attachment; filename="${exportFilename(new Date(), format)}"`,
       // Costs and margins: never kept by a shared cache.
       "Cache-Control": "private, no-store",
     },

@@ -1,14 +1,15 @@
 import { productionCostPence } from "@/lib/costing/costing";
 import type { EntryLine } from "@/lib/costing/import";
 import { parseQuantityToHundredths, VAT_RATES } from "@/lib/costing/validate";
-import { CsvError, parseCsv } from "@/lib/import/csv";
+import { readProducts, SourceError, type FileFormat, type ProductSource } from "@/lib/import/source";
 import { formatPence, parsePoundsToPence } from "@/lib/money";
 import type { ProductStatus } from "@/lib/products/validate";
 import { slugify } from "@/lib/slug";
 
 /**
- * Reading products back from a CSV file - our own export, edited in a
- * spreadsheet, or one typed from scratch - into a plan of what would change.
+ * Reading products back from a file - CSV, JSON or XML: our own export,
+ * edited, or one made from scratch - into a plan of what would change. The
+ * format is read in src/lib/import/source.ts; from here on it is the same.
  *
  * Pure: the file, the products and the categories go in, and out comes, row
  * by row, whether it adds a product or changes one, what exactly changes, and
@@ -64,7 +65,7 @@ export interface RowChange {
 }
 
 export interface RowPlan {
-  /** As a spreadsheet numbers it: the headings are row 1. */
+  /** As the file numbers it: a spreadsheet row (headings are row 1), or a JSON or XML product from 1. */
   row: number;
   kind: "new" | "update" | "unchanged";
   name: string;
@@ -77,6 +78,10 @@ export interface RowPlan {
 
 export interface ImportPlan {
   error: string | null;
+  /** How the file was read; null when it could not be. */
+  format: FileFormat | null;
+  /** What the file's numbered things are called: a spreadsheet's rows, a list's products. */
+  unit: "Row" | "Product";
   columns: { used: string[]; workedOut: string[]; notImported: string[]; unknown: string[] };
   rows: RowPlan[];
   /** Rows with problems are counted apart, not as added or changed. */
@@ -87,30 +92,34 @@ export const MAX_ROWS = 2000;
 
 type Field = keyof ImportValues;
 
-/** The export's headings, as the fields they set, in the export's order. */
-const IMPORTED: [heading: string, field: Field][] = [
-  ["Name", "name"],
-  ["Product code", "sku"],
-  ["Status", "status"],
-  ["Categories", "categoryIds"],
-  ["Price", "pricePence"],
-  ["Was price", "compareAtPence"],
-  ["VAT %", "vatRate"],
-  ["Stock", "stock"],
-  ["Made to order", "madeToOrder"],
-  ["Cost lines", "lines"],
-  ["Web address", "slug"],
-  ["Description", "description"],
-  ["Materials", "materials"],
-  ["Dimensions", "dimensions"],
-  ["Care instructions", "careInstructions"],
-  ["Weight (g)", "weightGrams"],
-  ["Lead time (days)", "leadTimeDays"],
-  ["One of a kind", "oneOfAKind"],
-  ["Featured", "featured"],
+/**
+ * The fields a file can set, by every name a format writes them under: the
+ * CSV export's headings, and the JSON and XML export's field names. Names
+ * match however they are spaced or cased ("Product code", "productCode").
+ */
+const IMPORTED: [names: string[], field: Field][] = [
+  [["Name"], "name"],
+  [["Product code", "sku"], "sku"],
+  [["Status"], "status"],
+  [["Categories"], "categoryIds"],
+  [["Price"], "pricePence"],
+  [["Was price"], "compareAtPence"],
+  [["VAT %", "vatRate"], "vatRate"],
+  [["Stock"], "stock"],
+  [["Made to order"], "madeToOrder"],
+  [["Cost lines"], "lines"],
+  [["Web address", "slug"], "slug"],
+  [["Description"], "description"],
+  [["Materials"], "materials"],
+  [["Dimensions"], "dimensions"],
+  [["Care instructions"], "careInstructions"],
+  [["Weight (g)", "weightGrams"], "weightGrams"],
+  [["Lead time (days)"], "leadTimeDays"],
+  [["One of a kind"], "oneOfAKind"],
+  [["Featured"], "featured"],
 ];
 
-const WORKED_OUT = ["VAT", "After VAT", "Cost", "Profit", "Margin %", "Times cost", "NOTHS fee", "NOTHS profit"];
+const WORKED_OUT = ["VAT", "After VAT", "Cost", "Profit", "Margin %", "Times cost", "NOTHS fee", "NOTHS profit", "workedOut", "marginPercent"];
 const NOT_IMPORTED = ["Photos"];
 
 /** How a change is labelled when it is shown, in the order it is shown. */
@@ -157,10 +166,8 @@ const NEW_PRODUCT: ImportValues = {
   lines: [],
 };
 
-const key = (heading: string) => heading.trim().toLowerCase();
-
-/** The export marks text a spreadsheet would run as a formula with an apostrophe; take it back. */
-const unguarded = (cell: string) => (/^'[=+\-@\t\r]/.test(cell) ? cell.slice(1) : cell);
+/** A name as it matches: "Product code", "productCode" and "product_code" are one. "%" counts: "VAT %" is not "VAT". */
+const key = (name: string) => name.toLowerCase().replace(/[^a-z0-9%]/g, "");
 
 const optionalText = (cell: string) => {
   const text = cell.replace(/\r\n?/g, "\n").trim();
@@ -226,50 +233,53 @@ function shown(field: Field, values: ImportValues, categoryName: (id: string) =>
   }
 }
 
-const EMPTY_PLAN = (error: string): ImportPlan => ({
+const EMPTY_PLAN = (error: string, source?: Pick<ProductSource, "format" | "unit">): ImportPlan => ({
   error,
+  format: source?.format ?? null,
+  unit: source?.unit ?? "Row",
   columns: { used: [], workedOut: [], notImported: [], unknown: [] },
   rows: [],
   counts: { added: 0, changed: 0, unchanged: 0, withProblems: 0 },
 });
 
 export function planImport(text: string, existing: readonly ExistingProduct[], categories: readonly ImportCategory[]): ImportPlan {
-  let table: string[][];
+  let source: ProductSource;
   try {
-    table = parseCsv(text);
+    source = readProducts(text);
   } catch (error) {
-    if (error instanceof CsvError) return EMPTY_PLAN(error.message);
+    if (error instanceof SourceError) return EMPTY_PLAN(error.message);
     throw error;
   }
 
-  if (table.length === 0) return EMPTY_PLAN("The file is empty.");
-  const [headings, ...body] = table;
-  if (body.length === 0) return EMPTY_PLAN("The file has headings but no rows beneath them.");
-  if (body.length > MAX_ROWS) return EMPTY_PLAN(`The file has ${body.length} rows; import at most ${MAX_ROWS.toLocaleString("en-GB")} at a time.`);
+  const { records, unit } = source;
+  const things = unit === "Row" ? "rows" : "products";
+  const aField = unit === "Row" ? "column" : "field";
+  if (records.length > MAX_ROWS) {
+    return EMPTY_PLAN(`The file has ${records.length} ${things}; import at most ${MAX_ROWS.toLocaleString("en-GB")} at a time.`, source);
+  }
 
-  // Which column holds which field.
-  const byHeading = new Map(IMPORTED.map(([heading, field]) => [key(heading), field]));
-  const columnOf = new Map<Field, number>();
+  // Which name in the file holds which field.
+  const byName = new Map(IMPORTED.flatMap(([names, field]) => names.map((name) => [key(name), field] as const)));
+  const nameOf = new Map<Field, string>();
   const columns: ImportPlan["columns"] = { used: [], workedOut: [], notImported: [], unknown: [] };
 
-  for (const [index, raw] of headings.entries()) {
-    const heading = raw.trim();
-    const field = byHeading.get(key(heading));
+  for (const name of source.names) {
+    const field = byName.get(key(name));
     if (field) {
-      if (columnOf.has(field)) return EMPTY_PLAN(`The column ${heading} appears twice.`);
-      columnOf.set(field, index);
-      columns.used.push(heading);
-    } else if (WORKED_OUT.some((name) => key(name) === key(heading))) {
-      columns.workedOut.push(heading);
-    } else if (NOT_IMPORTED.some((name) => key(name) === key(heading))) {
-      columns.notImported.push(heading);
-    } else if (heading.length > 0) {
-      columns.unknown.push(heading);
+      if (nameOf.has(field)) return EMPTY_PLAN(`The ${aField} ${name} appears twice.`, source);
+      nameOf.set(field, name);
+      columns.used.push(name);
+    } else if (WORKED_OUT.some((worked) => key(worked) === key(name))) {
+      columns.workedOut.push(name);
+    } else if (NOT_IMPORTED.some((skipped) => key(skipped) === key(name))) {
+      columns.notImported.push(name);
+    } else {
+      columns.unknown.push(name);
     }
   }
 
-  if (!columnOf.has("name") && !columnOf.has("slug")) {
-    return { ...EMPTY_PLAN("The file needs a Name or a Web address column, to know which products it is about."), columns };
+  if (!nameOf.has("name") && !nameOf.has("slug")) {
+    return { ...EMPTY_PLAN(`The file needs a Name or a Web address ${aField}, to know which products it is about.`, source), columns };
   }
 
   const bySlug = new Map(existing.map((product) => [product.slug, product]));
@@ -284,12 +294,13 @@ export function planImport(text: string, existing: readonly ExistingProduct[], c
   const seenCodes = new Map<string, { row: number; slug: string }>();
   const rows: RowPlan[] = [];
 
-  for (const [index, cells] of body.entries()) {
-    const rowNumber = index + 2;
+  for (const [index, record] of records.entries()) {
+    const rowNumber = index + source.first;
     const problems: string[] = [];
+    // Undefined when the file does not give this product the field - left as it is.
     const cell = (field: Field): string | undefined => {
-      const column = columnOf.get(field);
-      return column === undefined ? undefined : unguarded(cells[column] ?? "").trim();
+      const name = nameOf.get(field);
+      return name === undefined ? undefined : record.get(name)?.trim();
     };
 
     // Which product the row is about.
@@ -318,7 +329,7 @@ export function planImport(text: string, existing: readonly ExistingProduct[], c
 
     if (slug) {
       const earlier = seenSlugs.get(slug);
-      if (earlier !== undefined) problems.push(`Row ${earlier} is already ${slug}.`);
+      if (earlier !== undefined) problems.push(`${unit} ${earlier} is already ${slug}.`);
       else seenSlugs.set(slug, rowNumber);
     }
 
@@ -429,14 +440,14 @@ export function planImport(text: string, existing: readonly ExistingProduct[], c
       const earlier = seenCodes.get(values.sku);
       if (owner) problems.push(`Product code ${values.sku} is already used by ${owner.name}.`);
       else if (earlier !== undefined && earlier.slug !== values.slug) {
-        problems.push(`Product code ${values.sku} is already given to row ${earlier.row}.`);
+        problems.push(`Product code ${values.sku} is already given to ${unit.toLowerCase()} ${earlier.row}.`);
       } else if (earlier === undefined) seenCodes.set(values.sku, { row: rowNumber, slug: values.slug });
     }
 
     // What changes, in the order the admin shows it.
     const changes: RowChange[] = [];
     for (const field of Object.keys(LABEL) as Field[]) {
-      if (!product && (field === "name" || !columnOf.has(field))) continue;
+      if (!product && (field === "name" || cell(field) === undefined)) continue;
       if (!product && same(field, values, NEW_PRODUCT)) continue;
       if (product && same(field, values, base)) continue;
       changes.push({ label: LABEL[field]!, from: product ? shown(field, base, categoryName) : "(none)", to: shown(field, values, categoryName) });
@@ -457,6 +468,8 @@ export function planImport(text: string, existing: readonly ExistingProduct[], c
   const clean = rows.filter((row) => row.problems.length === 0);
   return {
     error: null,
+    format: source.format,
+    unit,
     columns,
     rows,
     counts: {
@@ -490,6 +503,8 @@ export interface PreviewRow {
 /** What the import screen is sent: the plan, less the rows that change nothing. */
 export interface ImportPreview {
   error: string | null;
+  format: ImportPlan["format"];
+  unit: ImportPlan["unit"];
   columns: ImportPlan["columns"];
   counts: ImportPlan["counts"];
   rows: PreviewRow[];
@@ -500,6 +515,8 @@ export interface ImportPreview {
 export function toPreview(plan: ImportPlan, signature: string): ImportPreview {
   return {
     error: plan.error,
+    format: plan.format,
+    unit: plan.unit,
     columns: plan.columns,
     counts: plan.counts,
     rows: plan.rows

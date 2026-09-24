@@ -29,6 +29,19 @@ describe("ConfirmDialog", () => {
     expect(dialog).toHaveTextContent("Its sub-categories move to the top level.");
   });
 
+  it("holds a choice that belongs with the question, between it and the buttons", () => {
+    render(
+      <ConfirmDialog open {...props}>
+        <label>
+          <input type="checkbox" /> Also delete its products
+        </label>
+      </ConfirmDialog>,
+    );
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toContainElement(screen.getByRole("checkbox", { name: /also delete its products/i }));
+  });
+
   it("dims the page with a neutral scrim rather than a blue brand tint", () => {
     render(<ConfirmDialog open {...props} />);
 

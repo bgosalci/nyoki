@@ -11,8 +11,8 @@ export default function ImportProductsPage() {
         <h1 className="text-xl font-semibold tracking-tight">Import products</h1>
       </div>
       <p className={`mt-2 max-w-prose text-sm ${ui.mutedOnPage}`}>
-        Rows are matched to products by their web address; a row with a new one, or none, adds a product as a draft.
-        Columns left out of the file change nothing. Photos stay as they are - add them on each product.
+        A CSV, JSON or XML file. Products are matched by their web address; one with a new address, or none, is added as
+        a draft. Fields left out of the file change nothing. Photos stay as they are - add them on each product.
       </p>
       <div className="mt-6">
         <ImportProducts check={checkImport} apply={applyImport} />

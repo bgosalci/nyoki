@@ -20,6 +20,7 @@ export function ConfirmDialog({
   tone = "danger",
   onConfirm,
   onCancel,
+  children,
 }: {
   open: boolean;
   title: string;
@@ -28,6 +29,8 @@ export function ConfirmDialog({
   tone?: "danger" | "primary";
   onConfirm: () => void;
   onCancel: () => void;
+  /** A choice that belongs with the question - which format to export in. */
+  children?: React.ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -64,6 +67,7 @@ export function ConfirmDialog({
       <p id={descriptionId} className={`mt-2 text-sm ${ui.mutedOnPanel}`}>
         {description}
       </p>
+      {children ? <div className="mt-4">{children}</div> : null}
       <div className="mt-6 flex justify-end gap-3">
         <button type="button" onClick={onCancel} className={`rounded-md px-4 py-2 text-sm font-medium ${ui.buttonSecondary}`}>
           Cancel

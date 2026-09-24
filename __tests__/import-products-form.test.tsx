@@ -13,6 +13,8 @@ const csvFile = (text = FILE_TEXT) => new File([text], "products.csv", { type: "
 
 const preview = (overrides: Partial<ImportPreview> = {}): ImportPreview => ({
   error: null,
+  format: "csv",
+  unit: "Row",
   columns: { used: ["Web address", "Price"], workedOut: ["Profit"], notImported: ["Photos"], unknown: [] },
   counts: { added: 1, changed: 1, unchanged: 235, withProblems: 0 },
   rows: [
@@ -31,14 +33,14 @@ function setup({ checked = preview(), applied = { error: null, added: 1, changed
 }
 
 async function choose(user: ReturnType<typeof userEvent.setup>, file = csvFile()) {
-  await user.upload(screen.getByLabelText("CSV file"), file);
+  await user.upload(screen.getByLabelText("Product file"), file);
 }
 
 describe("ImportProducts", () => {
   it("asks for a file in a way that looks clickable, and says nothing changes yet", () => {
     setup();
 
-    expect(screen.getByText("Choose a CSV file")).toBeInTheDocument();
+    expect(screen.getByText("Choose a CSV, JSON or XML file")).toBeInTheDocument();
     expect(screen.getByText(/nothing changes until you have seen what will/i)).toBeInTheDocument();
   });
 
@@ -122,4 +124,28 @@ describe("ImportProducts", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent("changed since the file was checked");
   });
+
+  it("takes JSON and XML files as well as CSV", () => {
+    setup();
+
+    expect(screen.getByLabelText("Product file")).toHaveAttribute("accept", expect.stringContaining(".json"));
+    expect(screen.getByLabelText("Product file")).toHaveAttribute("accept", expect.stringContaining(".xml"));
+  });
+
+  it("says how it read the file, and names a JSON or XML product by its place in the list", async () => {
+    const { user } = setup({
+      checked: preview({
+        format: "json",
+        unit: "Product",
+        counts: { added: 0, changed: 0, unchanged: 1, withProblems: 1 },
+        rows: [{ row: 2, kind: "update", name: "Snowflake Card", changes: [], problems: ["Stock: write a whole number, zero or more."] }],
+      }),
+    });
+
+    await choose(user, new File(['[{"webAddress":"snowflake-card"}]'], "products.json", { type: "application/json" }));
+
+    expect(await screen.findByText("Read as JSON.")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("Product 2 (Snowflake Card): Stock: write a whole number, zero or more.");
+  });
 });
+

@@ -53,7 +53,7 @@ export default async function ProductsPage({
             href="/admin/products/import"
             className={`rounded-md px-3.5 py-2 text-sm font-medium ${ui.buttonSecondary}`}
           >
-            Import CSV
+            Import
           </Link>
           <ExportButton q={filter.q ?? ""} status={filter.status ?? ""} category={filter.category ?? ""} count={filtering ? products.length : total} />
           <Link
