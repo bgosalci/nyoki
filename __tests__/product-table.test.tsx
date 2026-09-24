@@ -66,6 +66,26 @@ describe("ProductTable", () => {
     expect(screen.getByRole("checkbox", { name: /select all/i })).not.toBeChecked();
   });
 
+  it("opens a product from its photo as well as its name", () => {
+    const { container } = render(
+      <ProductTable
+        rows={[{ ...rows[0], image: { url: "/uploads/snowflake.jpg", alt: null } }]}
+        setStatus={jest.fn()}
+        remove={jest.fn()}
+        reprice={jest.fn()}
+      />,
+    );
+
+    const photo = container.querySelector('img[src*="snowflake"]')!;
+    const link = photo.closest("a");
+    expect(link).toHaveAttribute("href", "/admin/products/p1");
+    // The name is the one link a keyboard or screen reader meets; the photo
+    // is the same place again, for the mouse.
+    expect(link).toHaveAttribute("tabindex", "-1");
+    expect(link).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByRole("link", { name: "Snowflake Card" })).toHaveAttribute("href", "/admin/products/p1");
+  });
+
   it("counts what is chosen", async () => {
     const { user } = setup();
 

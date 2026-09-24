@@ -190,7 +190,12 @@ export function ProductTable({
                   />
                 </td>
                 <td className="py-2 pr-3">
-                  <ProductThumbnail image={row.image} size="large" />
+                  {/* The photo opens the product too. The name is the link a
+                      keyboard or screen reader meets; this is the same place
+                      again, for the mouse, so it is kept out of their way. */}
+                  <Link href={`/admin/products/${row.id}`} tabIndex={-1} aria-hidden="true" className="block w-fit">
+                    <ProductThumbnail image={row.image} size="large" />
+                  </Link>
                 </td>
                 <td className="py-3 pr-4">
                   <Link href={`/admin/products/${row.id}`} className="font-medium underline-offset-4 hover:underline">
