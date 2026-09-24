@@ -186,8 +186,16 @@ TypeScript, deployed to Vercel.
   and each form draws a `TopSaveButton` into it through a portal. Drawn by
   the form, it shares the form's pending state ("Saving…", no second press)
   though it sits outside the form's markup; its `form` attribute ties it
-  back, so it submits exactly as the bottom button does. A page with no slot
-  gets no top button.
+  back, so it submits exactly as the bottom button does.
+- The slot is found through `SaveSlotProvider` - it registers itself, in
+  React state, when it is put on the page - **not by searching the page**.
+  It first shipped with `document.getElementById`, and Njomza saw no Save on
+  the Price tab; it could not be reproduced by any route to that tab, but a
+  search made while React draws can find a header on its way out (moving to
+  another product replaces the whole header), and state cannot.
+- **The name, Save and the Details and Price tabs stay pinned** beneath the
+  top bar while the page scrolls (`ProductHeader`, `sticky top-14`, painting
+  the page ground). Back, Previous and Next scroll away with the page.
 
 ## Unsaved changes
 

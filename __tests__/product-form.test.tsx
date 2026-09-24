@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import Link from "next/link";
 
 import { ProductForm } from "@/components/admin/product-form";
-import { SaveSlot } from "@/components/admin/save-slot";
+import { SaveSlot, SaveSlotProvider } from "@/components/admin/save-slot";
 
 const noopAction = async () => ({ errors: {} });
 
@@ -223,25 +223,25 @@ describe("ProductForm, when a save goes through", () => {
 describe("ProductForm, saving from the top of the page", () => {
   it("puts Save beside the page's title as well as at the bottom, so a long form need not be scrolled", () => {
     render(
-      <>
+      <SaveSlotProvider>
         <SaveSlot />
         <ProductForm action={noopAction} product={mug} categories={categories} submitLabel="Save changes" />
-      </>,
+      </SaveSlotProvider>,
     );
 
     const saves = screen.getAllByRole("button", { name: "Save changes" });
     expect(saves).toHaveLength(2);
-    expect(document.getElementById("page-save")).toContainElement(saves[0]);
+    expect(document.querySelector("[data-save-slot]")).toContainElement(saves[0]);
   });
 
   it("saves the form from the top button, and both say so while it saves", async () => {
     let finish: (state: { errors: object }) => void = () => {};
     const action = jest.fn(() => new Promise<{ errors: object }>((resolve) => (finish = resolve)));
     render(
-      <>
+      <SaveSlotProvider>
         <SaveSlot />
         <ProductForm action={action} product={mug} categories={categories} submitLabel="Save changes" />
-      </>,
+      </SaveSlotProvider>,
     );
     const user = userEvent.setup();
 

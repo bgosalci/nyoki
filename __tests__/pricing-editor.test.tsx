@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import Link from "next/link";
 
 import { PricingEditor } from "@/components/admin/pricing-editor";
-import { SaveSlot } from "@/components/admin/save-slot";
+import { SaveSlot, SaveSlotProvider } from "@/components/admin/save-slot";
 
 beforeAll(() => {
   HTMLDialogElement.prototype.showModal = function () { this.setAttribute("open", ""); };
@@ -489,16 +489,16 @@ describe("PricingEditor, saving from the top of the page", () => {
   it("puts Save beside the page's title too, and it saves the price", async () => {
     const action = jest.fn(async () => ({ errors: {}, saved: true }));
     render(
-      <>
+      <SaveSlotProvider>
         <SaveSlot />
         <PricingEditor product={product} lines={lines} origin={null} suggestions={[]} action={action} />
-      </>,
+      </SaveSlotProvider>,
     );
     const user = userEvent.setup();
 
     const saves = screen.getAllByRole("button", { name: /^save$/i });
     expect(saves).toHaveLength(2);
-    expect(document.getElementById("page-save")).toContainElement(saves[0]);
+    expect(document.querySelector("[data-save-slot]")).toContainElement(saves[0]);
 
     await user.clear(screen.getByLabelText("Price"));
     await user.type(screen.getByLabelText("Price"), "13.50");

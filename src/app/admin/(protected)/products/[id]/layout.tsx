@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 
 import { ProductSteps } from "@/components/admin/product-steps";
-import { SaveSlot } from "@/components/admin/save-slot";
-import { ProductTabs } from "@/components/admin/product-tabs";
+import { SaveSlotProvider } from "@/components/admin/save-slot";
+import { ProductHeader } from "@/components/admin/product-header";
 import { db } from "@/lib/db";
 import { PRODUCT_LIST_ORDER } from "@/lib/products/filter";
 
@@ -26,19 +26,10 @@ export default async function ProductLayout({
   if (!product) notFound();
 
   return (
-    <>
-      <div className="flex flex-col gap-3">
-        <ProductSteps productId={product.id} fallback={{ href: "/admin/products", items: everything }} />
-        {/* Each tab's form puts its Save here too, beside the name. */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-xl font-semibold tracking-tight">{product.name}</h1>
-          <SaveSlot />
-        </div>
-      </div>
-
-      <ProductTabs productId={product.id} />
-
+    <SaveSlotProvider>
+      <ProductSteps productId={product.id} fallback={{ href: "/admin/products", items: everything }} />
+      <ProductHeader productId={product.id} name={product.name} />
       {children}
-    </>
+    </SaveSlotProvider>
   );
 }
