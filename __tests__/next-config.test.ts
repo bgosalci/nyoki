@@ -1,5 +1,7 @@
 import nextConfig from "../next.config";
 
+import { MAX_IMAGE_BYTES } from "@/lib/images/validate";
+
 describe("allowedDevOrigins", () => {
   const origins = nextConfig.allowedDevOrigins ?? [];
 
@@ -27,3 +29,27 @@ describe("allowedDevOrigins", () => {
     }
   });
 });
+
+describe("serverActions.bodySizeLimit", () => {
+  /** "11mb" in bytes, as Next reads it. */
+  const bytes = (limit: string | number | undefined) => {
+    if (typeof limit === "number") return limit;
+    const match = /^(\d+(?:\.\d+)?)\s*(b|kb|mb)$/i.exec(limit ?? "");
+    if (!match) return 1024 * 1024; // Next's default when unset
+    const unit = { b: 1, kb: 1024, mb: 1024 * 1024 }[match[2].toLowerCase() as "b" | "kb" | "mb"];
+    return Number(match[1]) * unit;
+  };
+  const limit = bytes(nextConfig.experimental?.serverActions?.bodySizeLimit as string | undefined);
+
+  it("takes one photo of the largest size the upload allows, with room for the form around it", () => {
+    // At Next's default of 1MB, choosing three phone photos failed outright:
+    // "Body exceeded 1 MB limit". Photos go one per request, so one is what
+    // has to fit - plus the multipart boundaries and headers.
+    expect(limit).toBeGreaterThanOrEqual(MAX_IMAGE_BYTES + 64 * 1024);
+  });
+
+  it("stays near that, since every action accepts a body this large before any check runs", () => {
+    expect(limit).toBeLessThanOrEqual(MAX_IMAGE_BYTES * 1.25);
+  });
+});
+

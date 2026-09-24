@@ -18,6 +18,18 @@ const nextConfig: NextConfig = {
   // front of it. Development-only setting: it does not exist in a build.
   allowedDevOrigins: ["*.local", "192.168.*.*", "10.*.*.*"],
 
+  experimental: {
+    serverActions: {
+      // Photos go up one per request, so one photo of the largest size the
+      // upload takes (MAX_IMAGE_BYTES, 10MB) has to fit, with room for the
+      // multipart around it. Next's default is 1MB, at which three phone
+      // photos failed outright. Kept near that rather than raised to fit
+      // a whole batch: every action accepts a body this large before any
+      // check runs. Vercel refuses request bodies over 4.5MB regardless.
+      bodySizeLimit: "11mb",
+    },
+  },
+
   images: {
     // Product photos are served from Vercel Blob in production. Local
     // development writes to public/uploads, which is same-origin and needs no

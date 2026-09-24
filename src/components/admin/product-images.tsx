@@ -1,9 +1,11 @@
 "use client";
 
 import { ui } from "@/lib/brand/ui";
-import { useActionState, useState } from "react";
+import { useRef, useState, useTransition, type FormEvent } from "react";
 
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
+import { FilePicker } from "@/components/admin/file-picker";
+import { validateImageUpload } from "@/lib/images/validate";
 
 export interface ProductImageItem {
   id: string;
@@ -26,6 +28,9 @@ const EMPTY: UploadState = { error: null };
 
 const ACCEPT = "image/jpeg,image/png,image/webp";
 
+/** Enough of a file to tell what it really is; the server reads the same. */
+const SNIFF_BYTES = 16;
+
 const buttonClass = `rounded-md px-2.5 py-1 text-xs disabled:opacity-40 ${ui.buttonSecondary}`;
 
 export function ProductImages({
@@ -38,13 +43,54 @@ export function ProductImages({
   actions: ProductImageActions;
   initialUploadState?: UploadState;
 }) {
-  const [state, uploadAction, isUploading] = useActionState(
-    actions.upload,
-    initialUploadState,
-  );
+  const [error, setError] = useState(initialUploadState.error);
+  const [isUploading, startUpload] = useTransition();
+  const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
+  const chosenFiles = useRef<File[]>([]);
 
   const ordered = [...images].sort((a, b) => a.position - b.position);
   const [removing, setRemoving] = useState<ProductImageItem | null>(null);
+  const [chosen, setChosen] = useState(0);
+
+  /**
+   * Photos go up one per request. Several phone photos in one request broke
+   * the server's size limit, and a request can only be so large (Vercel
+   * refuses anything over 4.5MB). The whole batch is checked here first,
+   * with the server's own rules, so one bad file still adds none of them;
+   * the server checks each again as it arrives.
+   */
+  async function upload(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const files = chosenFiles.current;
+    setError(null);
+
+    for (const [index, file] of files.entries()) {
+      const head = new Uint8Array(await file.slice(0, SNIFF_BYTES).arrayBuffer());
+      const check = validateImageUpload({ name: file.name, type: file.type, size: file.size, head, existingCount: images.length + index });
+      if (!check.ok) {
+        setError(check.error);
+        return;
+      }
+    }
+
+    setProgress({ current: 1, total: files.length });
+    startUpload(async () => {
+      for (const [index, file] of files.entries()) {
+        setProgress({ current: index + 1, total: files.length });
+        const one = new FormData();
+        one.append("files", file);
+        const result = await actions.upload({ error: null }, one);
+        if (result.error) {
+          setError(index > 0 ? `${index} of ${files.length} uploaded. ${file.name}: ${result.error}` : result.error);
+          break;
+        }
+      }
+      setProgress(null);
+      form.reset();
+    });
+  }
+
 
   return (
     <section className="flex flex-col gap-4">
@@ -123,40 +169,44 @@ export function ProductImages({
         }}
       />
 
-      <form action={uploadAction} className="flex flex-col gap-3">
-        {state.error ? (
+      <form onSubmit={upload} className="flex flex-col gap-3">
+        {error ? (
           <p
             role="alert"
             className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200"
           >
-            {state.error}
+            {error}
           </p>
         ) : null}
 
-        <div className="flex flex-wrap items-center gap-3">
-          <label htmlFor="product-photos" className="text-sm font-medium">
-            Add photos
-          </label>
-          <input
-            id="product-photos"
-            name="files"
-            type="file"
-            multiple
-            accept={ACCEPT}
-            required
-            className="text-sm"
-          />
-          <button
-            type="submit"
-            disabled={isUploading}
-            className={`rounded-md px-3.5 py-1.5 text-sm font-medium ${ui.buttonPrimary}`}
-          >
-            {isUploading ? "Uploading…" : "Upload"}
-          </button>
-        </div>
-        <p className={`text-xs ${ui.mutedOnPage}`}>
-          JPEG, PNG or WebP, up to 10MB each. Up to 10 photos per product.
-        </p>
+        <FilePicker
+          id="product-photos"
+          name="files"
+          label="Add photos"
+          prompt="Choose photos"
+          hint="JPEG, PNG or WebP, up to 10MB each. Up to 10 photos per product."
+          accept={ACCEPT}
+          multiple
+          onFiles={(files) => {
+            chosenFiles.current = files;
+            setChosen(files.length);
+          }}
+        />
+        <button
+          type="submit"
+          // Nothing chosen, nothing to upload: the button says so rather than
+          // posting an empty form for the server to refuse.
+          disabled={isUploading || progress !== null || chosen === 0}
+          className={`self-start rounded-md px-3.5 py-1.5 text-sm font-medium ${ui.buttonPrimary}`}
+        >
+          {progress
+            ? `Uploading ${progress.current} of ${progress.total}…`
+            : isUploading
+              ? "Uploading…"
+              : chosen > 0
+                ? `Upload ${chosen} ${chosen === 1 ? "photo" : "photos"}`
+                : "Upload"}
+        </button>
       </form>
     </section>
   );

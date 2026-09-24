@@ -1,4 +1,5 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 import { ProductImages } from "@/components/admin/product-images";
 
@@ -77,4 +78,98 @@ describe("ProductImages", () => {
 
     expect(screen.getByRole("alert")).toHaveTextContent("mug.gif is not an image we can use.");
   });
+
+  it("offers photos to choose in an area that looks like one, not a bare browser control", () => {
+    render(<ProductImages productId="p1" images={images} actions={actions} />);
+
+    expect(screen.getByText("Choose photos")).toBeInTheDocument();
+    expect(screen.getByText(/or drag them here/i)).toBeInTheDocument();
+  });
+
+  it("waits for photos before offering to upload, then says how many", async () => {
+    render(<ProductImages productId="p1" images={images} actions={actions} />);
+    const user = userEvent.setup();
+
+    expect(screen.getByRole("button", { name: /upload/i })).toBeDisabled();
+
+    await user.upload(screen.getByLabelText(/add photos/i), [
+      new File(["x"], "front.jpg", { type: "image/jpeg" }),
+      new File(["x"], "back.jpg", { type: "image/jpeg" }),
+    ]);
+
+    expect(screen.getByRole("button", { name: "Upload 2 photos" })).toBeEnabled();
+  });
 });
+
+describe("ProductImages, uploading", () => {
+  const JPEG = [0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+  const GIF = [0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+  const photo = (name: string, bytes = JPEG) => new File([new Uint8Array(bytes)], name, { type: "image/jpeg" });
+
+  /** Each call's files, by name - one list per request. */
+  const sent = (upload: jest.Mock) => upload.mock.calls.map(([, form]: [unknown, FormData]) => form.getAll("files").map((file) => (file as File).name));
+
+  async function choose(files: File[], upload: jest.Mock, existing = images) {
+    render(<ProductImages productId="p1" images={existing} actions={{ ...actions, upload }} />);
+    const user = userEvent.setup();
+    await user.upload(screen.getByLabelText(/add photos/i), files);
+    return user;
+  }
+
+  it("sends the photos one at a time, each in a request of its own", async () => {
+    // One request holding several phone photos broke the server's size limit.
+    const upload = jest.fn(async () => ({ error: null }));
+    const user = await choose([photo("front.jpg"), photo("side.jpg"), photo("back.jpg")], upload);
+
+    await user.click(screen.getByRole("button", { name: "Upload 3 photos" }));
+
+    await screen.findByRole("button", { name: "Upload" });
+    expect(sent(upload)).toEqual([["front.jpg"], ["side.jpg"], ["back.jpg"]]);
+    expect(screen.queryByText(/chosen:/)).not.toBeInTheDocument();
+  });
+
+  it("checks every photo before sending any, so one bad file adds none", async () => {
+    const upload = jest.fn(async () => ({ error: null }));
+    const user = await choose([photo("front.jpg"), photo("animated.jpg", GIF)], upload);
+
+    await user.click(screen.getByRole("button", { name: "Upload 2 photos" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("animated.jpg is not an image we can use");
+    expect(upload).not.toHaveBeenCalled();
+  });
+
+  it("will not go past ten photos, before sending anything", async () => {
+    const upload = jest.fn(async () => ({ error: null }));
+    const nine = Array.from({ length: 9 }, (_, i) => ({ id: `img_${i}`, url: `/u/${i}.jpg`, alt: null, position: i }));
+    const user = await choose([photo("a.jpg"), photo("b.jpg")], upload, nine);
+
+    await user.click(screen.getByRole("button", { name: "Upload 2 photos" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("up to 10 photos");
+    expect(upload).not.toHaveBeenCalled();
+  });
+
+  it("says how far it got when the server turns one down", async () => {
+    const upload = jest.fn().mockResolvedValueOnce({ error: null }).mockResolvedValueOnce({ error: "Storage is unavailable." });
+    const user = await choose([photo("front.jpg"), photo("side.jpg"), photo("back.jpg")], upload);
+
+    await user.click(screen.getByRole("button", { name: "Upload 3 photos" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("1 of 3 uploaded. side.jpg: Storage is unavailable.");
+    expect(sent(upload)).toEqual([["front.jpg"], ["side.jpg"]]);
+  });
+
+  it("shows how far along it is", async () => {
+    let finish: (value: { error: null }) => void = () => {};
+    const upload = jest.fn(() => new Promise<{ error: null }>((resolve) => (finish = resolve)));
+    const user = await choose([photo("front.jpg"), photo("side.jpg")], upload);
+
+    await user.click(screen.getByRole("button", { name: "Upload 2 photos" }));
+
+    expect(await screen.findByRole("button", { name: "Uploading 1 of 2…" })).toBeDisabled();
+    await act(async () => finish({ error: null }));
+    expect(await screen.findByRole("button", { name: "Uploading 2 of 2…" })).toBeDisabled();
+    await act(async () => finish({ error: null }));
+  });
+});
+

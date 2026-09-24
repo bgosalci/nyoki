@@ -369,6 +369,22 @@ TypeScript, deployed to Vercel.
   than write to Vercel's ephemeral disk.
 - Image positions are renumbered 0..n-1 after every delete or move, in one
   transaction. Moving swaps the two `position` values, not the array slots.
+- **Photos go up one per request.** Server Actions take 1MB by default, and
+  three phone photos in one request failed with "Body exceeded 1 MB limit".
+  `experimental.serverActions.bodySizeLimit` is `11mb`: one photo of the
+  largest size allowed (`MAX_IMAGE_BYTES`) plus multipart overhead, and no
+  more, since every action accepts that much before any check. A test pins
+  it between the two.
+- The browser checks the **whole batch** with `validateImageUpload` before
+  sending any, so one bad file still adds none; the server checks each again.
+- **Before deploying to Vercel:** it refuses request bodies over 4.5MB
+  whatever the Next limit says, so a photo over 4.5MB would fail there.
+  Shrink photos in the browser before sending, or upload straight to Blob.
+- Files are chosen with `FilePicker`: a dashed area that is the input's
+  label, with a Choose button and room to drop. The bare browser control
+  ("Choose files / No file chosen") did not read as something to click.
+- jsdom has no `Blob.arrayBuffer()`; `jest.setup.ts` fills it in from
+  FileReader for the tests.
 - Removing a photo deletes the stored file first, then the row. A product's
   images are always looked up scoped to that product id, so a forged image id
   cannot touch another product's photos.
