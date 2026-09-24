@@ -8,6 +8,9 @@ import { join } from "node:path";
 
 import { createImageStorage, type ImageStorage } from "@/lib/storage";
 import { LocalDiskStorage } from "@/lib/storage/local";
+import { VercelBlobStorage } from "@/lib/storage/vercel-blob";
+
+import { jpeg, jpegExif, readExif } from "./helpers/photos";
 
 describe("LocalDiskStorage", () => {
   let root: string;
@@ -93,4 +96,35 @@ describe("createImageStorage", () => {
 
     expect(() => createImageStorage()).toThrow(/BLOB_READ_WRITE_TOKEN/);
   });
+
+  describe("whatever it stores in", () => {
+    afterEach(() => jest.restoreAllMocks());
+
+    /** The bytes the backend was handed to store, without storing them. */
+    function stored(backend: typeof LocalDiskStorage | typeof VercelBlobStorage) {
+      return jest.spyOn(backend.prototype, "put").mockResolvedValue({ url: "/uploads/k.jpg" });
+    }
+
+    it("stores a photo without the location a phone wrote into it, keeping which way up it goes", async () => {
+      process.env = { ...original, NODE_ENV: "development" } as NodeJS.ProcessEnv;
+      delete process.env.BLOB_READ_WRITE_TOKEN;
+      const put = stored(LocalDiskStorage);
+
+      await createImageStorage().put("products/p1/k.jpg", jpeg(), "image/jpeg");
+
+      const exif = readExif(jpegExif(put.mock.calls[0][1])!);
+      expect(exif).toMatchObject({ latitude: null, orientation: 6 });
+    });
+
+    it("does the same on Vercel Blob, where the shop's photos really live", async () => {
+      process.env = { ...original, BLOB_READ_WRITE_TOKEN: "vercel_blob_rw_test" };
+      const put = stored(VercelBlobStorage);
+
+      await createImageStorage().put("products/p1/k.jpg", jpeg(), "image/jpeg");
+
+      expect(readExif(jpegExif(put.mock.calls[0][1])!).latitude).toBeNull();
+      expect(put.mock.calls[0][2]).toBe("image/jpeg");
+    });
+  });
 });
+

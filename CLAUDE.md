@@ -423,6 +423,24 @@ TypeScript, deployed to Vercel.
   or JPEG where the browser cannot write WebP (it hands back another type).
   **Anything smaller goes up byte for byte.** A photo the browser cannot
   read or write is sent as it was; shrinking never stops an upload.
+- **Every stored photo loses its location** (`stripLocation`,
+  `src/lib/images/metadata.ts`): a phone writes where a photo was taken into
+  it, and a product photo is public at its own address - taken at home, it
+  would publish the home. `createImageStorage()` wraps whichever backend it
+  picks so `put` always strips, and no route - upload, Shopify import,
+  price-list import - can store a location.
+- **Only the location goes.** The GPS block inside the camera data (EXIF, in
+  JPEG APP1, PNG eXIf or the WebP EXIF chunk) is wiped in place, values and
+  all, and XMP, which can repeat it, is removed. The picture is never
+  decoded, so nothing loses quality, and the **orientation stays**: removing
+  the whole EXIF block would show a phone photo on its side. Camera data that
+  cannot be read safely is dropped whole instead - a photo on its side is a
+  smaller harm than a location left in.
+- A PNG chunk's checksum is recomputed after the wipe; a WebP whose XMP goes
+  has its VP8X flag cleared and its RIFF size corrected.
+- Checked with photos written by Pillow with a real GPS block: GPS gone,
+  orientation and camera make kept, pixels identical, same size, and macOS
+  still reads them. None of the 674 JPEGs stored before this had a location.
 - The canvas work is `browserCodec`, passed in so the rules are tested
   without one (jsdom has no canvas). Checked in real Chrome: a 6.7MB
   4032x3024 photo came out 3000x2250 at 2.4MB.

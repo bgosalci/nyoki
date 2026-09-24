@@ -3,10 +3,28 @@ import {
   LOCAL_UPLOAD_ROOT,
   LocalDiskStorage,
 } from "@/lib/storage/local";
+import { stripLocation } from "@/lib/images/metadata";
+import type { ImageContentType } from "@/lib/images/validate";
 import type { ImageStorage } from "@/lib/storage/types";
 import { VercelBlobStorage } from "@/lib/storage/vercel-blob";
 
 export type { ImageStorage } from "@/lib/storage/types";
+
+const PHOTO_TYPES: readonly string[] = ["image/jpeg", "image/png", "image/webp"] satisfies ImageContentType[];
+
+/**
+ * Every photo is stored without the location a phone wrote into it - see
+ * src/lib/images/metadata.ts. Done here, around whichever backend is chosen,
+ * so no way of storing a photo (an upload, an import script) can miss it.
+ */
+function withoutLocations(storage: ImageStorage): ImageStorage {
+  return {
+    kind: storage.kind,
+    put: (key, body, contentType) =>
+      storage.put(key, PHOTO_TYPES.includes(contentType) ? stripLocation(body, contentType as ImageContentType) : body, contentType),
+    remove: (url) => storage.remove(url),
+  };
+}
 
 /**
  * Pick the image backend for this environment.
@@ -18,7 +36,7 @@ export type { ImageStorage } from "@/lib/storage/types";
  */
 export function createImageStorage(): ImageStorage {
   if (process.env.BLOB_READ_WRITE_TOKEN) {
-    return new VercelBlobStorage();
+    return withoutLocations(new VercelBlobStorage());
   }
 
   if (process.env.NODE_ENV === "production") {
@@ -27,8 +45,10 @@ export function createImageStorage(): ImageStorage {
     );
   }
 
-  return new LocalDiskStorage({
-    root: LOCAL_UPLOAD_ROOT,
-    publicBase: LOCAL_UPLOAD_PUBLIC_BASE,
-  });
+  return withoutLocations(
+    new LocalDiskStorage({
+      root: LOCAL_UPLOAD_ROOT,
+      publicBase: LOCAL_UPLOAD_PUBLIC_BASE,
+    }),
+  );
 }
