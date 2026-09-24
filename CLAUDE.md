@@ -655,6 +655,12 @@ TypeScript, deployed to Vercel.
   posted, so the ticks save - and the unsaved-changes warning sees them -
   whether it is open or not. The ticks are held in state so the summary
   follows them.
+- The open list has a **search** (the cursor lands in it): every word typed,
+  in any order, against each category's place in the tree - so "cards"
+  finds a group's types - and each match keeps its group beside it. Rows
+  are hidden, never removed, so a tick filtered out of view is still saved.
+  The box has no `name`, so it is neither posted nor seen as a change, and
+  Enter in it does not save the product.
 
 ## Choosing by photo
 
