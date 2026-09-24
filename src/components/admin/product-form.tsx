@@ -3,10 +3,10 @@
 import { ui } from "@/lib/brand/ui";
 import Link from "next/link";
 
+import { CategoryChooser } from "@/components/admin/category-chooser";
 import { Field, inputClass } from "@/components/admin/field";
 import { TopSaveButton } from "@/components/admin/save-slot";
 import { UnsavedChanges } from "@/components/admin/unsaved-changes";
-import { flattenTree } from "@/lib/categories/tree";
 import { formatPence } from "@/lib/money";
 import type { ProductErrors, ProductInput } from "@/lib/products/validate";
 import { useActionForm } from "@/lib/forms/action-form";
@@ -49,8 +49,6 @@ export function ProductForm({
 }) {
   const { state, formAction, isPending, formRef, onSubmit } = useActionForm(action, initialState, (result) => Object.keys(result.errors).length > 0);
   const errors = state.errors;
-  const inCategories = new Set(product?.categoryIds ?? []);
-  const categoryTree = flattenTree(categories);
 
   return (
     <form id="product-details" ref={formRef} action={formAction} onSubmit={onSubmit} className="flex max-w-2xl flex-col gap-8">
@@ -272,34 +270,7 @@ export function ProductForm({
         </label>
       </section>
 
-      <fieldset className="flex flex-col gap-3">
-        <legend className="text-sm font-semibold">Categories</legend>
-        {errors.categoryIds ? (
-          <p className="text-xs text-red-600 dark:text-red-400">{errors.categoryIds}</p>
-        ) : null}
-        {categoryTree.length === 0 ? (
-          <p className={`text-sm ${ui.mutedOnPage}`}>
-            No categories yet. Add some under Categories and they will appear here.
-          </p>
-        ) : (
-          <ul className="flex flex-col gap-1.5">
-            {categoryTree.map(({ row, depth }) => (
-              <li key={row.id} style={{ paddingLeft: depth * 1.5 + "rem" }}>
-                <label className="flex items-center gap-2.5 text-sm">
-                  <input
-                    type="checkbox"
-                    name="categoryIds"
-                    value={row.id}
-                    defaultChecked={inCategories.has(row.id)}
-                    className={`size-4 ${ui.checkbox}`}
-                  />
-                  {row.name}
-                </label>
-              </li>
-            ))}
-          </ul>
-        )}
-      </fieldset>
+      <CategoryChooser categories={categories} chosen={product?.categoryIds ?? []} error={errors.categoryIds} />
 
       <div className={`flex items-center gap-3 border-t pt-6 ${ui.ruleOnPage}`}>
         <button

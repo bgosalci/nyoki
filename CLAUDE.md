@@ -645,6 +645,17 @@ TypeScript, deployed to Vercel.
   the URL as you type (debounced) or change a select, so the server component
   re-renders and the view stays bookmarkable. No Filter buttons.
 
+## A product's categories
+
+- The Details tab shows only the **chosen** categories, each by its place in
+  the tree ("Cards › Christmas Cards"), with "Change categories" opening the
+  whole list and a × on each to take it off (`CategoryChooser`). All forty-
+  odd checkboxes down the page at all times was not wanted.
+- The list is always in the page, only `hidden`: a hidden checkbox is still
+  posted, so the ticks save - and the unsaved-changes warning sees them -
+  whether it is open or not. The ticks are held in state so the summary
+  follows them.
+
 ## Choosing by photo
 
 - `PhotoChooser` (`src/components/admin/photo-chooser.tsx`) is the admin's

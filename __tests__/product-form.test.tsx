@@ -88,8 +88,9 @@ describe("ProductForm", () => {
     expect(screen.getByRole("group", { name: /price/i })).toHaveTextContent(/price tab once/i);
   });
 
-  it("lists every category as a checkbox, nested ones indented under their parent", () => {
+  it("lists every category as a checkbox once asked, nested ones under their parent", async () => {
     render(<ProductForm action={noopAction} categories={categories} />);
+    await userEvent.setup().click(screen.getByRole("button", { name: "Choose categories" }));
 
     const mugs = screen.getByRole("checkbox", { name: /mugs/i });
     expect(mugs).toHaveAttribute("name", "categoryIds");
@@ -101,9 +102,11 @@ describe("ProductForm", () => {
     expect(order.indexOf("cat_mugs")).toBe(order.indexOf("cat_tableware") + 1);
   });
 
-  it("pre-ticks the categories the product is already in", () => {
+  it("shows the categories the product is already in, and has them ticked in the list", async () => {
     render(<ProductForm action={noopAction} categories={categories} product={mug} />);
 
+    expect(screen.getByRole("list", { name: "Chosen categories" })).toHaveTextContent("Tableware › Mugs");
+    await userEvent.setup().click(screen.getByRole("button", { name: "Change categories" }));
     expect(screen.getByRole("checkbox", { name: /mugs/i })).toBeChecked();
     expect(screen.getByRole("checkbox", { name: /tableware/i })).not.toBeChecked();
   });
@@ -165,6 +168,7 @@ describe("ProductForm, when a save is rejected", () => {
 
     await user.type(screen.getByLabelText(/^name/i), " - Blue");
     await user.type(screen.getByLabelText(/product code/i), "MUG-01");
+    await user.click(screen.getByRole("button", { name: "Change categories" }));
     await user.click(screen.getByRole("checkbox", { name: /vases/i }));
     await user.selectOptions(screen.getByLabelText(/status/i), "DRAFT");
     await user.click(screen.getByRole("button", { name: /save/i }));
