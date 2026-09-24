@@ -1,4 +1,5 @@
 import { act, render, screen } from "@testing-library/react";
+import Link from "next/link";
 
 import { ProductHeader } from "@/components/admin/product-header";
 import { SaveSlot, SaveSlotProvider, TopSaveButton } from "@/components/admin/save-slot";
@@ -67,5 +68,25 @@ describe("ProductHeader", () => {
     expect(header).toHaveClass("sticky", "top-14");
     expect(header).toContainElement(screen.getByRole("navigation", { name: "Product" }));
     expect(header).toContainElement(slot() as HTMLElement);
+  });
+
+  it("pins the way back, Previous and Next with them, as part of the header", () => {
+    render(
+      <SaveSlotProvider>
+        <ProductHeader
+          productId="p1"
+          name="Handmade Three Christmas Stars"
+          steps={
+            <nav aria-label="Other products">
+              <Link href="/admin/products">Back to all products</Link> <Link href="/admin/products/p2/price">Next</Link>
+            </nav>
+          }
+        />
+      </SaveSlotProvider>,
+    );
+
+    const header = screen.getByRole("heading", { name: "Handmade Three Christmas Stars" }).closest("[data-pinned]")!;
+    expect(header).toContainElement(screen.getByRole("link", { name: "Back to all products" }));
+    expect(header).toContainElement(screen.getByRole("link", { name: "Next" }));
   });
 });

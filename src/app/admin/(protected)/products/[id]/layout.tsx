@@ -27,8 +27,11 @@ export default async function ProductLayout({
 
   return (
     <SaveSlotProvider>
-      <ProductSteps productId={product.id} fallback={{ href: "/admin/products", items: everything }} />
-      <ProductHeader productId={product.id} name={product.name} />
+      <ProductHeader
+        productId={product.id}
+        name={product.name}
+        steps={<ProductSteps productId={product.id} fallback={{ href: "/admin/products", items: everything }} />}
+      />
       {children}
     </SaveSlotProvider>
   );

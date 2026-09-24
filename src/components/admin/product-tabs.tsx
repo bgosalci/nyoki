@@ -21,7 +21,7 @@ export function ProductTabs({ productId }: { productId: string }) {
   ];
 
   return (
-    <nav aria-label="Product" className={`mt-5 flex gap-1 border-b ${ui.rule}`}>
+    <nav aria-label="Product" className={`flex gap-1 border-b ${ui.rule}`}>
       {tabs.map((tab) => (
         <Link
           key={tab.href}

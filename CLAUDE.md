@@ -193,9 +193,10 @@ TypeScript, deployed to Vercel.
   the Price tab; it could not be reproduced by any route to that tab, but a
   search made while React draws can find a header on its way out (moving to
   another product replaces the whole header), and state cannot.
-- **The name, Save and the Details and Price tabs stay pinned** beneath the
-  top bar while the page scrolls (`ProductHeader`, `sticky top-14`, painting
-  the page ground). Back, Previous and Next scroll away with the page.
+- **The whole product header stays pinned** beneath the top bar while the
+  page scrolls (`ProductHeader`, `sticky top-14`, painting the page ground):
+  Back, Previous and Next, the name and its Save, and the Details and Price
+  tabs.
 
 ## Unsaved changes
 
