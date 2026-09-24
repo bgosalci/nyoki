@@ -61,3 +61,16 @@ describe("CategoryCostsForm", () => {
     expect(screen.getByText(/no usual costs yet/i)).toBeInTheDocument();
   });
 });
+
+describe("CategoryCostsForm, when a save is rejected", () => {
+  it("keeps the lines typed", async () => {
+    const { user } = setup({ action: jest.fn(async () => ({ error: "Line 2: write the cost as pounds and pence, like 0.22." })) });
+
+    await user.clear(screen.getAllByLabelText("Cost each")[1]);
+    await user.type(screen.getAllByLabelText("Cost each")[1], "1.1p");
+    await user.click(screen.getByRole("button", { name: /save usual costs/i }));
+    await screen.findByText(/write the cost as pounds and pence/i);
+
+    expect(screen.getAllByLabelText("Cost each")[1]).toHaveValue("1.1p");
+  });
+});

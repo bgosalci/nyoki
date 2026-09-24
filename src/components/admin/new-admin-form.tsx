@@ -1,10 +1,10 @@
 "use client";
 
 import { ui } from "@/lib/brand/ui";
-import { useActionState } from "react";
 
 import { Field, inputClass } from "@/components/admin/field";
 import type { NewAdminErrors } from "@/lib/admin/validate";
+import { useActionForm } from "@/lib/forms/action-form";
 
 export interface NewAdminState {
   errors: NewAdminErrors;
@@ -23,11 +23,11 @@ export function NewAdminForm({
   action: NewAdminAction;
   initialState?: NewAdminState;
 }) {
-  const [state, formAction, isPending] = useActionState(action, initialState);
+  const { state, formAction, isPending, formRef, onSubmit } = useActionForm(action, initialState, (result) => Object.keys(result.errors).length > 0);
   const errors = state.errors;
 
   return (
-    <form action={formAction} className="flex max-w-md flex-col gap-5">
+    <form ref={formRef} action={formAction} onSubmit={onSubmit} className="flex max-w-md flex-col gap-5">
       {state.created ? (
         <div
           role="status"

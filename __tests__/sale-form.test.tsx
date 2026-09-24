@@ -133,3 +133,18 @@ describe("SaleForm", () => {
     expect(screen.getByText("Pick at least one product for the sale.")).toBeInTheDocument();
   });
 });
+
+describe("SaleForm, when a save is rejected", () => {
+  it("keeps what was typed", async () => {
+    render(<SaleForm action={async () => ({ errors: { value: "Write the amount as a whole number." } })} products={products} />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText(/^name/i), "Summer sale");
+    await user.type(screen.getByLabelText(/^amount/i), "15");
+    await user.click(screen.getByRole("button", { name: /save sale/i }));
+    await screen.findByText("Write the amount as a whole number.");
+
+    expect(screen.getByLabelText(/^name/i)).toHaveValue("Summer sale");
+    expect(screen.getByLabelText(/^amount/i)).toHaveValue("15");
+  });
+});

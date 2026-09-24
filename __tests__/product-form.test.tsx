@@ -155,3 +155,66 @@ describe("ProductForm", () => {
   });
 });
 
+describe("ProductForm, when a save is rejected", () => {
+  const rejected = async () => ({ errors: { sku: "Another product already uses that code." } });
+
+  it("keeps everything typed, rather than putting the saved values back", async () => {
+    render(<ProductForm action={rejected} product={mug} categories={categories} />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText(/^name/i), " - Blue");
+    await user.type(screen.getByLabelText(/product code/i), "MUG-01");
+    await user.click(screen.getByRole("checkbox", { name: /vases/i }));
+    await user.selectOptions(screen.getByLabelText(/status/i), "DRAFT");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    await screen.findByText("Another product already uses that code.");
+
+    expect(screen.getByLabelText(/^name/i)).toHaveValue("Hand-thrown Mug - Blue");
+    expect(screen.getByLabelText(/product code/i)).toHaveValue("MUG-01");
+    expect(screen.getByRole("checkbox", { name: /vases/i })).toBeChecked();
+    expect(screen.getByLabelText(/status/i)).toHaveValue("DRAFT");
+  });
+
+  it("keeps a new product's fields, so one mistake does not wipe the form", async () => {
+    render(<ProductForm action={async () => ({ errors: { name: "Give the product a name." } })} />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText(/description/i), "Crocheted by hand.");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    await screen.findByText("Give the product a name.");
+
+    expect(screen.getByLabelText(/description/i)).toHaveValue("Crocheted by hand.");
+  });
+
+  it("still asks before leaving, since the typed changes are still unsaved", async () => {
+    HTMLDialogElement.prototype.showModal = function () { this.setAttribute("open", ""); };
+    render(
+      <>
+        <ProductForm action={rejected} product={mug} categories={categories} />
+        <Link href="/admin/products/p3" onClick={(event) => event.preventDefault()}>Next</Link>
+      </>,
+    );
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText(/^name/i), " - Blue");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    await screen.findByText("Another product already uses that code.");
+    await user.click(screen.getByRole("link", { name: "Next" }));
+
+    expect(screen.getByRole("dialog", { name: /leave without saving/i })).toBeInTheDocument();
+  });
+});
+
+describe("ProductForm, when a save goes through", () => {
+  it("shows what was saved, as the server tidied it - a web address built from the name", async () => {
+    const saved = async () => ({ errors: {} });
+    const { rerender } = render(<ProductForm action={saved} product={{ ...mug, slug: "" }} categories={categories} />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    // The page re-renders with the saved row, as revalidation does.
+    rerender(<ProductForm action={saved} product={mug} categories={categories} />);
+
+    expect(await screen.findByDisplayValue("hand-thrown-mug")).toBe(screen.getByLabelText(/web address/i));
+  });
+});

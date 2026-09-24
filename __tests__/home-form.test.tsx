@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 import { HomeForm } from "@/components/admin/home-form";
 import { HOME_DEFAULTS } from "@/lib/home/content";
@@ -63,5 +64,19 @@ describe("HomeForm", () => {
     setup({ initialState: { errors: {}, saved: true } });
 
     expect(screen.getByRole("status")).toHaveTextContent(/saved/i);
+  });
+});
+
+describe("HomeForm, when a save is rejected", () => {
+  it("keeps what was typed", async () => {
+    setup({ action: jest.fn(async () => ({ errors: { ctaLabel: "Give the button some words." } })) });
+    const user = userEvent.setup();
+
+    await user.clear(screen.getByLabelText(/headline/i));
+    await user.type(screen.getByLabelText(/headline/i), "Made slowly");
+    await user.click(screen.getByRole("button", { name: /^save$/i }));
+    await screen.findByText("Give the button some words.");
+
+    expect(screen.getByLabelText(/headline/i)).toHaveValue("Made slowly");
   });
 });

@@ -1,10 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
-
 import { Field, inputClass } from "@/components/admin/field";
 import { ui } from "@/lib/brand/ui";
 import type { AdminRole } from "@/lib/auth/session";
+import { useActionForm } from "@/lib/forms/action-form";
 
 export interface EditAdminState {
   errors: Partial<Record<"name" | "role", string>>;
@@ -24,11 +23,11 @@ export function EditAdminForm({
   admin: { name: string; role: AdminRole };
   initialState?: EditAdminState;
 }) {
-  const [state, formAction, isPending] = useActionState(action, initialState);
+  const { state, formAction, isPending, formRef, onSubmit } = useActionForm(action, initialState, (result) => Object.keys(result.errors).length > 0);
   const errors = state.errors;
 
   return (
-    <form action={formAction} className="flex max-w-md flex-col gap-5">
+    <form ref={formRef} action={formAction} onSubmit={onSubmit} className="flex max-w-md flex-col gap-5">
       {state.saved ? (
         <p role="status" className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
           Saved.

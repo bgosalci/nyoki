@@ -1,4 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 import { CategoryForm } from "@/components/admin/category-form";
 
@@ -74,5 +75,22 @@ describe("CategoryForm", () => {
 
     expect(screen.getByLabelText(/parent/i)).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByText("A category cannot sit inside itself.")).toBeInTheDocument();
+  });
+});
+
+describe("CategoryForm, when a save is rejected", () => {
+  it("keeps what was typed and chosen", async () => {
+    render(<CategoryForm action={async () => ({ errors: { slug: "Another category already uses that web address." } })} categories={categories} />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText(/^name/i), "Jugs");
+    await user.type(screen.getByLabelText(/description/i), "For milk and flowers.");
+    await user.selectOptions(screen.getByLabelText(/parent/i), "tableware");
+    await user.click(screen.getByRole("button", { name: /save category/i }));
+    await screen.findByText("Another category already uses that web address.");
+
+    expect(screen.getByLabelText(/^name/i)).toHaveValue("Jugs");
+    expect(screen.getByLabelText(/description/i)).toHaveValue("For milk and flowers.");
+    expect(screen.getByLabelText(/parent/i)).toHaveValue("tableware");
   });
 });

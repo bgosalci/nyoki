@@ -2,11 +2,11 @@
 
 import { ui } from "@/lib/brand/ui";
 import Link from "next/link";
-import { useActionState } from "react";
 
 import { Field, inputClass } from "@/components/admin/field";
 import { descendantIds } from "@/lib/categories/validate";
 import type { CategoryErrors, CategoryInput } from "@/lib/categories/validate";
+import { useActionForm } from "@/lib/forms/action-form";
 
 export interface CategoryFormState {
   errors: CategoryErrors;
@@ -41,7 +41,7 @@ export function CategoryForm({
   initialState?: CategoryFormState;
   submitLabel?: string;
 }) {
-  const [state, formAction, isPending] = useActionState(action, initialState);
+  const { state, formAction, isPending, formRef, onSubmit } = useActionForm(action, initialState, (result) => Object.keys(result.errors).length > 0);
   const errors = state.errors;
 
   // A category cannot sit inside itself or anything beneath it. The server
@@ -50,7 +50,7 @@ export function CategoryForm({
   const parentOptions = categories.filter((option) => !excluded.has(option.id));
 
   return (
-    <form action={formAction} className="flex max-w-xl flex-col gap-5">
+    <form ref={formRef} action={formAction} onSubmit={onSubmit} className="flex max-w-xl flex-col gap-5">
       <Field label="Name" name="name" error={errors.name}>
         {(props) => (
           <input {...props} type="text" defaultValue={category?.name ?? ""} className={inputClass} />

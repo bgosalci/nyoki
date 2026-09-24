@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 import { DetailsForm } from "@/components/shop/details-form";
 import { PasswordForm } from "@/components/shop/password-form";
@@ -57,5 +58,22 @@ describe("PasswordForm", () => {
     render(<PasswordForm action={action} initialState={{ errors: {}, changed: true }} />);
 
     expect(screen.getByRole("status")).toHaveTextContent(/changed/i);
+  });
+});
+
+describe("DetailsForm, when a save is rejected", () => {
+  it("keeps what the shopper typed", async () => {
+    render(<DetailsForm shopper={shopper} action={async () => ({ errors: { email: "Another account already uses that email." } })} />);
+    const user = userEvent.setup();
+
+    await user.clear(screen.getByLabelText(/name/i));
+    await user.type(screen.getByLabelText(/name/i), "Ada King");
+    await user.clear(screen.getByLabelText(/email/i));
+    await user.type(screen.getByLabelText(/email/i), "ada@king.example");
+    await user.click(screen.getByRole("button", { name: /^save$/i }));
+    await screen.findByText("Another account already uses that email.");
+
+    expect(screen.getByLabelText(/name/i)).toHaveValue("Ada King");
+    expect(screen.getByLabelText(/email/i)).toHaveValue("ada@king.example");
   });
 });

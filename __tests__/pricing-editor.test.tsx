@@ -468,3 +468,18 @@ describe("PricingEditor, for a piece not yet costed", () => {
     expect(screen.queryByRole("group", { name: /from your price lists/i })).not.toBeInTheDocument();
   });
 });
+
+describe("PricingEditor, when a save is rejected", () => {
+  it("keeps the price and the cost lines typed - they are controlled, so React never loses them", async () => {
+    const { user } = setup({ action: jest.fn(async () => ({ errors: { compareAtPrice: "The was-price has to be higher than the price, or there is nothing to strike through." } })) });
+
+    await user.clear(screen.getByLabelText("Price"));
+    await user.type(screen.getByLabelText("Price"), "13.50");
+    await user.type(screen.getAllByLabelText("What")[0], " (large)");
+    await user.click(screen.getByRole("button", { name: /^save$/i }));
+    await screen.findByText(/nothing to strike through/i);
+
+    expect(screen.getByLabelText("Price")).toHaveValue("13.50");
+    expect(screen.getAllByLabelText("What")[0]).toHaveValue("Card & envelope (large)");
+  });
+});

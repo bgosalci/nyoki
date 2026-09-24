@@ -1,11 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
-
 import { ShopField, shopInputClass } from "@/components/shop/field";
 import type { Shopper } from "@/lib/account/dal";
 import type { CustomerDetailsErrors } from "@/lib/account/validate";
 import { ui } from "@/lib/brand/ui";
+import { useActionForm } from "@/lib/forms/action-form";
 
 export interface DetailsState {
   errors: CustomerDetailsErrors;
@@ -25,10 +24,10 @@ export function DetailsForm({
   action: DetailsAction;
   initialState?: DetailsState;
 }) {
-  const [state, formAction, isPending] = useActionState(action, initialState);
+  const { state, formAction, isPending, formRef, onSubmit } = useActionForm(action, initialState, (result) => Object.keys(result.errors).length > 0);
 
   return (
-    <form action={formAction} className="flex max-w-sm flex-col gap-5">
+    <form ref={formRef} action={formAction} onSubmit={onSubmit} className="flex max-w-sm flex-col gap-5">
       {state.saved ? (
         <p role="status" className="rounded border border-nyoki-sage bg-nyoki-sage/20 px-3 py-2 text-sm">
           Saved.

@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 import { ChangePasswordForm } from "@/components/admin/change-password-form";
 import { NewAdminForm } from "@/components/admin/new-admin-form";
@@ -66,5 +67,35 @@ describe("NewAdminForm", () => {
 
     expect(screen.getByLabelText(/email/i)).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByText("Another account already uses that email.")).toBeInTheDocument();
+  });
+});
+
+describe("NewAdminForm, when it is rejected", () => {
+  it("keeps the email and name typed", async () => {
+    render(<NewAdminForm action={async () => ({ errors: { email: "Another account already uses that email." }, created: null })} />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText(/^email/i), "njomza@nyoki.co.uk");
+    await user.type(screen.getByLabelText(/^name/i), "Njomza");
+    await user.click(screen.getByRole("button", { name: /create account/i }));
+    await screen.findByText("Another account already uses that email.");
+
+    expect(screen.getByLabelText(/^email/i)).toHaveValue("njomza@nyoki.co.uk");
+    expect(screen.getByLabelText(/^name/i)).toHaveValue("Njomza");
+  });
+});
+
+describe("ChangePasswordForm, when it is rejected", () => {
+  it("clears the passwords, which are typed again after a failure", async () => {
+    render(<ChangePasswordForm action={async () => ({ errors: { currentPassword: "That is not your current password." }, done: false })} />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText(/current password/i), "not-it");
+    await user.type(screen.getByLabelText(/^new password/i), "a-new-long-password");
+    await user.type(screen.getByLabelText(/confirm/i), "a-new-long-password");
+    await user.click(screen.getByRole("button"));
+    await screen.findByText("That is not your current password.");
+
+    expect(screen.getByLabelText(/current password/i)).toHaveValue("");
   });
 });

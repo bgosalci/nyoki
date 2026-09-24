@@ -6,6 +6,13 @@ import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { formSnapshot, linkLeavingPage } from "@/lib/forms/leaving";
 
 /**
+ * One list, not a new empty one each render: it is an effect dependency, and
+ * a new one would re-run the baseline effect on every render - taking
+ * whatever is typed at that moment as "unchanged".
+ */
+const NOTHING_IGNORED: readonly string[] = [];
+
+/**
  * Asks before a page with unsaved changes is left.
  *
  * Changed means the form would post something different from what it did
@@ -25,7 +32,7 @@ import { formSnapshot, linkLeavingPage } from "@/lib/forms/leaving";
 export function UnsavedChanges({
   formRef,
   saved,
-  ignore = [],
+  ignore = NOTHING_IGNORED,
 }: {
   formRef: React.RefObject<HTMLFormElement | null>;
   /**

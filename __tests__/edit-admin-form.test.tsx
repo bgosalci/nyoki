@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 import { EditAdminForm } from "@/components/admin/edit-admin-form";
 import { ResetPasswordButton } from "@/components/admin/reset-password-button";
@@ -53,5 +54,20 @@ describe("ResetPasswordButton", () => {
     render(<ResetPasswordButton action={noopReset} name="Burim" initialState={{ password: null, error: "Only an owner can reset passwords." }} />);
 
     expect(screen.getByRole("alert")).toHaveTextContent("Only an owner can reset passwords.");
+  });
+});
+
+describe("EditAdminForm, when a save is rejected", () => {
+  it("keeps the name typed and the role chosen", async () => {
+    render(<EditAdminForm action={async () => ({ errors: { role: "The shop needs at least one owner." }, saved: false })} admin={{ name: "Njomza", role: "OWNER" }} />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText(/^name/i), " G");
+    await user.click(screen.getByLabelText(/staff/i));
+    await user.click(screen.getByRole("button", { name: /save changes/i }));
+    await screen.findByText("The shop needs at least one owner.");
+
+    expect(screen.getByLabelText(/^name/i)).toHaveValue("Njomza G");
+    expect(screen.getByLabelText(/staff/i)).toBeChecked();
   });
 });

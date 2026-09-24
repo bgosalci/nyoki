@@ -202,12 +202,35 @@ TypeScript, deployed to Vercel.
   navigates exactly as it would have.
 - A form reports a save by passing a **new** `saved` object (the action
   state when it succeeded, else null); what it holds then is the new
-  baseline. `ignore` must be a constant, since it is an effect dependency.
+  baseline. `ignore` must be a constant, since it is an effect dependency -
+  and so is its default: it once defaulted to a fresh `[]`, which re-ran the
+  baseline effect on every render and took whatever was typed as
+  "unchanged" (a controlled form re-renders on every keystroke).
 - **Not covered: the browser's own Back button.** Next handles popstate
   itself and there is no clean way to cancel it.
-- Known, separate: React 19 resets an uncontrolled form after its action
-  returns, even when the save was rejected, so a validation error on the
-  Details (or new product) form puts every field back to what was saved.
+
+## Rejected saves keep what was typed
+
+- React 19 resets a `<form action={fn}>` after the action returns - **even
+  when the server rejected the save** - so a validation error put every
+  uncontrolled field back to what was last saved, and wiped a new product's
+  form entirely.
+- `useActionForm` (`src/lib/forms/action-form.ts`) replaces `useActionState`
+  for forms of uncontrolled fields: `<form ref={formRef} action={formAction}
+  onSubmit={onSubmit}>`. It **keeps React's reset** - after a save that went
+  through, that is what shows the server's tidied values (a web address built
+  from the name) - and undoes it for a rejected one: React resets during the
+  commit that brings the result, and a layout effect puts back what was
+  submitted (`restoreFormValues`) before the page paints.
+- What was submitted is read in `onSubmit`, which runs before the action,
+  not by wrapping the action - a server action passed straight to the form
+  keeps working before the JavaScript loads.
+- **Passwords are not put back**: a sign-in or password form clears them
+  after a failure, as people expect. The admin login, shop sign-in and
+  register forms already send the email back in their state instead, and
+  are left as they are.
+- Controlled forms (a product's Price tab, a category's usual costs) never
+  lost anything - React owns their values - and have tests saying so.
 
 ## A product's Price tab
 

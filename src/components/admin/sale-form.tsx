@@ -2,11 +2,12 @@
 
 import { ui } from "@/lib/brand/ui";
 import Link from "next/link";
-import { useActionState, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Field, inputClass } from "@/components/admin/field";
 import { formatPence } from "@/lib/money";
 import type { SaleErrors, SaleInput } from "@/lib/sales/validate";
+import { useActionForm } from "@/lib/forms/action-form";
 
 export interface SaleFormState {
   errors: SaleErrors;
@@ -58,7 +59,7 @@ export function SaleForm({
   initialState?: SaleFormState;
   submitLabel?: string;
 }) {
-  const [state, formAction, isPending] = useActionState(action, initialState);
+  const { state, formAction, isPending, formRef, onSubmit } = useActionForm(action, initialState, (result) => Object.keys(result.errors).length > 0);
   const errors = state.errors;
 
   const [selected, setSelected] = useState<Set<string>>(
@@ -84,7 +85,7 @@ export function SaleForm({
   }
 
   return (
-    <form action={formAction} className="flex max-w-2xl flex-col gap-8">
+    <form ref={formRef} action={formAction} onSubmit={onSubmit} className="flex max-w-2xl flex-col gap-8">
       <section className="flex flex-col gap-5">
         <Field label="Name" name="name" error={errors.name} hint="Only you see this.">
           {(props) => (

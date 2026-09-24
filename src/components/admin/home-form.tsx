@@ -1,11 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
-
 import { Field, inputClass } from "@/components/admin/field";
 import { ProductPicker, type PickerProduct } from "@/components/admin/product-picker";
 import { ui } from "@/lib/brand/ui";
 import type { HomeContent, HomeErrors } from "@/lib/home/content";
+import { useActionForm } from "@/lib/forms/action-form";
 
 export interface HomeState {
   errors: HomeErrors;
@@ -31,10 +30,10 @@ export function HomeForm({
   action: HomeAction;
   initialState?: HomeState;
 }) {
-  const [state, formAction, isPending] = useActionState(action, initialState);
+  const { state, formAction, isPending, formRef, onSubmit } = useActionForm(action, initialState, (result) => Object.keys(result.errors).length > 0);
 
   return (
-    <form action={formAction} className="mt-8 flex max-w-2xl flex-col gap-6">
+    <form ref={formRef} action={formAction} onSubmit={onSubmit} className="mt-8 flex max-w-2xl flex-col gap-6">
       {state.saved ? (
         <p role="status" className={`rounded-md border px-3 py-2 text-sm ${ui.card} ${ui.rule}`}>
           Saved. The shop shows it now.

@@ -11,6 +11,7 @@ beforeAll(() => {
 });
 
 const WORKING_OUT = ["margin"];
+const SAVED = {};
 
 /** A form, a way out of the page, and the guard - as a product page has them. */
 function Page({ saved = null, onFollow }: { saved?: object | null; onFollow: () => void }) {
@@ -113,6 +114,32 @@ describe("UnsavedChanges", () => {
     await user.click(screen.getByRole("link", { name: "Next" }));
 
     expect(onFollow).toHaveBeenCalled();
+  });
+
+  it("keeps asking however often the page re-renders, with nothing to ignore", async () => {
+    // A form re-renders as it saves ("Saving…") and, if controlled, on every
+    // keystroke. None of that is a save, so none of it may reset what counts
+    // as unchanged - which a new empty ignore list every render once did.
+    function Bare({ tick }: { tick: number }) {
+      const formRef = useRef<HTMLFormElement>(null);
+      return (
+        <>
+          <form ref={formRef} data-tick={tick}>
+            <input aria-label="Name" name="name" defaultValue="Snowflake Card" />
+          </form>
+          <Link href="/admin/products/p3" onClick={(event) => event.preventDefault()}>Next</Link>
+          <UnsavedChanges formRef={formRef} saved={SAVED} />
+        </>
+      );
+    }
+    const { rerender } = render(<Bare tick={0} />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText("Name"), " - Blue");
+    rerender(<Bare tick={1} />);
+    await user.click(screen.getByRole("link", { name: "Next" }));
+
+    expect(screen.getByRole("dialog", { name: /leave without saving/i })).toBeInTheDocument();
   });
 
   it("keeps asking when a save did not go through", async () => {
