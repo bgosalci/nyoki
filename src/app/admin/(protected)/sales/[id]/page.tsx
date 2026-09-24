@@ -2,20 +2,29 @@ import { BackLink } from "@/components/admin/back-link";
 import { notFound } from "next/navigation";
 
 import { EditSaleForm } from "@/components/admin/edit-sale-form";
+import { categoryPaths, pathsOf } from "@/lib/categories/path";
 import { db } from "@/lib/db";
 import type { SaleInput } from "@/lib/sales/validate";
 
 export default async function EditSalePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const [sale, products] = await Promise.all([
+  const [sale, found, categories] = await Promise.all([
     db.sale.findUnique({ where: { id }, include: { products: { select: { productId: true } } } }),
     db.product.findMany({
       where: { status: { not: "ARCHIVED" } },
       orderBy: { name: "asc" },
-      select: { id: true, name: true, pricePence: true },
+      select: { id: true, name: true, pricePence: true, categories: { select: { categoryId: true } } },
     }),
+    db.category.findMany({ select: { id: true, name: true, parentId: true } }),
   ]);
+
+  // Each product's categories by their places in the tree, for the picker to find it by.
+  const paths = categoryPaths(categories);
+  const products = found.map(({ categories: links, ...product }) => ({
+    ...product,
+    categories: pathsOf(links.map((link) => link.categoryId), paths),
+  }));
 
   if (!sale) notFound();
 

@@ -3,7 +3,9 @@
 import { useEffect, useId, useRef, useState } from "react";
 
 import { ui } from "@/lib/brand/ui";
+import { categoryPaths } from "@/lib/categories/path";
 import { flattenTree } from "@/lib/categories/tree";
+import { matchesEveryWord } from "@/lib/search";
 
 export interface ChooserCategory {
   id: string;
@@ -49,15 +51,8 @@ export function CategoryChooser({
   const byId = new Map(categories.map((category) => [category.id, category]));
 
   /** "Cards › Christmas Cards": a name is not always enough on its own. */
-  const path = (id: string) => {
-    const names: string[] = [];
-    const seen = new Set<string>();
-    for (let at = byId.get(id); at && !seen.has(at.id); at = at.parentId ? byId.get(at.parentId) : undefined) {
-      seen.add(at.id);
-      names.unshift(at.name);
-    }
-    return names.join(" › ");
-  };
+  const paths = categoryPaths(categories);
+  const path = (id: string) => paths.get(id) ?? "";
 
   const toggle = (id: string) =>
     setChosen((current) => {
@@ -70,8 +65,7 @@ export function CategoryChooser({
   // In the tree's own order, so the summary reads as the list does.
   const picked = tree.filter(({ row }) => chosen.has(row.id));
 
-  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
-  const matching = tree.filter(({ row }) => words.every((word) => path(row.id).toLowerCase().includes(word)));
+  const matching = tree.filter(({ row }) => matchesEveryWord(path(row.id), query));
   // Each match keeps its group - and that group's group - beside it.
   const shown = new Set(matching.map(({ row }) => row.id));
   for (const { row } of matching) {

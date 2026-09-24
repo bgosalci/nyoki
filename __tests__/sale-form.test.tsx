@@ -148,3 +148,77 @@ describe("SaleForm, when a save is rejected", () => {
     expect(screen.getByLabelText(/^amount/i)).toHaveValue("15");
   });
 });
+
+describe("SaleForm, finding products by category", () => {
+  const catalogue = [
+    { id: "p_snow", name: "Snowflake Card", pricePence: 600, categories: ["Cards › Christmas Cards"] },
+    { id: "p_stars", name: "Three Stars", pricePence: 799, categories: ["Cards › Christmas Cards"] },
+    { id: "p_bunny", name: "Bunny Card", pricePence: 550, categories: ["Cards › Easter Card"] },
+    { id: "p_vase", name: "Bud Vase", pricePence: 1800, categories: ["Home › Vases"] },
+  ];
+  // The product boxes shown; the sale's own "Live" box is not one of them.
+  const shown = () =>
+    screen
+      .getAllByRole("checkbox")
+      .filter((box) => box.getAttribute("name") === "productIds")
+      .map((box) => box.getAttribute("value"));
+
+  function setup() {
+    const { container } = render(<SaleForm action={noopAction} products={catalogue} />);
+    const posted = () => new FormData(container.querySelector("form")!).getAll("productIds");
+    return { posted, user: userEvent.setup() };
+  }
+
+  it("finds products by their category - even one not named for it", async () => {
+    const { user } = setup();
+
+    await user.type(screen.getByLabelText(/find products/i), "christmas");
+
+    expect(shown()).toEqual(["p_snow", "p_stars"]);
+  });
+
+  it("matches every word typed, in any order, across name and category", async () => {
+    const { user } = setup();
+
+    await user.type(screen.getByLabelText(/find products/i), "card easter");
+
+    expect(shown()).toEqual(["p_bunny"]);
+  });
+
+  it("shows each product's categories beside its name", () => {
+    setup();
+
+    expect(screen.getByText("Cards › Easter Card")).toBeInTheDocument();
+  });
+
+  it("selects just the products found, not the whole shop", async () => {
+    const { user, posted } = setup();
+
+    await user.type(screen.getByLabelText(/find products/i), "christmas");
+    await user.click(screen.getByRole("button", { name: "Select these 2" }));
+
+    expect(posted()).toEqual(["p_snow", "p_stars"]);
+    expect(screen.getByText(/2 of 4 selected/i)).toBeInTheDocument();
+  });
+
+  it("clears just the products found, keeping the rest", async () => {
+    const { user, posted } = setup();
+    await user.click(screen.getByRole("button", { name: "Select all" }));
+
+    await user.type(screen.getByLabelText(/find products/i), "christmas");
+    await user.click(screen.getByRole("button", { name: "Clear these 2" }));
+
+    expect(posted()).toEqual(["p_bunny", "p_vase"]);
+  });
+
+  it("does not save the sale when Enter is pressed in the search", async () => {
+    const action = jest.fn(async () => ({ errors: {} }));
+    render(<SaleForm action={action} products={catalogue} />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText(/find products/i), "christmas{Enter}");
+
+    expect(action).not.toHaveBeenCalled();
+  });
+});
+

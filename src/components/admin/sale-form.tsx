@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 
 import { Field, inputClass } from "@/components/admin/field";
 import { formatPence } from "@/lib/money";
+import { matchesEveryWord } from "@/lib/search";
 import type { SaleErrors, SaleInput } from "@/lib/sales/validate";
 import { useActionForm } from "@/lib/forms/action-form";
 
@@ -22,6 +23,8 @@ export interface SaleFormProduct {
   id: string;
   name: string;
   pricePence: number;
+  /** Its categories' places in the tree - "Cards › Christmas Cards" - to find it by. */
+  categories?: string[];
 }
 
 const EMPTY: SaleFormState = { errors: {} };
@@ -45,6 +48,11 @@ function amountValue(sale: SaleInput | undefined): string {
  * The picker is controlled state: every product is always rendered so a
  * selection survives being filtered out of view, and only the non-matching
  * rows are hidden. A hidden checked box still submits.
+ *
+ * Its search matches every word typed, in any order, against each product's
+ * name and its categories' places in the tree - so "christmas" finds every
+ * Christmas card, named so or not. While it is narrowed, Select and Clear act
+ * on what it shows, so a whole category goes into a sale in two clicks.
  */
 export function SaleForm({
   action,
@@ -67,13 +75,23 @@ export function SaleForm({
   );
   const [query, setQuery] = useState("");
 
-  const visibleIds = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    if (needle.length === 0) return new Set(products.map((p) => p.id));
-    return new Set(
-      products.filter((p) => p.name.toLowerCase().includes(needle)).map((p) => p.id),
-    );
-  }, [products, query]);
+  const visibleIds = useMemo(
+    () => new Set(products.filter((p) => matchesEveryWord(`${p.name} ${(p.categories ?? []).join(" ")}`, query)).map((p) => p.id)),
+    [products, query],
+  );
+  const narrowed = query.trim().length > 0;
+
+  /** Everything shown, ticked or not: the whole shop, or what the search found. */
+  function setShown(checked: boolean) {
+    setSelected((current) => {
+      const next = new Set(current);
+      for (const id of visibleIds) {
+        if (checked) next.add(id);
+        else next.delete(id);
+      }
+      return next;
+    });
+  }
 
   function toggle(id: string, checked: boolean) {
     setSelected((current) => {
@@ -194,22 +212,26 @@ export function SaleForm({
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Find products…"
+            // Enter in a form's text box would save the sale.
+            onKeyDown={(event) => {
+              if (event.key === "Enter") event.preventDefault();
+            }}
+            placeholder="Find products or a category…"
             className={`${inputClass} min-w-48 flex-1`}
           />
           <button
             type="button"
-            onClick={() => setSelected(new Set(products.map((p) => p.id)))}
+            onClick={() => setShown(true)}
             className={`rounded-md px-3 py-2 text-xs ${ui.buttonSecondary}`}
           >
-            Select all
+            {narrowed ? `Select these ${visibleIds.size}` : "Select all"}
           </button>
           <button
             type="button"
-            onClick={() => setSelected(new Set())}
+            onClick={() => setShown(false)}
             className={`rounded-md px-3 py-2 text-xs ${ui.buttonSecondary}`}
           >
-            Clear
+            {narrowed ? `Clear these ${visibleIds.size}` : "Clear"}
           </button>
         </div>
 
@@ -230,7 +252,12 @@ export function SaleForm({
                     onChange={(event) => toggle(product.id, event.target.checked)}
                     className={`size-4 ${ui.checkbox}`}
                   />
-                  {product.name}
+                  <span className="flex flex-col">
+                    {product.name}
+                    {product.categories?.length ? (
+                      <span className={`text-xs ${ui.mutedOnPanel}`}>{product.categories.join("; ")}</span>
+                    ) : null}
+                  </span>
                 </span>
                 <span className={`tabular-nums ${ui.mutedOnPanel}`}>
                   {formatPence(product.pricePence)}

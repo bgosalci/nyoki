@@ -442,6 +442,14 @@ TypeScript, deployed to Vercel.
   on the sale form (`src/components/admin/sale-form.tsx`). Every product is
   always rendered and only non-matching rows are hidden, so a selection
   survives being filtered out of view.
+- The picker's search matches every word typed, in any order, against each
+  product's name **and its categories' places in the tree**
+  (`categoryPaths`/`pathsOf`), so "christmas" finds every Christmas card,
+  named so or not; each row shows its categories. While narrowed, Select and
+  Clear act on what is shown ("Select these 21"), so a category goes into a
+  sale in two clicks. Enter in the search does not save the sale.
+- One matching rule for every admin search box, `matchesEveryWord`
+  (`src/lib/search.ts`), shared by the sale picker and the category chooser.
 - Percentages are whole numbers only; 12.5% produces sub-penny discounts.
 - Sales are **deleted**, products are **archived**: nothing snapshots a sale,
   and an order records the price actually paid, not which sale produced it.
