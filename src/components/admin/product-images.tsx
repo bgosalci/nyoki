@@ -5,6 +5,7 @@ import { useRef, useState, useTransition, type FormEvent } from "react";
 
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { FilePicker } from "@/components/admin/file-picker";
+import { shrinkPhoto } from "@/lib/images/shrink";
 import { validateImageUpload } from "@/lib/images/validate";
 
 export interface ProductImageItem {
@@ -37,11 +38,14 @@ export function ProductImages({
   images,
   actions,
   initialUploadState = EMPTY,
+  prepare = shrinkPhoto,
 }: {
   productId: string;
   images: ProductImageItem[];
   actions: ProductImageActions;
   initialUploadState?: UploadState;
+  /** Readies a photo for sending: a large one is shrunk to fit Vercel's request limit. */
+  prepare?: (file: File) => Promise<File>;
 }) {
   const [error, setError] = useState(initialUploadState.error);
   const [isUploading, startUpload] = useTransition();
@@ -79,7 +83,7 @@ export function ProductImages({
       for (const [index, file] of files.entries()) {
         setProgress({ current: index + 1, total: files.length });
         const one = new FormData();
-        one.append("files", file);
+        one.append("files", await prepare(file));
         const result = await actions.upload({ error: null }, one);
         if (result.error) {
           setError(index > 0 ? `${index} of ${files.length} uploaded. ${file.name}: ${result.error}` : result.error);

@@ -415,9 +415,17 @@ TypeScript, deployed to Vercel.
   it between the two.
 - The browser checks the **whole batch** with `validateImageUpload` before
   sending any, so one bad file still adds none; the server checks each again.
-- **Before deploying to Vercel:** it refuses request bodies over 4.5MB
-  whatever the Next limit says, so a photo over 4.5MB would fail there.
-  Shrink photos in the browser before sending, or upload straight to Blob.
+- **Large photos are shrunk in the browser before sending**
+  (`src/lib/images/shrink.ts`): Vercel refuses request bodies over 4.5MB
+  whatever the Next limit says. A photo over 3.5MB, or over 3,000px on its
+  long side, is scaled to fit 3,000px and saved again - JPEG at 0.9, down to
+  0.7 if still heavy; a PNG or WebP becomes WebP to keep see-through parts,
+  or JPEG where the browser cannot write WebP (it hands back another type).
+  **Anything smaller goes up byte for byte.** A photo the browser cannot
+  read or write is sent as it was; shrinking never stops an upload.
+- The canvas work is `browserCodec`, passed in so the rules are tested
+  without one (jsdom has no canvas). Checked in real Chrome: a 6.7MB
+  4032x3024 photo came out 3000x2250 at 2.4MB.
 - Files are chosen with `FilePicker`: a dashed area that is the input's
   label, with a Choose button and room to drop. The bare browser control
   ("Choose files / No file chosen") did not read as something to click.

@@ -116,6 +116,33 @@ describe("ProductImages, uploading", () => {
     return user;
   }
 
+  it("sends each photo as prepared for sending - shrunk, when it is too large for Vercel", async () => {
+    const upload = jest.fn(async () => ({ error: null }));
+    const prepare = jest.fn(async (file: File) => new File([file], `small-${file.name}`, { type: file.type }));
+    render(<ProductImages productId="p1" images={images} actions={{ ...actions, upload }} prepare={prepare} />);
+    const user = userEvent.setup();
+    await user.upload(screen.getByLabelText(/add photos/i), [photo("front.jpg"), photo("back.jpg")]);
+
+    await user.click(screen.getByRole("button", { name: "Upload 2 photos" }));
+
+    await screen.findByRole("button", { name: "Upload" });
+    expect(prepare).toHaveBeenCalledTimes(2);
+    expect(sent(upload)).toEqual([["small-front.jpg"], ["small-back.jpg"]]);
+  });
+
+  it("prepares nothing when the batch fails its check", async () => {
+    const upload = jest.fn(async () => ({ error: null }));
+    const prepare = jest.fn(async (file: File) => file);
+    render(<ProductImages productId="p1" images={images} actions={{ ...actions, upload }} prepare={prepare} />);
+    const user = userEvent.setup();
+    await user.upload(screen.getByLabelText(/add photos/i), [photo("front.jpg"), photo("animated.jpg", GIF)]);
+
+    await user.click(screen.getByRole("button", { name: "Upload 2 photos" }));
+
+    await screen.findByRole("alert");
+    expect(prepare).not.toHaveBeenCalled();
+  });
+
   it("sends the photos one at a time, each in a request of its own", async () => {
     // One request holding several phone photos broke the server's size limit.
     const upload = jest.fn(async () => ({ error: null }));
