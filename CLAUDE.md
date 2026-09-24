@@ -595,6 +595,10 @@ TypeScript, deployed to Vercel.
   (switched on, started, not ended, not used up; a minimum spend does not
   count against it). "Running sales" once counted every sale switched on,
   scheduled and ended ones included.
+- Beneath running sales and live codes, **how many are scheduled**: switched
+  on and still to start ("2 scheduled", "None scheduled"). One switched off
+  is not scheduled - it will not start on its own - and a code used up
+  before it starts never will.
 
 ## Admin chrome
 

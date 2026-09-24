@@ -31,6 +31,7 @@ export default async function AdminOverviewPage() {
               </Link>
             </dt>
             <dd className="mt-1 text-2xl font-semibold tabular-nums">{stat.value}</dd>
+            {stat.detail ? <dd className={`mt-1 text-xs ${ui.mutedOnPanel}`}>{stat.detail}</dd> : null}
           </div>
         ))}
       </dl>

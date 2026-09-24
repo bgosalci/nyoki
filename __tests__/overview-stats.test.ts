@@ -67,6 +67,43 @@ describe("overviewStats", () => {
     expect(value(overviewStats({ ...counts, sales: [], codes }, NOW), "Live promo codes")).toBe(3);
   });
 
+  it("says how many sales are scheduled to start, beside those running", () => {
+    const sales = [
+      sale(), // running
+      sale({ startsAt: at(2) }), // scheduled
+      sale({ startsAt: at(30), endsAt: at(40) }), // scheduled
+      sale({ startsAt: at(2), active: false }), // switched off: it will not start on its own
+      sale({ startsAt: at(-10), endsAt: at(-1) }), // over
+    ];
+    const running = overviewStats({ ...counts, sales, codes: [] }, NOW).find((stat) => stat.label === "Running sales");
+
+    expect(running).toMatchObject({ value: 1, detail: "2 scheduled" });
+  });
+
+  it("says how many promo codes are scheduled to start, beside those live", () => {
+    const codes = [
+      code(), // live
+      code({ startsAt: at(1) }), // scheduled
+      code({ startsAt: at(1), active: false }), // switched off
+      code({ startsAt: at(1), usageLimit: 5, usedCount: 5 }), // used up before it starts: it never will
+    ];
+    const live = overviewStats({ ...counts, sales: [], codes }, NOW).find((stat) => stat.label === "Live promo codes");
+
+    expect(live).toMatchObject({ value: 1, detail: "1 scheduled" });
+  });
+
+  it("says plainly when nothing is scheduled, and adds nothing to the other figures", () => {
+    const stats = overviewStats({ ...counts, sales: [sale()], codes: [code()] }, NOW);
+
+    expect(Object.fromEntries(stats.map((stat) => [stat.label, stat.detail]))).toEqual({
+      "Live products": undefined,
+      Drafts: undefined,
+      "Orders to fulfil": undefined,
+      "Running sales": "None scheduled",
+      "Live promo codes": "None scheduled",
+    });
+  });
+
   it("links each figure to the page behind it", () => {
     const stats = overviewStats({ ...counts, sales: [], codes: [] }, NOW);
 
