@@ -34,13 +34,13 @@ const ORIGIN = "http://localhost:3000";
 
 /** The file as rows of cells. None of these cells needs quoting. */
 function table(csv: string): Record<string, string>[] {
-  const [header, ...rows] = csv.replace(/^﻿/, "").trimEnd().split("\r\n").map((row) => row.split(","));
+  const [header, ...rows] = csv.replace(/^\uFEFF/, "").trimEnd().split("\r\n").map((row) => row.split(","));
   return rows.map((row) => Object.fromEntries(header.map((name, i) => [name, row[i] ?? ""])));
 }
 
 describe("productsCsv", () => {
   it("names every column", () => {
-    const [header] = productsCsv([], { origin: ORIGIN }).replace(/^﻿/, "").split("\r\n");
+    const [header] = productsCsv([], { origin: ORIGIN }).replace(/^\uFEFF/, "").split("\r\n");
     expect(header.split(",")).toEqual([
       "Name",
       "Product code",

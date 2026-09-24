@@ -30,5 +30,5 @@ function write(cell: Cell): string {
 }
 
 export function toCsv(rows: readonly (readonly Cell[])[]): string {
-  return "﻿" + rows.map((row) => row.map(write).join(",") + "\r\n").join("");
+  return "\uFEFF" + rows.map((row) => row.map(write).join(",") + "\r\n").join("");
 }

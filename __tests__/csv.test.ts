@@ -1,6 +1,6 @@
 import { num, toCsv } from "@/lib/export/csv";
 
-const BOM = "﻿";
+const BOM = "\uFEFF";
 
 describe("toCsv", () => {
   it("writes cells split by commas and rows by CRLF, marked as UTF-8 so £ and accents survive Excel", () => {

@@ -309,6 +309,44 @@ TypeScript, deployed to Vercel.
   so a spreadsheet never runs a product name as a formula. Numbers are a
   separate cell kind, so a loss (-1.70) is not mistaken for a formula.
 
+## CSV import
+
+- "Import CSV" on the products list (`/admin/products/import`) reads a CSV -
+  our own export, edited in a spreadsheet, or one typed from scratch - and
+  shows **exactly what it would change** before anything is written.
+- `planImport` (`src/lib/import/products.ts`) is pure: file, products and
+  categories in, a plan out - row by row, new or changed or unchanged, the
+  changes as "Price: £6.00 → £6.50", and every problem named by row.
+- **Matched by web address**, exactly as stored first and tidied only as a
+  fallback: an address imported from Shopify can hold what `slugify` would
+  strip (`ice-lolly-brooch-_-yellow`), and tidied first it matched nothing
+  and an untouched export added a duplicate. Found by round-tripping the
+  real catalogue. A row with a new address, or none, adds a draft; one
+  without an address whose name is already taken is refused, not
+  duplicated.
+- **A column left out changes nothing**; a column present is what the
+  product becomes, blank included - except Status, where blank leaves it.
+  The worked-out columns (VAT, profit, margin...) are ignored and said to
+  be; Photos are not imported.
+- The admin's own rules apply: a name, whole-number stock, a lead time for
+  made-to-order, no active piece without a price, a was-price above the
+  price, one product per code, one row per product.
+- **All or nothing.** Any problem imports nothing; the import is one
+  transaction. It is checked, then applied in a second request that works
+  the plan out afresh and applies it only if its hash matches what was
+  seen (`planSignature`) - a product saved in between is not overwritten by
+  a preview that no longer holds.
+- **Round trip:** importing our own export untouched must change nothing.
+  A test holds this, and it was checked on the real catalogue (237
+  unchanged).
+- `parseCsv` (`src/lib/import/csv.ts`) reads RFC 4180 as Excel and Numbers
+  write it: BOM, quoted cells with commas, quotes and line breaks, CRLF or
+  LF, empty rows skipped; an unclosed quote is an error naming its row.
+- The export's apostrophe before text a spreadsheet would run (`'=...`) is
+  taken back on import.
+- Write `\uFEFF` as the escape in source, never the character itself: a
+  BOM pasted literally is invisible, and one was.
+
 ## Price list import
 
 - Her three Numbers files name nothing: every piece is identified by a
