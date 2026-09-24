@@ -43,8 +43,11 @@ export function discountPenceFor(pricePence: number, sale: Pick<PricingSale, "ty
   return clamp(raw, 0, pricePence);
 }
 
-/** Whether a sale is live at `now`: start is inclusive, end is exclusive. */
-function isLive(sale: PricingSale, now: Date): boolean {
+/**
+ * Whether a sale is live at `now`: switched on, start inclusive, end
+ * exclusive. The shop prices by it, and the admin's Overview counts by it.
+ */
+export function isSaleLive(sale: Pick<PricingSale, "active" | "startsAt" | "endsAt">, now: Date): boolean {
   if (!sale.active) return false;
   if (sale.startsAt.getTime() > now.getTime()) return false;
   if (sale.endsAt !== null && sale.endsAt.getTime() <= now.getTime()) return false;
@@ -67,7 +70,7 @@ export function activeSaleFor<T extends PricingSale>(
   let bestDiscount = 0;
 
   for (const sale of sales) {
-    if (!isLive(sale, now)) continue;
+    if (!isSaleLive(sale, now)) continue;
 
     const discount = discountPenceFor(pricePence, sale);
     if (discount > bestDiscount) {

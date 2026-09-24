@@ -142,16 +142,30 @@ export type Redeemability =
  * guessing at neighbouring ones. A minimum spend is different: the shopper can
  * act on it, so it says so plainly.
  */
+/**
+ * Whether a shopper could use the code at `now`, whatever their basket:
+ * switched on, started, not ended, not used up. A minimum spend is the
+ * shopper's to meet, so it does not make a code any less live. Checkout
+ * decides by it, and the admin's Overview counts by it.
+ */
+export function codeIsLive(
+  code: Pick<RedeemableCode, "active" | "startsAt" | "endsAt" | "usageLimit" | "usedCount">,
+  now: Date,
+): boolean {
+  if (!code.active) return false;
+  if (code.startsAt.getTime() > now.getTime()) return false;
+  if (code.endsAt !== null && code.endsAt.getTime() <= now.getTime()) return false;
+  if (code.usageLimit !== null && code.usedCount >= code.usageLimit) return false;
+  return true;
+}
+
 export function codeRedeemability(
   code: RedeemableCode,
   { now, subtotalPence }: { now: Date; subtotalPence: number },
 ): Redeemability {
   const unavailable = { ok: false as const, reason: "That code is not available." };
 
-  if (!code.active) return unavailable;
-  if (code.startsAt.getTime() > now.getTime()) return unavailable;
-  if (code.endsAt !== null && code.endsAt.getTime() <= now.getTime()) return unavailable;
-  if (code.usageLimit !== null && code.usedCount >= code.usageLimit) return unavailable;
+  if (!codeIsLive(code, now)) return unavailable;
 
   if (code.minSpendPence !== null && subtotalPence < code.minSpendPence) {
     return { ok: false, reason: `That code needs a basket of ${formatPence(code.minSpendPence)} or more.` };

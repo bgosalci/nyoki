@@ -584,6 +584,18 @@ TypeScript, deployed to Vercel.
   name, which also becomes the page's meta description. The shopkeeper's own
   description always wins.
 
+## Overview
+
+- The Overview's figures come from `overviewStats` (`src/lib/admin/overview.ts`):
+  live products, drafts, orders to fulfil, running sales, live promo codes -
+  each a link to the page behind it (the label's link is stretched over its
+  card, so the list stays a list).
+- **Sales and codes are counted by the rules the shop and checkout use**:
+  `isSaleLive` (switched on and between its dates) and `codeIsLive`
+  (switched on, started, not ended, not used up; a minimum spend does not
+  count against it). "Running sales" once counted every sale switched on,
+  scheduled and ended ones included.
+
 ## Admin chrome
 
 - The admin has a fixed top bar (`AdminTopBar`, h-14) and a fixed footer
