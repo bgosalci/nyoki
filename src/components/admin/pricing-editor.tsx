@@ -6,6 +6,7 @@ import { CostLinesTable } from "@/components/admin/cost-lines-table";
 import { Field, inputClass } from "@/components/admin/field";
 import { PhotoField } from "@/components/admin/photo-field";
 import { ProductThumbnail } from "@/components/admin/product-thumbnail";
+import { TopSaveButton } from "@/components/admin/save-slot";
 import { UnsavedChanges } from "@/components/admin/unsaved-changes";
 import { ui } from "@/lib/brand/ui";
 import {
@@ -162,8 +163,9 @@ export function PricingEditor({
   }
 
   return (
-    <form ref={formRef} action={formAction} className="mt-8 flex flex-col gap-10">
+    <form id="product-price" ref={formRef} action={formAction} className="mt-8 flex flex-col gap-10">
       <UnsavedChanges formRef={formRef} saved={state.saved ? state : null} ignore={WORKING_OUT} />
+      <TopSaveButton form="product-price" pending={isPending} label="Save" />
 
       {state.saved ? (
         <p role="status" className={`rounded-md border px-3 py-2 text-sm ${ui.card} ${ui.rule}`}>

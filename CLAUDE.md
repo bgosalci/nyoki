@@ -181,6 +181,13 @@ TypeScript, deployed to Vercel.
 - Leaving a product's Details or Price with unsaved edits asks first - see
   Unsaved changes.
 - `BackLink` is a bordered button, not underlined text, on every item page.
+- **Save is at the top as well as the bottom** of a product's Details and
+  Price tabs, and the new-product page: `SaveSlot` sits beside the title,
+  and each form draws a `TopSaveButton` into it through a portal. Drawn by
+  the form, it shares the form's pending state ("Saving…", no second press)
+  though it sits outside the form's markup; its `form` attribute ties it
+  back, so it submits exactly as the bottom button does. A page with no slot
+  gets no top button.
 
 ## Unsaved changes
 

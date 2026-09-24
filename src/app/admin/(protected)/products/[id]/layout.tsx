@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { ProductSteps } from "@/components/admin/product-steps";
+import { SaveSlot } from "@/components/admin/save-slot";
 import { ProductTabs } from "@/components/admin/product-tabs";
 import { db } from "@/lib/db";
 import { PRODUCT_LIST_ORDER } from "@/lib/products/filter";
@@ -28,7 +29,11 @@ export default async function ProductLayout({
     <>
       <div className="flex flex-col gap-3">
         <ProductSteps productId={product.id} fallback={{ href: "/admin/products", items: everything }} />
-        <h1 className="text-xl font-semibold tracking-tight">{product.name}</h1>
+        {/* Each tab's form puts its Save here too, beside the name. */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-xl font-semibold tracking-tight">{product.name}</h1>
+          <SaveSlot />
+        </div>
       </div>
 
       <ProductTabs productId={product.id} />

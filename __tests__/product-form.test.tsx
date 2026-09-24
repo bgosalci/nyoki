@@ -1,8 +1,9 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import Link from "next/link";
 
 import { ProductForm } from "@/components/admin/product-form";
+import { SaveSlot } from "@/components/admin/save-slot";
 
 const noopAction = async () => ({ errors: {} });
 
@@ -218,3 +219,48 @@ describe("ProductForm, when a save goes through", () => {
     expect(await screen.findByDisplayValue("hand-thrown-mug")).toBe(screen.getByLabelText(/web address/i));
   });
 });
+
+describe("ProductForm, saving from the top of the page", () => {
+  it("puts Save beside the page's title as well as at the bottom, so a long form need not be scrolled", () => {
+    render(
+      <>
+        <SaveSlot />
+        <ProductForm action={noopAction} product={mug} categories={categories} submitLabel="Save changes" />
+      </>,
+    );
+
+    const saves = screen.getAllByRole("button", { name: "Save changes" });
+    expect(saves).toHaveLength(2);
+    expect(document.getElementById("page-save")).toContainElement(saves[0]);
+  });
+
+  it("saves the form from the top button, and both say so while it saves", async () => {
+    let finish: (state: { errors: object }) => void = () => {};
+    const action = jest.fn(() => new Promise<{ errors: object }>((resolve) => (finish = resolve)));
+    render(
+      <>
+        <SaveSlot />
+        <ProductForm action={action} product={mug} categories={categories} submitLabel="Save changes" />
+      </>,
+    );
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText(/^name/i), " - Blue");
+    await user.click(screen.getAllByRole("button", { name: "Save changes" })[0]);
+
+    expect(action).toHaveBeenCalledTimes(1);
+    const posted = (action.mock.calls[0] as unknown[])[1] as FormData;
+    expect(posted.get("name")).toBe("Hand-thrown Mug - Blue");
+    const saving = await screen.findAllByRole("button", { name: "Saving…" });
+    expect(saving).toHaveLength(2);
+    saving.forEach((button) => expect(button).toBeDisabled());
+    await act(async () => finish({ errors: {} }));
+  });
+
+  it("keeps a single Save where the page has no place for one at the top", () => {
+    render(<ProductForm action={noopAction} product={mug} categories={categories} submitLabel="Save changes" />);
+
+    expect(screen.getAllByRole("button", { name: "Save changes" })).toHaveLength(1);
+  });
+});
+

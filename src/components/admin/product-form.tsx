@@ -4,6 +4,7 @@ import { ui } from "@/lib/brand/ui";
 import Link from "next/link";
 
 import { Field, inputClass } from "@/components/admin/field";
+import { TopSaveButton } from "@/components/admin/save-slot";
 import { UnsavedChanges } from "@/components/admin/unsaved-changes";
 import { flattenTree } from "@/lib/categories/tree";
 import { formatPence } from "@/lib/money";
@@ -52,9 +53,10 @@ export function ProductForm({
   const categoryTree = flattenTree(categories);
 
   return (
-    <form ref={formRef} action={formAction} onSubmit={onSubmit} className="flex max-w-2xl flex-col gap-8">
+    <form id="product-details" ref={formRef} action={formAction} onSubmit={onSubmit} className="flex max-w-2xl flex-col gap-8">
       {/* A new product is saved by leaving for its page, so only an edit reports a save. */}
       <UnsavedChanges formRef={formRef} saved={Object.keys(errors).length === 0 ? state : null} />
+      <TopSaveButton form="product-details" pending={isPending} label={submitLabel} />
 
       <section className="flex flex-col gap-5">
         <Field label="Name" name="name" error={errors.name}>
