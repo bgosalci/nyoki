@@ -8,7 +8,7 @@ import Link from "next/link";
 
 import { db } from "@/lib/db";
 import { CategoryPills } from "@/components/admin/category-pills";
-import { ExportLink } from "@/components/admin/export-link";
+import { ExportButton } from "@/components/admin/export-button";
 import { subtreeIds } from "@/lib/products/category-pills";
 import { PRODUCT_LIST_ORDER, parseProductFilter, productWhere } from "@/lib/products/filter";
 
@@ -49,7 +49,7 @@ export default async function ProductsPage({
         <h1 className="text-xl font-semibold tracking-tight">Products</h1>
 
         <div className="flex flex-wrap items-center gap-2">
-          <ExportLink q={filter.q ?? ""} status={filter.status ?? ""} category={filter.category ?? ""} count={filtering ? products.length : total} />
+          <ExportButton q={filter.q ?? ""} status={filter.status ?? ""} category={filter.category ?? ""} count={filtering ? products.length : total} />
           <Link
             href="/admin/products/new"
             className={`rounded-md px-3.5 py-2 text-sm font-medium ${ui.buttonPrimary}`}

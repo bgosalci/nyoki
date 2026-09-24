@@ -289,7 +289,10 @@ TypeScript, deployed to Vercel.
 
 ## CSV export
 
-- "Export CSV" on the products list exports **every product field** from
+- "Export CSV" on the products list **asks first** - a `ConfirmDialog`
+  naming how many products the file holds and that it carries the shop's
+  costs and margins - then downloads through a hidden `download` link.
+- It exports **every product field** from
   the database, for the list **as it is filtered** - unfiltered, the whole
   catalogue (`/admin/products/export`, a route handler, which checks the
   account itself: a layout does not wrap a route handler).
