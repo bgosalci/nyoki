@@ -12,7 +12,8 @@ export default async function EditProductPage({
 }) {
   const { id } = await params;
 
-  const [product, categories] = await Promise.all([
+  const photo = { orderBy: { position: "asc" as const }, take: 1, select: { url: true, alt: true } };
+  const [product, categories, chosen, options] = await Promise.all([
     db.product.findUnique({
       where: { id },
       include: {
@@ -21,6 +22,18 @@ export default async function EditProductPage({
       },
     }),
     db.category.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, parentId: true } }),
+    // "You may also like": what is chosen, in order, and the pieces on the
+    // shop that could be.
+    db.alsoLike.findMany({
+      where: { productId: id },
+      orderBy: { position: "asc" },
+      select: { piece: { select: { id: true, name: true, status: true, images: photo } } },
+    }),
+    db.product.findMany({
+      where: { status: "ACTIVE", id: { not: id } },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, images: photo },
+    }),
   ]);
   if (!product) notFound();
 
@@ -53,6 +66,10 @@ export default async function EditProductPage({
           product={initial}
           pricing={{ productId: product.id, pricePence: product.pricePence, compareAtPence: product.compareAtPence }}
           categories={categories}
+          alsoLike={{
+            options: options.map(({ images, ...piece }) => ({ ...piece, image: images[0] ?? null })),
+            chosen: chosen.map(({ piece: { images, status, ...piece } }) => ({ ...piece, image: images[0] ?? null, onShop: status === "ACTIVE" })),
+          }}
         />
       </div>
     </>

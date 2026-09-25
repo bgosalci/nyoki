@@ -13,7 +13,8 @@ import { formatPence } from "@/lib/money";
 import { effectivePricePence } from "@/lib/pricing";
 import { chainTo } from "@/lib/products/category-pills";
 import { productFacts } from "@/lib/storefront/facts";
-import { activeProducts, toCards } from "@/lib/storefront/queries";
+import { ALSO_LIKE_LIMIT, alsoLike } from "@/lib/products/also-like";
+import { activeProducts, CARD_SELECT, toCards } from "@/lib/storefront/queries";
 
 async function findProduct(slug: string) {
   return db.product.findFirst({
@@ -52,12 +53,20 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const facts = productFacts(product);
 
   const categoryIds = product.categories.map((link) => link.categoryId);
-  const [categories, related] = await Promise.all([
+  const [categories, chosen, automatic] = await Promise.all([
     db.category.findMany({ select: { id: true, slug: true, name: true, parentId: true } }),
+    // Njomza's own choices, in her order; one taken off the shop is skipped.
+    db.alsoLike.findMany({
+      where: { productId: product.id, piece: { status: "ACTIVE" } },
+      orderBy: { position: "asc" },
+      select: { piece: { select: CARD_SELECT } },
+    }),
+    // Pieces from the same categories, to fill whatever she has not chosen.
     categoryIds.length > 0
-      ? activeProducts({ slug: { not: product.slug }, categories: { some: { categoryId: { in: categoryIds } } } }, 4)
+      ? activeProducts({ slug: { not: product.slug }, categories: { some: { categoryId: { in: categoryIds } } } }, ALSO_LIKE_LIMIT * 2)
       : Promise.resolve([]),
   ]);
+  const related = alsoLike({ chosen: chosen.map((link) => link.piece), automatic });
 
   const own = categories.find((c) => c.id === categoryIds[0]);
   const trail = own ? chainTo(categories, own.slug) : [];

@@ -1,6 +1,8 @@
 "use client";
 
+import type { ChosenPiece } from "@/components/admin/also-like-field";
 import { ProductForm, type ProductFormCategory } from "@/components/admin/product-form";
+import type { PickerProduct } from "@/components/admin/product-picker";
 import { updateProduct } from "@/app/admin/(protected)/products/actions";
 import type { ProductInput } from "@/lib/products/validate";
 
@@ -15,11 +17,13 @@ export function EditProductForm({
   product,
   pricing,
   categories,
+  alsoLike,
 }: {
   id: string;
   product: ProductInput;
   pricing: { productId: string; pricePence: number; compareAtPence: number | null };
   categories: ProductFormCategory[];
+  alsoLike: { options: PickerProduct[]; chosen: ChosenPiece[] };
 }) {
   return (
     <ProductForm
@@ -27,6 +31,7 @@ export function EditProductForm({
       product={product}
       pricing={pricing}
       categories={categories}
+      alsoLike={alsoLike}
       submitLabel="Save changes"
     />
   );

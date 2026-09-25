@@ -3,7 +3,9 @@
 import { ui } from "@/lib/brand/ui";
 import Link from "next/link";
 
+import { AlsoLikeField, type ChosenPiece } from "@/components/admin/also-like-field";
 import { CategoryChooser } from "@/components/admin/category-chooser";
+import type { PickerProduct } from "@/components/admin/product-picker";
 import { Field, inputClass } from "@/components/admin/field";
 import { TopSaveButton } from "@/components/admin/save-slot";
 import { UnsavedChanges } from "@/components/admin/unsaved-changes";
@@ -33,6 +35,7 @@ export function ProductForm({
   product,
   pricing,
   categories = [],
+  alsoLike,
   initialState = EMPTY,
   submitLabel = "Save product",
 }: {
@@ -44,6 +47,8 @@ export function ProductForm({
    */
   pricing?: { productId: string; pricePence: number; compareAtPence: number | null };
   categories?: ProductFormCategory[];
+  /** The pieces to suggest under "You may also like": what can be, and what is. */
+  alsoLike?: { options: PickerProduct[]; chosen: ChosenPiece[] };
   initialState?: ProductFormState;
   submitLabel?: string;
 }) {
@@ -271,6 +276,8 @@ export function ProductForm({
       </section>
 
       <CategoryChooser categories={categories} chosen={product?.categoryIds ?? []} error={errors.categoryIds} />
+
+      {alsoLike ? <AlsoLikeField options={alsoLike.options} chosen={alsoLike.chosen} error={errors.alsoLikeIds} /> : null}
 
       <div className={`flex items-center gap-3 border-t pt-6 ${ui.ruleOnPage}`}>
         <button

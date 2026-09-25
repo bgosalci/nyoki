@@ -8,6 +8,7 @@ import { requireAdmin } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
 import { repriceProduct, validateRepriceInput, type RepriceFields } from "@/lib/products/repricing";
 import { activationBlockedBecause } from "@/lib/products/activation";
+import { parseAlsoLikeIds } from "@/lib/products/also-like";
 import { validateProductInput, type ProductStatus } from "@/lib/products/validate";
 import { isUniqueViolationOn } from "@/lib/db-errors";
 import { uniqueSlug } from "@/lib/slug";
@@ -31,6 +32,21 @@ async function takenSlugs(base: string, exceptId?: string): Promise<string[]> {
   return rows.map((row) => row.slug);
 }
 
+/**
+ * The "You may also like" pieces posted, in order, less any that no longer
+ * exist - ids come from the browser, and a product deleted since the form was
+ * opened would otherwise fail the whole save.
+ */
+async function alsoLikeFrom(formData: FormData, selfId: string | null) {
+  const parsed = parseAlsoLikeIds(formData, selfId);
+  if (!parsed.ok) return parsed;
+  const known = new Set(
+    (await db.product.findMany({ where: { id: { in: parsed.ids } }, select: { id: true } })).map((product) => product.id),
+  );
+  const ids = parsed.ids.filter((pieceId) => known.has(pieceId));
+  return { ok: true as const, create: ids.map((pieceId, position) => ({ pieceId, position })) };
+}
+
 export async function createProduct(
   _state: ProductFormState,
   formData: FormData,
@@ -45,6 +61,9 @@ export async function createProduct(
   const blocked = result.data.status === "ACTIVE" ? activationBlockedBecause({ pricePence: 0 }) : null;
   if (blocked) return { errors: { status: blocked } };
 
+  const alsoLike = await alsoLikeFrom(formData, null);
+  if (!alsoLike.ok) return { errors: { alsoLikeIds: alsoLike.error } };
+
   const slug = uniqueSlug(result.data.slug, await takenSlugs(result.data.slug));
   const { categoryIds, ...fields } = result.data;
 
@@ -56,6 +75,7 @@ export async function createProduct(
         pricePence: 0,
         slug,
         categories: { create: categoryIds.map((categoryId) => ({ categoryId })) },
+        alsoLike: { create: alsoLike.create },
       },
     });
     id = created.id;
@@ -87,22 +107,27 @@ export async function updateProduct(
     if (blocked) return { errors: { status: blocked } };
   }
 
+  const alsoLike = await alsoLikeFrom(formData, id);
+  if (!alsoLike.ok) return { errors: { alsoLikeIds: alsoLike.error } };
+
   // The price is not among these fields, so saving the product form cannot
   // change it or reset it - only the Price tab can.
   const slug = uniqueSlug(result.data.slug, await takenSlugs(result.data.slug, id));
   const { categoryIds, ...fields } = result.data;
 
   try {
-    // Replace the category set in one transaction, so a failure part-way
-    // cannot leave the product in half its intended categories.
+    // Replace the category set and the chosen pieces in one transaction, so a
+    // failure part-way cannot leave the product with half of either.
     await db.$transaction([
       db.categoryProduct.deleteMany({ where: { productId: id } }),
+      db.alsoLike.deleteMany({ where: { productId: id } }),
       db.product.update({
         where: { id },
         data: {
           ...fields,
           slug,
           categories: { create: categoryIds.map((categoryId) => ({ categoryId })) },
+          alsoLike: { create: alsoLike.create },
         },
       }),
     ]);

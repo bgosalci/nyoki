@@ -551,6 +551,24 @@ TypeScript, deployed to Vercel.
 - No cart yet: product pages say ordering is coming soon rather than showing a
   button that does nothing.
 
+## You may also like
+
+- A product's page shows up to four pieces under "You may also like":
+  **Njomza's choices first**, in her order, then pieces from the same
+  categories to fill the row (`alsoLike` in `src/lib/products/also-like.ts`),
+  so choosing one or two never leaves it short and choosing none keeps it
+  fully automatic, as it always was.
+- Chosen on the product's Details tab (`AlsoLikeField`), by photo through the
+  PhotoChooser, from the pieces on the shop; stored as `AlsoLike` rows
+  (product, piece, position), gone with either product. Saved with the
+  details, in the same transaction as the categories.
+- A chosen piece taken off the shop since is **skipped** on the page and the
+  gap filled automatically; the admin still lists it, marked "Not on the
+  shop, so skipped". A deleted one simply goes.
+- `parseAlsoLikeIds` drops repeats, blanks and the product itself quietly,
+  and refuses more than four; the save drops ids no longer in the database.
+- Not in the CSV/JSON/XML export or import yet.
+
 ## Home page
 
 - Everything on it that is not simply the catalogue lives in the `HomePage`

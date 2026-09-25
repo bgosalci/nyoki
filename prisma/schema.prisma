@@ -99,11 +99,34 @@ model Product {
   sales      SaleProduct[]
   orderItems OrderItem[]
 
+  // "You may also like": the pieces Njomza chose for this one, and the
+  // products that chose this one.
+  alsoLike     AlsoLike[] @relation("AlsoLikeFrom")
+  alsoLikedFor AlsoLike[] @relation("AlsoLikeTo")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([status])
   @@map("products")
+}
+
+/**
+ * A piece chosen to show under "You may also like" on a product's page, in
+ * the order it was chosen. Gone with either product; the page fills any gap
+ * from the same categories.
+ */
+model AlsoLike {
+  productId String @map("product_id")
+  pieceId   String @map("piece_id")
+  position  Int    @default(0)
+
+  product Product @relation("AlsoLikeFrom", fields: [productId], references: [id], onDelete: Cascade)
+  piece   Product @relation("AlsoLikeTo", fields: [pieceId], references: [id], onDelete: Cascade)
+
+  @@id([productId, pieceId])
+  @@index([pieceId])
+  @@map("also_like")
 }
 
 model ProductImage {

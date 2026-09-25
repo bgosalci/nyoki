@@ -44,7 +44,9 @@ export type ProductField =
   | "oneOfAKind"
   | "madeToOrder"
   | "leadTimeDays"
-  | "categoryIds";
+  | "categoryIds"
+  // Read apart, by parseAlsoLikeIds; here so its problem shows on the form.
+  | "alsoLikeIds";
 
 export type ProductErrors = Partial<Record<ProductField, string>>;
 

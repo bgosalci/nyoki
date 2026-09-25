@@ -268,3 +268,33 @@ describe("ProductForm, saving from the top of the page", () => {
   });
 });
 
+describe("ProductForm, You may also like", () => {
+  it("offers the pieces to suggest on the product's page, and posts those chosen", () => {
+    const { container } = render(
+      <ProductForm
+        action={noopAction}
+        product={mug}
+        categories={categories}
+        alsoLike={{ options: [{ id: "p9", name: "Bud Vase", image: null }], chosen: [{ id: "p8", name: "Stoneware Jug", image: null, onShop: true }] }}
+      />,
+    );
+
+    expect(screen.getByRole("group", { name: "You may also like" })).toHaveTextContent("Stoneware Jug");
+    expect(new FormData(container.querySelector("form")!).getAll("alsoLikeIds")).toEqual(["p8"]);
+  });
+
+  it("shows why a choice was refused", () => {
+    render(
+      <ProductForm
+        action={noopAction}
+        product={mug}
+        categories={categories}
+        alsoLike={{ options: [], chosen: [] }}
+        initialState={{ errors: { alsoLikeIds: "Choose at most 4 pieces." } }}
+      />,
+    );
+
+    expect(screen.getByRole("group", { name: "You may also like" })).toHaveTextContent("Choose at most 4 pieces.");
+  });
+});
+
