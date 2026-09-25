@@ -269,17 +269,23 @@ describe("ProductForm, saving from the top of the page", () => {
 });
 
 describe("ProductForm, You may also like", () => {
-  it("offers the pieces to suggest on the product's page, and posts those chosen", () => {
+  it("shows the pieces the page will suggest, hers and the automatic ones, and posts those she chose", () => {
     const { container } = render(
       <ProductForm
         action={noopAction}
         product={mug}
         categories={categories}
-        alsoLike={{ options: [{ id: "p9", name: "Bud Vase", image: null }], chosen: [{ id: "p8", name: "Stoneware Jug", image: null, onShop: true }] }}
+        alsoLike={{
+          options: [{ id: "p9", name: "Bud Vase", image: null }],
+          automatic: [{ id: "p7", name: "Speckled Bowl", image: null }],
+          chosen: [{ id: "p8", name: "Stoneware Jug", image: null, onShop: true }],
+        }}
       />,
     );
 
-    expect(screen.getByRole("group", { name: "You may also like" })).toHaveTextContent("Stoneware Jug");
+    const field = screen.getByRole("group", { name: "You may also like" });
+    expect(field).toHaveTextContent("Stoneware Jug");
+    expect(field).toHaveTextContent("Speckled Bowl");
     expect(new FormData(container.querySelector("form")!).getAll("alsoLikeIds")).toEqual(["p8"]);
   });
 
@@ -289,7 +295,7 @@ describe("ProductForm, You may also like", () => {
         action={noopAction}
         product={mug}
         categories={categories}
-        alsoLike={{ options: [], chosen: [] }}
+        alsoLike={{ options: [], automatic: [], chosen: [] }}
         initialState={{ errors: { alsoLikeIds: "Choose at most 4 pieces." } }}
       />,
     );

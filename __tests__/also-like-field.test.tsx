@@ -8,16 +8,22 @@ beforeAll(() => {
   HTMLDialogElement.prototype.close = function () { this.removeAttribute("open"); };
 });
 
-const options = ["Bud Vase", "Stoneware Mug", "Snowflake Card", "Stocking Card", "Three Stars"].map((name, i) => ({
-  id: `p${i + 1}`,
-  name,
-  image: null,
-}));
+const piece = (id: string, name: string) => ({ id, name, image: null });
+const snowflake = piece("p1", "Snowflake Card");
+const stocking = piece("p2", "Stocking Card");
+const stars = piece("p3", "Three Stars");
+const baubles = piece("p4", "Tree Baubles");
+const reindeer = piece("p5", "Reindeer Card");
+const vase = piece("p6", "Bud Vase");
 
-function setup(chosen: React.ComponentProps<typeof AlsoLikeField>["chosen"] = []) {
+// What the shop picks by itself for this product: same categories, newest first.
+const automatic = [snowflake, stocking, stars, baubles, reindeer];
+const options = [...automatic, vase];
+
+function setup(props: Partial<React.ComponentProps<typeof AlsoLikeField>> = {}) {
   const { container } = render(
     <form>
-      <AlsoLikeField options={options} chosen={chosen} />
+      <AlsoLikeField options={options} automatic={automatic} chosen={[]} {...props} />
     </form>,
   );
   const posted = () => new FormData(container.querySelector("form")!).getAll("alsoLikeIds");
@@ -25,62 +31,90 @@ function setup(chosen: React.ComponentProps<typeof AlsoLikeField>["chosen"] = []
 }
 
 const field = () => screen.getByRole("group", { name: "You may also like" });
-const pick = async (user: ReturnType<typeof userEvent.setup>, opener: RegExp, name: string) => {
-  await user.click(within(field()).getByRole("button", { name: opener }));
-  await user.click(within(screen.getByRole("dialog")).getByRole("button", { name }));
-};
+/** The row as shown: each piece's name and whether it was picked automatically. */
+const row = () =>
+  within(within(field()).getByRole("list", { name: "Shown on the product's page" }))
+    .getAllByRole("listitem")
+    .map((tile) => `${tile.querySelector("[data-name]")?.textContent ?? "(empty)"} - ${tile.querySelector("[data-how]")?.textContent ?? ""}`);
 
 describe("AlsoLikeField", () => {
-  it("is automatic until Njomza chooses, and says what automatic means", () => {
+  it("shows the four pieces the product's page shows now, picked automatically", () => {
     const { posted } = setup();
 
-    expect(within(field()).getByText(/chosen automatically/i)).toHaveTextContent(/same categories/i);
-    expect(within(field()).getByRole("button", { name: "Choose pieces" })).toBeInTheDocument();
+    expect(row()).toEqual([
+      "Snowflake Card - Automatic",
+      "Stocking Card - Automatic",
+      "Three Stars - Automatic",
+      "Tree Baubles - Automatic",
+    ]);
+    expect(within(field()).getByText(/picked automatically from the same categories/i)).toBeInTheDocument();
     expect(posted()).toEqual([]);
   });
 
-  it("adds the pieces she chooses by photo, in the order chosen", async () => {
+  it("makes the row her own when she changes one: the four she sees, with her choice in its place", async () => {
     const { user, posted } = setup();
 
-    await pick(user, /choose pieces/i, "Snowflake Card");
-    await pick(user, /add a piece/i, "Bud Vase");
+    await user.click(within(field()).getByRole("button", { name: "Change Stocking Card" }));
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Bud Vase" }));
 
-    expect(within(field()).getAllByRole("listitem").map((item) => item.textContent)).toEqual([
-      expect.stringContaining("Snowflake Card"),
-      expect.stringContaining("Bud Vase"),
+    expect(row()).toEqual([
+      "Snowflake Card - Your choice",
+      "Bud Vase - Your choice",
+      "Three Stars - Your choice",
+      "Tree Baubles - Your choice",
     ]);
-    expect(posted()).toEqual(["p3", "p1"]);
+    expect(posted()).toEqual(["p1", "p6", "p3", "p4"]);
   });
 
-  it("does not offer a piece already chosen", async () => {
-    const { user } = setup([{ ...options[0], onShop: true }]);
+  it("does not offer a piece already in the row", async () => {
+    const { user } = setup();
 
-    await user.click(within(field()).getByRole("button", { name: /add a piece/i }));
+    await user.click(within(field()).getByRole("button", { name: "Change Snowflake Card" }));
 
-    expect(within(screen.getByRole("dialog")).queryByRole("button", { name: "Bud Vase" })).not.toBeInTheDocument();
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).queryByRole("button", { name: "Stocking Card" })).not.toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Reindeer Card" })).toBeInTheDocument();
   });
 
-  it("takes one off, or goes back to automatic altogether", async () => {
-    const { user, posted } = setup([{ ...options[0], onShop: true }, { ...options[1], onShop: true }]);
+  it("shows her choices first and fills the rest automatically, as the page does", () => {
+    setup({ chosen: [{ ...vase, onShop: true }, { ...stars, onShop: true }] });
 
-    await user.click(within(field()).getByRole("button", { name: "Remove Bud Vase" }));
-    expect(posted()).toEqual(["p2"]);
+    expect(row()).toEqual([
+      "Bud Vase - Your choice",
+      "Three Stars - Your choice",
+      "Snowflake Card - Automatic",
+      "Stocking Card - Automatic",
+    ]);
+  });
+
+  it("goes back to the automatic pieces", async () => {
+    const { user, posted } = setup({ chosen: [{ ...vase, onShop: true }] });
 
     await user.click(within(field()).getByRole("button", { name: "Back to automatic" }));
+
     expect(posted()).toEqual([]);
-    expect(within(field()).getByText(/chosen automatically/i)).toBeInTheDocument();
+    expect(row()[0]).toBe("Snowflake Card - Automatic");
+    expect(within(field()).queryByRole("button", { name: "Back to automatic" })).not.toBeInTheDocument();
   });
 
-  it("holds four at most, as the row does", async () => {
-    setup(options.slice(0, 4).map((option) => ({ ...option, onShop: true })));
+  it("leaves a place to add one where the categories find fewer than four", async () => {
+    const { user, posted } = setup({ automatic: [snowflake] });
 
-    expect(within(field()).queryByRole("button", { name: /add a piece/i })).not.toBeInTheDocument();
-    expect(within(field()).getByText(/four chosen/i)).toBeInTheDocument();
+    expect(row()).toEqual(["Snowflake Card - Automatic", "(empty) - ", "(empty) - ", "(empty) - "]);
+    await user.click(within(field()).getAllByRole("button", { name: "Add a piece" })[0]);
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Bud Vase" }));
+
+    expect(posted()).toEqual(["p1", "p6"]);
   });
 
-  it("marks a chosen piece that is no longer on the shop, since the page skips it", () => {
-    setup([{ id: "gone", name: "Old Card", image: null, onShop: false }]);
+  it("names a chosen piece taken off the shop, which the page skips, and lets it go", async () => {
+    const { user, posted } = setup({ chosen: [{ id: "old", name: "Old Card", image: null, onShop: false }, { ...vase, onShop: true }] });
 
-    expect(within(field()).getByText("Old Card").closest("li")).toHaveTextContent(/not on the shop/i);
+    expect(row()[0]).toBe("Bud Vase - Your choice");
+    expect(within(field()).getByText(/old card is not on the shop, so it is skipped/i)).toBeInTheDocument();
+
+    await user.click(within(field()).getByRole("button", { name: "Remove Old Card" }));
+
+    expect(posted()).toEqual(["p6"]);
   });
 });

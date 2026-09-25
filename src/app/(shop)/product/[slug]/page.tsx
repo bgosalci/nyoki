@@ -13,8 +13,8 @@ import { formatPence } from "@/lib/money";
 import { effectivePricePence } from "@/lib/pricing";
 import { chainTo } from "@/lib/products/category-pills";
 import { productFacts } from "@/lib/storefront/facts";
-import { ALSO_LIKE_LIMIT, alsoLike } from "@/lib/products/also-like";
-import { activeProducts, CARD_SELECT, toCards } from "@/lib/storefront/queries";
+import { alsoLike } from "@/lib/products/also-like";
+import { automaticAlsoLike, CARD_SELECT, toCards } from "@/lib/storefront/queries";
 
 async function findProduct(slug: string) {
   return db.product.findFirst({
@@ -62,9 +62,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       select: { piece: { select: CARD_SELECT } },
     }),
     // Pieces from the same categories, to fill whatever she has not chosen.
-    categoryIds.length > 0
-      ? activeProducts({ slug: { not: product.slug }, categories: { some: { categoryId: { in: categoryIds } } } }, ALSO_LIKE_LIMIT * 2)
-      : Promise.resolve([]),
+    automaticAlsoLike(product.id, categoryIds),
   ]);
   const related = alsoLike({ chosen: chosen.map((link) => link.piece), automatic });
 

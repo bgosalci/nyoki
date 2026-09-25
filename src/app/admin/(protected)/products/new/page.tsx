@@ -27,7 +27,7 @@ export default async function NewProductPage() {
         <ProductForm
           action={createProduct}
           categories={categories}
-          alsoLike={{ options: options.map(({ images, ...piece }) => ({ ...piece, image: images[0] ?? null })), chosen: [] }}
+          alsoLike={{ options: options.map(({ images, ...piece }) => ({ ...piece, image: images[0] ?? null })), automatic: [], chosen: [] }}
           submitLabel="Create product"
         />
       </div>

@@ -558,13 +558,25 @@ TypeScript, deployed to Vercel.
   categories to fill the row (`alsoLike` in `src/lib/products/also-like.ts`),
   so choosing one or two never leaves it short and choosing none keeps it
   fully automatic, as it always was.
-- Chosen on the product's Details tab (`AlsoLikeField`), by photo through the
-  PhotoChooser, from the pieces on the shop; stored as `AlsoLike` rows
-  (product, piece, position), gone with either product. Saved with the
-  details, in the same transaction as the categories.
+- **The Details tab shows the row as the page shows it now**
+  (`AlsoLikeField`): four tiles, each marked "Your choice" or "Automatic",
+  each with Change, which picks a replacement by photo through the
+  PhotoChooser (pieces already in the row left out). An empty slot, where
+  the categories found fewer than four, offers "Add a piece".
+- **Changing one makes the row hers**: the four she was looking at, with
+  her replacement in its place, all stored as her choices - so the row she
+  saw is the row that stays, rather than the automatic three shifting
+  around her one. "Back to automatic" lets the categories pick again.
+- The automatic pieces come from one query, `automaticAlsoLike` in
+  `src/lib/storefront/queries.ts`, used by the shop page and the admin
+  alike, so the admin cannot show one row while the shop shows another.
+  A new product is in no category yet, so it starts with empty slots.
+- Stored as `AlsoLike` rows (product, piece, position), gone with either
+  product. Saved with the details, in the same transaction as the
+  categories.
 - A chosen piece taken off the shop since is **skipped** on the page and the
-  gap filled automatically; the admin still lists it, marked "Not on the
-  shop, so skipped". A deleted one simply goes.
+  gap filled automatically; the admin says so beneath the row ("... is not
+  on the shop, so it is skipped") with a Remove. A deleted one simply goes.
 - `parseAlsoLikeIds` drops repeats, blanks and the product itself quietly,
   and refuses more than four; the save drops ids no longer in the database.
 - Not in the CSV/JSON/XML export or import yet.

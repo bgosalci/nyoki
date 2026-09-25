@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { EditProductForm } from "@/components/admin/edit-product-form";
 import { EditProductImages } from "@/components/admin/edit-product-images";
 import { db } from "@/lib/db";
+import { automaticAlsoLike } from "@/lib/storefront/queries";
 import type { ProductInput } from "@/lib/products/validate";
 
 export default async function EditProductPage({
@@ -37,6 +38,13 @@ export default async function EditProductPage({
   ]);
   if (!product) notFound();
 
+  // What the product's page picks by itself, picked the same way, so the
+  // field shows what the shop shows.
+  const automatic = await automaticAlsoLike(
+    product.id,
+    product.categories.map((link) => link.categoryId),
+  );
+
   // Narrow the database row to exactly what the form needs, so a column added
   // later does not silently become a hidden form field.
   const initial: ProductInput = {
@@ -68,6 +76,7 @@ export default async function EditProductPage({
           categories={categories}
           alsoLike={{
             options: options.map(({ images, ...piece }) => ({ ...piece, image: images[0] ?? null })),
+            automatic: automatic.map(({ id, name, images }) => ({ id, name, image: images[0] ?? null })),
             chosen: chosen.map(({ piece: { images, status, ...piece } }) => ({ ...piece, image: images[0] ?? null, onShop: status === "ACTIVE" })),
           }}
         />

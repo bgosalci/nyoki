@@ -48,7 +48,7 @@ export function ProductForm({
   pricing?: { productId: string; pricePence: number; compareAtPence: number | null };
   categories?: ProductFormCategory[];
   /** The pieces to suggest under "You may also like": what can be, and what is. */
-  alsoLike?: { options: PickerProduct[]; chosen: ChosenPiece[] };
+  alsoLike?: { options: PickerProduct[]; automatic: PickerProduct[]; chosen: ChosenPiece[] };
   initialState?: ProductFormState;
   submitLabel?: string;
 }) {
@@ -277,7 +277,7 @@ export function ProductForm({
 
       <CategoryChooser categories={categories} chosen={product?.categoryIds ?? []} error={errors.categoryIds} />
 
-      {alsoLike ? <AlsoLikeField options={alsoLike.options} chosen={alsoLike.chosen} error={errors.alsoLikeIds} /> : null}
+      {alsoLike ? <AlsoLikeField options={alsoLike.options} automatic={alsoLike.automatic} chosen={alsoLike.chosen} error={errors.alsoLikeIds} /> : null}
 
       <div className={`flex items-center gap-3 border-t pt-6 ${ui.ruleOnPage}`}>
         <button

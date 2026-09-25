@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { ALSO_LIKE_LIMIT } from "@/lib/products/also-like";
 import { toCardProduct, type CardProduct, type CardSource } from "@/lib/storefront/card";
 import type { TileProduct } from "@/lib/storefront/tiles";
 
@@ -34,6 +35,18 @@ export async function activeProducts(where = {}, take?: number) {
     take,
     select: CARD_SELECT,
   });
+}
+
+/**
+ * What "You may also like" picks by itself for a product: pieces on the shop
+ * from the same categories, newest first. Shared by the product's page and
+ * the admin field that shows it, so what Njomza is shown is what the shop
+ * shows. Twice what the row holds, so the pieces she has chosen herself
+ * still leave enough to fill it.
+ */
+export async function automaticAlsoLike(productId: string, categoryIds: string[]) {
+  if (categoryIds.length === 0) return [];
+  return activeProducts({ id: { not: productId }, categories: { some: { categoryId: { in: categoryIds } } } }, ALSO_LIKE_LIMIT * 2);
 }
 
 /**

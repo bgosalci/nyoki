@@ -23,7 +23,7 @@ export function EditProductForm({
   product: ProductInput;
   pricing: { productId: string; pricePence: number; compareAtPence: number | null };
   categories: ProductFormCategory[];
-  alsoLike: { options: PickerProduct[]; chosen: ChosenPiece[] };
+  alsoLike: { options: PickerProduct[]; automatic: PickerProduct[]; chosen: ChosenPiece[] };
 }) {
   return (
     <ProductForm
