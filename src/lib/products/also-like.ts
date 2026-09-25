@@ -33,3 +33,46 @@ export function parseAlsoLikeIds(form: FormData, selfId: string | null): { ok: t
   if (ids.length > ALSO_LIKE_LIMIT) return { ok: false, error: `Choose at most ${ALSO_LIKE_LIMIT} pieces.` };
   return { ok: true, ids };
 }
+
+/**
+ * The order to offer pieces in when choosing one for a product's "You may
+ * also like": those sharing one of its categories first, then those in the
+ * same group (anything sharing a category above), then everything else - so
+ * replacing a Christmas card starts with Christmas cards, then other cards,
+ * and a cardigan comes last. Within each, the order they came in is kept.
+ */
+export function closestFirst<T extends { categoryIds: readonly string[] }>(
+  pieces: readonly T[],
+  categoryIds: readonly string[],
+  categories: readonly { id: string; parentId: string | null }[],
+): T[] {
+  const parents = new Map(categories.map((category) => [category.id, category.parentId]));
+
+  // A category and everything above it. A tree that loops stops where it
+  // comes round again.
+  const lineage = (ids: readonly string[]) => {
+    const seen = new Set<string>();
+    for (const id of ids) {
+      let at: string | null | undefined = id;
+      while (at && !seen.has(at)) {
+        seen.add(at);
+        at = parents.get(at);
+      }
+    }
+    return seen;
+  };
+
+  const own = new Set(categoryIds);
+  const family = lineage(categoryIds);
+  const distance = (piece: T) => {
+    if (piece.categoryIds.some((id) => own.has(id))) return 0;
+    for (const id of lineage(piece.categoryIds)) if (family.has(id)) return 1;
+    return 2;
+  };
+
+  // Array.prototype.sort is stable, so each tier keeps the order given.
+  return pieces
+    .map((piece) => ({ piece, distance: distance(piece) }))
+    .sort((a, b) => a.distance - b.distance)
+    .map(({ piece }) => piece);
+}

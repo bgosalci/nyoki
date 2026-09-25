@@ -83,12 +83,20 @@ describe("PhotoChooser", () => {
     expect(screen.getByRole("button", { name: /christmas/i })).toHaveAttribute("aria-pressed", "false");
   });
 
-  it("shows a handful at a time and says how many more there are", () => {
-    const many = Array.from({ length: 75 }, (_, i) => ({ id: `i${i}`, title: `Row ${i}`, details: [], imageUrl: null, searchText: "" }));
+  it("shows every choice, however many, so any can be found by scrolling", () => {
+    const many = Array.from({ length: 226 }, (_, i) => ({ id: `i${i}`, title: `Row ${i}`, details: [], imageUrl: null, searchText: "" }));
     setup({ items: many });
 
-    expect(within(screen.getByRole("dialog")).getAllByRole("button", { name: /^row/i })).toHaveLength(60);
-    expect(screen.getByText(/60 of 75/i)).toBeInTheDocument();
+    expect(within(screen.getByRole("dialog")).getAllByRole("button", { name: /^row/i })).toHaveLength(226);
+    expect(screen.getByText("226 to choose from")).toBeInTheDocument();
+  });
+
+  it("fetches a photo only as it scrolls into view, which is what makes showing them all cheap", () => {
+    setup();
+
+    const photos = screen.getByRole("dialog").querySelectorAll("img");
+    expect(photos.length).toBeGreaterThan(0);
+    photos.forEach((photo) => expect(photo).toHaveAttribute("loading", "lazy"));
   });
 
   it("can show what is being matched, to compare against", () => {

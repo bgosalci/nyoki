@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { EditProductForm } from "@/components/admin/edit-product-form";
 import { EditProductImages } from "@/components/admin/edit-product-images";
 import { db } from "@/lib/db";
+import { closestFirst } from "@/lib/products/also-like";
 import { automaticAlsoLike } from "@/lib/storefront/queries";
 import type { ProductInput } from "@/lib/products/validate";
 
@@ -33,16 +34,21 @@ export default async function EditProductPage({
     db.product.findMany({
       where: { status: "ACTIVE", id: { not: id } },
       orderBy: { name: "asc" },
-      select: { id: true, name: true, images: photo },
+      select: { id: true, name: true, images: photo, categories: { select: { categoryId: true } } },
     }),
   ]);
   if (!product) notFound();
 
   // What the product's page picks by itself, picked the same way, so the
   // field shows what the shop shows.
-  const automatic = await automaticAlsoLike(
-    product.id,
-    product.categories.map((link) => link.categoryId),
+  const categoryIds = product.categories.map((link) => link.categoryId);
+  const automatic = await automaticAlsoLike(product.id, categoryIds);
+  // A replacement is offered nearest first: its own categories, its group,
+  // then everything else, each by name.
+  const ranked = closestFirst(
+    options.map((piece) => ({ ...piece, categoryIds: piece.categories.map((link) => link.categoryId) })),
+    categoryIds,
+    categories,
   );
 
   // Narrow the database row to exactly what the form needs, so a column added
@@ -75,7 +81,7 @@ export default async function EditProductPage({
           pricing={{ productId: product.id, pricePence: product.pricePence, compareAtPence: product.compareAtPence }}
           categories={categories}
           alsoLike={{
-            options: options.map(({ images, ...piece }) => ({ ...piece, image: images[0] ?? null })),
+            options: ranked.map(({ id, name, images }) => ({ id, name, image: images[0] ?? null })),
             automatic: automatic.map(({ id, name, images }) => ({ id, name, image: images[0] ?? null })),
             chosen: chosen.map(({ piece: { images, status, ...piece } }) => ({ ...piece, image: images[0] ?? null, onShop: status === "ACTIVE" })),
           }}

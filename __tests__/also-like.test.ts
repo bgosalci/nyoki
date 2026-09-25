@@ -1,4 +1,4 @@
-import { ALSO_LIKE_LIMIT, alsoLike, parseAlsoLikeIds } from "@/lib/products/also-like";
+import { ALSO_LIKE_LIMIT, alsoLike, closestFirst, parseAlsoLikeIds } from "@/lib/products/also-like";
 
 const piece = (id: string) => ({ id, name: id });
 
@@ -54,5 +54,54 @@ describe("parseAlsoLikeIds", () => {
 
   it("reads nothing chosen as automatic", () => {
     expect(parseAlsoLikeIds(new FormData(), null)).toEqual({ ok: true, ids: [] });
+  });
+});
+
+describe("closestFirst, the order a replacement is offered in", () => {
+  // Cards > Christmas Cards, Birthday Cards; Clothes > Cardigans.
+  const categories = [
+    { id: "cards", parentId: null },
+    { id: "christmas", parentId: "cards" },
+    { id: "birthday", parentId: "cards" },
+    { id: "clothes", parentId: null },
+    { id: "cardigans", parentId: "clothes" },
+  ];
+  const piece = (name: string, ...categoryIds: string[]) => ({ id: name, name, categoryIds });
+  // As the page sends them: by name.
+  const pieces = [
+    piece("Bamboo Cardigan", "cardigans"),
+    piece("Birthday Balloons", "birthday"),
+    piece("Bud Vase"),
+    piece("Snowflake Card", "christmas"),
+    piece("Thank You Card", "cards"),
+    piece("Three Stars", "christmas"),
+  ];
+  const names = (ranked: { name: string }[]) => ranked.map((p) => p.name);
+
+  it("puts pieces from the same category first, then the rest of its group, then everything else", () => {
+    expect(names(closestFirst(pieces, ["christmas"], categories))).toEqual([
+      "Snowflake Card",
+      "Three Stars",
+      "Birthday Balloons",
+      "Thank You Card",
+      "Bamboo Cardigan",
+      "Bud Vase",
+    ]);
+  });
+
+  it("counts a piece in any of the product's categories as the same category", () => {
+    expect(names(closestFirst(pieces, ["birthday", "cardigans"], categories)).slice(0, 2)).toEqual(["Bamboo Cardigan", "Birthday Balloons"]);
+  });
+
+  it("leaves the order alone for a product in no category", () => {
+    expect(names(closestFirst(pieces, [], categories))).toEqual(names(pieces));
+  });
+
+  it("cannot hang on a tree that loops", () => {
+    const looped = [
+      { id: "a", parentId: "b" },
+      { id: "b", parentId: "a" },
+    ];
+    expect(names(closestFirst([piece("X", "b"), piece("Y")], ["a"], looped))).toEqual(["X", "Y"]);
   });
 });

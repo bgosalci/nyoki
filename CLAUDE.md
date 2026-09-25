@@ -567,6 +567,11 @@ TypeScript, deployed to Vercel.
   her replacement in its place, all stored as her choices - so the row she
   saw is the row that stays, rather than the automatic three shifting
   around her one. "Back to automatic" lets the categories pick again.
+- A replacement is offered **nearest first** (`closestFirst`): pieces in
+  one of the product's own categories, then in the same group, then
+  everything else, each by name - so changing a Christmas card starts with
+  Christmas cards and a cardigan comes last. Ranked on the server by the
+  categories as saved. A piece in no category can only come last.
 - The automatic pieces come from one query, `automaticAlsoLike` in
   `src/lib/storefront/queries.ts`, used by the shop page and the admin
   alike, so the admin cannot show one row while the shop shows another.
@@ -705,8 +710,13 @@ TypeScript, deployed to Vercel.
 - `PhotoChooser` (`src/components/admin/photo-chooser.tsx`) is the admin's
   one modal for choosing a thing by looking at it: tiles of photos, a search
   that matches every word typed in any order against whatever the caller says
-  an item can be found by, and a cap of 60 with a note to narrow. It knows
-  nothing about what it is choosing - it takes tiles and hands back an id.
+  an item can be found by. It knows nothing about what it is choosing - it
+  takes tiles and hands back an id.
+- **It shows every item**, however many. It was capped at 60 "to save
+  fetching a few hundred photos", but next/image loads lazily - a photo is
+  fetched as it scrolls into view - so the cap saved nothing and left most
+  of the catalogue findable only by guessing a word from its name. A test
+  pins the lazy loading, since it is what makes showing them all cheap.
 - `PhotoField` (`photo-field.tsx`) is the form field around it: a box showing
   what is chosen by its photo and name, Choose, and Clear. **Every
   choose-by-photo field is one**, so they all look alike - the home page's

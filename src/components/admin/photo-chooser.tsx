@@ -16,12 +16,6 @@ export interface ChooserItem {
 }
 
 /**
- * Every tile is an optimised image request. A capped page and a word to
- * narrow it is kinder than fetching a few hundred the moment it opens.
- */
-const VISIBLE = 60;
-
-/**
  * Choosing one thing from many by looking at it: a modal of photographs with
  * a search.
  *
@@ -33,6 +27,11 @@ const VISIBLE = 60;
  * The search matches every word typed, in any order, against everything the
  * caller says an item can be found by - so a photo's file name, which often
  * says what the piece is when nothing else does, counts.
+ *
+ * Every item is shown, however many: something that can only be found by
+ * guessing a word from its name cannot be browsed for. It is cheap because
+ * next/image loads lazily - a photo is fetched as it scrolls into view, not
+ * when the chooser opens. It was capped at sixty until that was noticed.
  */
 export function PhotoChooser({
   open,
@@ -72,8 +71,6 @@ export function PhotoChooser({
         const haystack = `${item.title} ${item.searchText}`.toLowerCase();
         return words.every((word) => haystack.includes(word));
       });
-  const shown = matches.slice(0, VISIBLE);
-
   function close(then: () => void) {
     setQuery("");
     then();
@@ -105,17 +102,13 @@ export function PhotoChooser({
         className={`mt-4 w-full rounded-md border px-3 py-2 text-sm outline-none ${ui.input}`}
       />
 
-      <p className={`mt-2 text-xs ${ui.mutedOnPage}`}>
-        {matches.length > VISIBLE
-          ? `Showing ${VISIBLE} of ${matches.length}. Type a word to narrow it.`
-          : `${matches.length} to choose from`}
-      </p>
+      <p className={`mt-2 text-xs ${ui.mutedOnPage}`}>{matches.length} to choose from</p>
 
-      {shown.length === 0 ? (
+      {matches.length === 0 ? (
         <p className={`mt-6 text-sm ${ui.mutedOnPage}`}>Nothing matches that. Try one word, or fewer.</p>
       ) : (
         <ul className="mt-4 grid max-h-[50dvh] grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-4">
-          {shown.map((item) => (
+          {matches.map((item) => (
             <li key={item.id}>
               <button
                 type="button"
