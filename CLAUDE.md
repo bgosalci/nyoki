@@ -319,6 +319,10 @@ TypeScript, deployed to Vercel.
   column and the bar at the end of the page share them. Nothing starts
   chosen. A piece with options has its details unpinned (`pinDetails`),
   since they can be taller than the screen.
+- **The options come after the description**, before Need to know. Above
+  it, straight under the price, was tried and not wanted.
+- A pack's saving is a sage outline with deep sage text: a sage fill under
+  ink read as a heavy grey blob beside the price.
 - The rules - price, what is missing, the summary's words - are
   `src/lib/customisation/choices.ts`, pure, for the basket to check by too.
 - **No basket yet**: Add to basket is `aria-disabled` but never faded; pressed

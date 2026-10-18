@@ -153,10 +153,6 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             ) : null}
           </div>
 
-          {/* The choices come straight after the price: a card's description
-              can run longer than the screen. */}
-          {customising ? <CustomiserPanels /> : null}
-
           {product.description ? (
             <RichText text={product.description} className={`leading-relaxed ${ui.shopMuted}`} />
           ) : null}
@@ -182,6 +178,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               </li>
             ) : null}
           </ul>
+
+          {/* What can be chosen, once the piece has been described. */}
+          {customising ? <CustomiserPanels /> : null}
 
           {facts.length > 0 ? (
             <Disclosure title="Need to know" className={`border-t pt-4 ${ui.shopRule}`}>

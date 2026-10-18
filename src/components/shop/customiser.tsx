@@ -533,7 +533,11 @@ function Price({ pricePence, wasPence, saving = null }: { pricePence: number; wa
       {saving !== null ? (
         <>
           {" "}
-          <span className="rounded-full bg-nyoki-sage px-2 py-0.5 text-xs font-medium text-nyoki-ink">Save {formatPence(saving)}</span>
+          {/* An outline in the logo's sage: a fill under ink read as a heavy
+              grey blob beside the price. */}
+          <span className="rounded-full border border-nyoki-sage px-2 text-xs font-medium text-nyoki-sage-deep">
+            Save {formatPence(saving)}
+          </span>
         </>
       ) : null}
     </span>

@@ -73,6 +73,13 @@ describe("brand colours come from the logo files, not a guess", () => {
 });
 
 describe("approved pairings", () => {
+  it("reads deep sage on white as well as on the page, for a pack's saving on a chosen tile", () => {
+    const pairs = APPROVED_TEXT_PAIRINGS.map((p) => `${p.text} on ${p.surface}`);
+
+    expect(pairs).toContain(`${brand.sageDeep} on ${neutral.beige}`);
+    expect(pairs).toContain(`${brand.sageDeep} on ${neutral.white}`);
+  });
+
   it("every body-text pairing meets AA", () => {
     for (const pairing of APPROVED_TEXT_PAIRINGS) {
       const ratio = contrastRatio(pairing.text, pairing.surface);

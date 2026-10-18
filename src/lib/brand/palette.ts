@@ -106,6 +106,7 @@ export const APPROVED_TEXT_PAIRINGS: readonly Pairing[] = [
   { text: brand.ink, surface: neutral.white, use: "Headlines" },
   { text: brand.ink, surface: neutral.accentBeige, use: "Headlines on a quiet band" },
   { text: brand.sageDeep, surface: neutral.beige, use: "Accent headings in the logo's colour" },
+  { text: brand.sageDeep, surface: neutral.white, use: "A pack's saving on a chosen tile, in the logo's colour" },
   { text: neutral.white, surface: brand.navy, use: "Primary button" },
   { text: neutral.white, surface: brand.ink, use: "Footer, dark bands" },
   { text: neutral.beige, surface: brand.navy, use: "Primary button, warmer" },

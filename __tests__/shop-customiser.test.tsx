@@ -82,6 +82,15 @@ describe("the customiser", () => {
       expect(screen.getByRole("radio", { name: "Pack of 3 3 cards £15.00 Save £1.50" })).not.toBeChecked();
     });
 
+    it("draws the saving as a sage outline, light beside the price", () => {
+      // A sage fill under ink read as a heavy grey blob next to the price.
+      setup();
+
+      const saving = screen.getByText("Save £1.50");
+      expect(saving).toHaveClass("border", "border-nyoki-sage", "text-nyoki-sage-deep", "rounded-full");
+      expect(saving.className).not.toMatch(/\bbg-/);
+    });
+
     it("shows what each was, during a sale", () => {
       setup({
         ...everything,
