@@ -89,20 +89,26 @@ model Product {
   // shop: cards carry the standard 20%, children's clothing is zero-rated.
   vatRate Int @default(20) @map("vat_rate")
 
-  images      ProductImage[]
-  variants    ProductVariant[]
-  categories  CategoryProduct[]
-  favourites  Favourite[]
-  homeHeroFor HomePage[]      @relation("HomeHero")
-  costLines   CostLine[]
+  images         ProductImage[]
+  variants       ProductVariant[]
+  categories     CategoryProduct[]
+  favourites     Favourite[]
+  homeHeroFor    HomePage[]        @relation("HomeHero")
+  costLines      CostLine[]
   priceListEntry PriceListEntry?
-  sales      SaleProduct[]
-  orderItems OrderItem[]
+  sales          SaleProduct[]
+  orderItems     OrderItem[]
 
   // "You may also like": the pieces Njomza chose for this one, and the
   // products that chose this one.
   alsoLike     AlsoLike[] @relation("AlsoLikeFrom")
   alsoLikedFor AlsoLike[] @relation("AlsoLikeTo")
+
+  // What a shopper can choose on a card or bookmark: a printed message,
+  // personalisation, packs. Nothing here for anything else.
+  customisation         ProductCustomisation?
+  personalisationFields PersonalisationField[]
+  packs                 ProductPack[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -127,6 +133,69 @@ model AlsoLike {
   @@id([productId, pieceId])
   @@index([pieceId])
   @@map("also_like")
+}
+
+// ---------------------------------------------------------------------------
+// Customisation - cards and bookmarks only (see src/lib/customisation)
+// ---------------------------------------------------------------------------
+
+// How a card or bookmark can be made up. No row means nothing is offered.
+// Every extra is charged per card, so a pack of four pays it four times.
+model ProductCustomisation {
+  productId String @id @map("product_id")
+
+  // A message printed inside.
+  message           Boolean @default(false)
+  messagePricePence Int     @default(0) @map("message_price_pence")
+  messageMaxLength  Int     @default(300) @map("message_max_length")
+
+  // Personalisation: what can be personalised is the product's
+  // PersonalisationField rows. Required means it is only sold personalised.
+  personalisation           Boolean @default(false)
+  personalisationPricePence Int     @default(0) @map("personalisation_price_pence")
+  personalisationRequired   Boolean @default(false) @map("personalisation_required")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("product_customisations")
+}
+
+enum PersonalisationKind {
+  TEXT // typed: a name; maxLength applies
+  CHOICE // chosen from `choices`: an initial, a star sign
+}
+
+// One thing a shopper personalises, e.g. "Name" or "Zodiac sign".
+model PersonalisationField {
+  id        String              @id @default(cuid())
+  productId String              @map("product_id")
+  label     String
+  kind      PersonalisationKind
+  maxLength Int?                @map("max_length")
+  choices   String[]
+  position  Int                 @default(0)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("personalisation_fields")
+}
+
+// A pack of the same card, at its own price. The single card is the
+// product itself, at the product's price.
+model ProductPack {
+  id         String @id @default(cuid())
+  productId  String @map("product_id")
+  cards      Int
+  pricePence Int    @map("price_pence")
+  position   Int    @default(0)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, cards])
+  @@map("product_packs")
 }
 
 model ProductImage {
@@ -199,7 +268,6 @@ model Category {
 /**
  * One thing that goes into making and sending a product: a card and
  * envelope, a skein of yarn, the postage.
- *
  * The lines ARE the costing - a product with none has not been costed yet.
  * The unit cost is in pence like every other amount; the quantity is in
  * HUNDREDTHS, because yarn is bought by the half skein and 2.5 of them is a
@@ -243,7 +311,6 @@ model CategoryCostLine {
 /**
  * A costed row from Njomza's 2023 price lists, brought in so it can be matched
  * to a product rather than typed in again.
- *
  * The lists identify each piece by photograph alone - there is no name or
  * code column - so matching is by the photo. Confident matches are attached
  * on import; the rest wait here to be chosen by eye.
@@ -278,7 +345,6 @@ model PriceListEntry {
 
 /**
  * The home page's editable content: one row, always id "home".
- *
  * A singleton table rather than a key-value settings bag, so each field has a
  * type and the form can be validated like any other. Everything the page
  * shows that is not simply the catalogue lives here.
@@ -306,7 +372,6 @@ model HomePage {
 
 /**
  * A piece somebody has saved for later.
- *
  * The pair is the key: saving the same thing twice is the same thing saved,
  * not a second row. Both sides cascade - a closed account and a deleted
  * product each take their saves with them.

@@ -31,3 +31,26 @@ describe("ProductTabs", () => {
     expect(screen.getByRole("link", { name: "Details" })).not.toHaveAttribute("aria-current");
   });
 });
+
+describe("ProductTabs for a card or bookmark", () => {
+  it("offers a third tab for how it can be customised", () => {
+    pathname = "/admin/products/p1";
+    render(<ProductTabs productId="p1" customisable />);
+
+    expect(screen.getByRole("link", { name: "Customise" })).toHaveAttribute("href", "/admin/products/p1/customise");
+  });
+
+  it("marks Customise as the tab in view beneath it", () => {
+    pathname = "/admin/products/p1/customise";
+    render(<ProductTabs productId="p1" customisable />);
+
+    expect(screen.getByRole("link", { name: "Customise" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Details" })).not.toHaveAttribute("aria-current");
+  });
+
+  it("offers no Customise tab for anything else", () => {
+    render(<ProductTabs productId="p1" />);
+
+    expect(screen.queryByRole("link", { name: "Customise" })).not.toBeInTheDocument();
+  });
+});

@@ -13,11 +13,14 @@ import { formatPence } from "@/lib/money";
 import { effectivePricePence } from "@/lib/pricing";
 import { chainTo } from "@/lib/products/category-pills";
 import { BuyBar } from "@/components/shop/buy-bar";
+import { CustomiserBar, CustomiserPanels, CustomiserProvider } from "@/components/shop/customiser";
 import { Disclosure } from "@/components/shop/disclosure";
 import { PlainText } from "@/components/shop/plain-text";
 import { ProductLayout } from "@/components/shop/product-layout";
 import { RichText } from "@/components/shop/rich-text";
 import { productFacts } from "@/lib/storefront/facts";
+import { customisationGroup } from "@/lib/customisation/group";
+import { offersAnything, toOffer } from "@/lib/customisation/offer";
 import { summaryOf } from "@/lib/rich-text/parse";
 import { alsoLike } from "@/lib/products/also-like";
 import { automaticAlsoLike, CARD_SELECT, toCards } from "@/lib/storefront/queries";
@@ -30,6 +33,9 @@ async function findProduct(slug: string) {
       variants: { orderBy: { position: "asc" } },
       categories: { select: { categoryId: true } },
       sales: { select: { sale: true } },
+      customisation: true,
+      personalisationFields: true,
+      packs: true,
     },
   });
 }
@@ -72,6 +78,22 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   ]);
   const related = alsoLike({ chosen: chosen.map((link) => link.piece), automatic });
 
+  // A card or bookmark with something to choose shows its choices, and the
+  // bar with the total takes the place of the phone's buy bar.
+  const noun = customisationGroup(categoryIds, categories);
+  const offer = noun
+    ? toOffer({
+        product,
+        customisation: product.customisation,
+        fields: product.personalisationFields,
+        packs: product.packs,
+        sales,
+        noun,
+        now: new Date(),
+      })
+    : null;
+  const customising = offer !== null && offersAnything(offer);
+
   const own = categories.find((c) => c.id === categoryIds[0]);
   const trail = own ? chainTo(categories, own.slug) : [];
   const wasPence = price.sale ? product.pricePence : product.compareAtPence;
@@ -90,7 +112,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     </div>
   );
 
-  return (
+  const page = (
     <div className="mx-auto max-w-shop px-4 py-10 sm:px-6">
       <nav aria-label="Breadcrumb">
         <ol className={`flex flex-wrap items-center gap-2 text-sm font-medium tracking-[0.1em] uppercase ${ui.shopMuted}`}>
@@ -105,6 +127,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       </nav>
 
       <ProductLayout
+        pinDetails={!customising}
         mainPhoto={mainImage ? photo(mainImage, 0) : null}
         morePhotos={
           moreImages.length > 0 ? (
@@ -129,6 +152,10 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               <p className={`self-start px-2 py-1 text-xs tracking-wider uppercase ${ui.shopBand}`}>{price.sale.name}</p>
             ) : null}
           </div>
+
+          {/* The choices come straight after the price: a card's description
+              can run longer than the screen. */}
+          {customising ? <CustomiserPanels /> : null}
 
           {product.description ? (
             <RichText text={product.description} className={`leading-relaxed ${ui.shopMuted}`} />
@@ -205,7 +232,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       ) : null}
 
       {/* Last, so it holds to the bottom of the screen over the whole page. */}
-      <BuyBar pricePence={price.pricePence} wasPence={wasPence} />
+      {customising ? <CustomiserBar /> : <BuyBar pricePence={price.pricePence} wasPence={wasPence} />}
     </div>
   );
+
+  return customising ? <CustomiserProvider offer={offer}>{page}</CustomiserProvider> : page;
 }

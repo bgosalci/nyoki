@@ -1,0 +1,191 @@
+import type { ItemNoun } from "@/lib/customisation/group";
+import type { Offer } from "@/lib/customisation/offer";
+import { formatPence } from "@/lib/money";
+
+/**
+ * A shopper's choices on a card or bookmark, and what they come to.
+ *
+ * Pure, so the page works from the same rules the basket will check by. Each
+ * extra is charged per card: a pack of three with an 80p message pays £2.40
+ * for it. A pack carries one message and one personalisation, printed in
+ * every card.
+ */
+
+/** The single card, as the unit chosen; a pack is chosen by its id. */
+export const SINGLE = "single";
+
+export type MessageChoice = "Blank inside" | "Printed message";
+
+export interface Choices {
+  /** SINGLE or a pack's id; unused when there are no packs. */
+  unit: string | null;
+  message: MessageChoice | null;
+  messageText: string;
+  /** The switch, while personalisation is optional. */
+  personalise: boolean;
+  /** Field id to what was typed or chosen. */
+  personalisation: Record<string, string>;
+  quantity: number;
+}
+
+/**
+ * Nothing chosen, so every shopper decides for themselves; personalising
+ * starts switched off.
+ */
+export const EMPTY_CHOICES: Choices = {
+  unit: null,
+  message: null,
+  messageText: "",
+  personalise: false,
+  personalisation: {},
+  quantity: 1,
+};
+
+/** The single card or pack chosen, or null while a choice is still owed. */
+function chosenUnit(offer: Offer, choices: Choices): { cards: number; pricePence: number } | null {
+  if (offer.packs.length === 0 || choices.unit === SINGLE) return { cards: 1, pricePence: offer.single.pricePence };
+  return offer.packs.find((pack) => pack.id === choices.unit) ?? null;
+}
+
+export function isPersonalising(offer: Offer, choices: Choices): boolean {
+  return offer.personalisation !== null && (offer.personalisation.required || choices.personalise);
+}
+
+const isPrinting = (offer: Offer, choices: Choices) => offer.message !== null && choices.message === "Printed message";
+
+/** One of whatever was chosen - a card or a pack - with its extras, or null. */
+export function unitPricePence(offer: Offer, choices: Choices): number | null {
+  const unit = chosenUnit(offer, choices);
+  if (!unit) return null;
+
+  const extrasPerCard =
+    (isPrinting(offer, choices) ? offer.message!.pricePence : 0) +
+    (isPersonalising(offer, choices) ? offer.personalisation!.pricePence : 0);
+
+  return unit.pricePence + extrasPerCard * unit.cards;
+}
+
+export function totalPence(offer: Offer, choices: Choices): number | null {
+  const unit = unitPricePence(offer, choices);
+  return unit === null ? null : unit * choices.quantity;
+}
+
+/** What a pack saves against the same cards bought singly, or null. */
+export function packSavingPence(offer: Offer, pack: Offer["packs"][number]): number | null {
+  const saving = offer.single.pricePence * pack.cards - pack.pricePence;
+  return saving > 0 ? saving : null;
+}
+
+/** An extra's cost as the shopper reads it: "+80p a card". */
+export function extraNote(pricePence: number, noun: ItemNoun): string {
+  if (pricePence === 0) return "No extra charge";
+  return `+${pricePence < 100 ? `${pricePence}p` : formatPence(pricePence)} a ${noun.one}`;
+}
+
+/** What the page can be missing: the unit, the message, or a field by id. */
+export type ChoiceKey = "unit" | "message" | "messageText" | `field:${string}`;
+
+export interface MissingChoice {
+  key: ChoiceKey;
+  message: string;
+}
+
+const blank = (text: string | undefined) => (text ?? "").trim() === "";
+
+/**
+ * What still needs answering, in page order. Nothing the current choices
+ * hide is asked: the words for a card left blank inside, or what to
+ * personalise with personalising switched off.
+ */
+export function missingChoices(offer: Offer, choices: Choices): MissingChoice[] {
+  const missing: MissingChoice[] = [];
+
+  if (!chosenUnit(offer, choices)) {
+    missing.push({ key: "unit", message: `Please choose a single ${offer.noun.one} or a pack.` });
+  }
+
+  if (offer.message) {
+    if (choices.message === null) {
+      missing.push({ key: "message", message: "Please choose a message option." });
+    } else if (choices.message === "Printed message" && blank(choices.messageText)) {
+      missing.push({ key: "messageText", message: "Please type the message you want printed." });
+    }
+  }
+
+  if (isPersonalising(offer, choices)) {
+    for (const field of offer.personalisation!.fields) {
+      const value = choices.personalisation[field.id];
+      const what = field.label.toLowerCase();
+      if (field.kind === "TEXT" && blank(value)) {
+        missing.push({ key: `field:${field.id}`, message: `Please fill in the ${what}.` });
+      } else if (field.kind === "CHOICE" && !field.choices.includes(value ?? "")) {
+        missing.push({ key: `field:${field.id}`, message: `Please choose the ${what}.` });
+      }
+    }
+  }
+
+  return missing;
+}
+
+/**
+ * The line beneath Add to basket. There is no basket yet, so complete
+ * choices say so rather than inviting a press that cannot add anything.
+ */
+export function statusLine(missing: number): string {
+  if (missing === 0) return "All done. Online ordering opens soon.";
+  return `${missing} ${missing === 1 ? "answer" : "answers"} still needed before you can add this to your basket`;
+}
+
+export interface SummaryRow {
+  label: string;
+  value: string;
+}
+
+/** The "Your choices" panel: a row for each thing the piece offers. */
+export function summarise(offer: Offer, choices: Choices): SummaryRow[] {
+  const rows: SummaryRow[] = [];
+  const { one } = offer.noun;
+
+  if (offer.packs.length > 0) {
+    const pack = offer.packs.find((p) => p.id === choices.unit);
+    const value = choices.unit === SINGLE ? `Single ${one}` : pack ? `Pack of ${pack.cards}` : "Not chosen yet";
+    rows.push({ label: "Single or pack", value });
+  }
+
+  if (offer.message) {
+    const words = choices.messageText.trim();
+    const value =
+      choices.message === null
+        ? "Not chosen yet"
+        : choices.message === "Blank inside"
+          ? "Blank inside"
+          : words
+            ? `Printed: “${words}”`
+            : "Printed message (not written yet)";
+    rows.push({ label: `Inside the ${one}`, value });
+  }
+
+  if (offer.personalisation) {
+    const filled = offer.personalisation.fields
+      .map((field) => ({ label: field.label, value: (choices.personalisation[field.id] ?? "").trim() }))
+      .filter((entry) => entry.value !== "")
+      .map((entry) => `${entry.label}: ${entry.value}`);
+    const value = !isPersonalising(offer, choices) ? "None" : filled.length > 0 ? filled.join(" · ") : "Not filled in yet";
+    rows.push({ label: "Personalisation", value });
+  }
+
+  return rows;
+}
+
+export const QUANTITY_MIN = 1;
+export const QUANTITY_MAX = 99;
+
+/**
+ * A typed quantity, brought into 1 to 99. A blank, a nought or anything that
+ * is not a number counts as one; a fraction is cut to the whole number below.
+ */
+export function clampQuantity(raw: string | number): number {
+  const number = typeof raw === "number" ? raw : raw.trim() === "" ? NaN : Number(raw);
+  if (!Number.isFinite(number)) return QUANTITY_MIN;
+  return Math.min(QUANTITY_MAX, Math.max(QUANTITY_MIN, Math.trunc(number)));
+}

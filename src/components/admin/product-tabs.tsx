@@ -6,18 +6,22 @@ import { usePathname } from "next/navigation";
 import { ui } from "@/lib/brand/ui";
 
 /**
- * A product's two pages: what it is, and what it sells for.
+ * A product's pages: what it is, and what it sells for - and, for a card or
+ * bookmark, how a shopper can have it made up.
  *
  * Links rather than toggled panels, so each tab has an address - a price can
  * be linked to directly, and the back button goes back a tab.
  */
-export function ProductTabs({ productId }: { productId: string }) {
+export function ProductTabs({ productId, customisable = false }: { productId: string; customisable?: boolean }) {
   const pathname = usePathname();
   const base = `/admin/products/${productId}`;
 
   const tabs = [
     { href: base, label: "Details", current: pathname === base },
     { href: `${base}/price`, label: "Price", current: pathname.startsWith(`${base}/price`) },
+    ...(customisable
+      ? [{ href: `${base}/customise`, label: "Customise", current: pathname.startsWith(`${base}/customise`) }]
+      : []),
   ];
 
   return (

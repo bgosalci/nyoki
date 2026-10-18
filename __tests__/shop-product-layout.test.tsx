@@ -47,6 +47,21 @@ describe("ProductLayout", () => {
     expect(slot("Description")).toHaveClass("md:sticky", "md:self-start");
   });
 
+  it("lets long details scroll with the page instead, when asked", () => {
+    // A card with its options to choose can be taller than the screen; held
+    // in view, its last options would stay out of reach until the photos ran
+    // out.
+    const { container } = render(
+      <ProductLayout mainPhoto={<p>Main photo</p>} pinDetails={false}>
+        <p>Options</p>
+      </ProductLayout>,
+    );
+    const details = [...container.querySelectorAll("p")].find((p) => p.textContent === "Options")!.parentElement!;
+
+    expect(details).not.toHaveClass("md:sticky");
+    expect(details).toHaveClass("md:col-start-2", "md:row-span-2", "md:row-start-1", "md:self-start");
+  });
+
   it("leaves no empty slot when there is only the one photo", () => {
     const { container } = renderLayout(null);
 

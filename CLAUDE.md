@@ -253,7 +253,8 @@ TypeScript, deployed to Vercel.
 - A product has two tabs, as routes: **Details** (`/admin/products/[id]`) and
   **Price** (`/admin/products/[id]/price`), sharing a layout that carries the
   way back, the name and the tabs. Routes rather than toggled panels, so a
-  price can be linked to and the back button goes back a tab.
+  price can be linked to and the back button goes back a tab. A card or
+  bookmark has a third, **Customise** - see Customising cards and bookmarks.
 - The Price tab holds the cost lines, VAT, price and was-price, and works
   every figure out live: profit, margin, what Not On The High Street leaves,
   and each step of a sale on both. Margin is profit as a share of what is
@@ -282,6 +283,50 @@ TypeScript, deployed to Vercel.
   Choosing fills the form to be checked and Clear takes the costs and VAT
   back out; only saving records it, and the row's id is re-checked on the
   server as unclaimed.
+
+## Customising cards and bookmarks
+
+- **Only cards and bookmarks** can be customised (`customisationGroup`,
+  `src/lib/customisation/group.ts`): a category called Cards or Bookmarks,
+  singular or plural, the piece's own or anywhere above it. There is no
+  Bookmarks category yet; one made later is recognised by its address. The
+  Customise tab, its save and the shop page all ask the same function, so a
+  piece moved out of Cards stops offering anything, its settings kept.
+- The Customise tab (`/admin/products/[id]/customise`) sets three things,
+  each with what it costs: a **printed message inside** (cost, longest
+  message), **personalisation** (cost, whether it is required, and what can be
+  personalised - each thing typed with a character limit, like a name, or
+  chosen from a list, like an initial or a star sign) and **packs** (how
+  many, at what price). The single card is always the product at its own
+  price; packs are the same card. A piece can have all three.
+- Stored as `ProductCustomisation` (one row per piece, absent = nothing
+  offered), `PersonalisationField` and `ProductPack` rows. Packs are not
+  variants: variants are clothing sizes and colours with stock of their own.
+- **Every extra is charged per card**, so a pack of three with an 80p message
+  pays £2.40 for it, and the page says "+80p a card". A pack carries one
+  message and one personalisation, printed in every card.
+- **A live sale comes off the single card and the packs**, not the extras
+  (`toOffer`, `src/lib/customisation/offer.ts`).
+- Required personalisation has no switch on the page; the cost can be £0 when
+  the price covers it. Optional personalisation is a switch, off to begin with.
+- **A section switched off keeps its settings**: they stay in the form,
+  hidden and posted, `parseCustomisation` does not check them, and the save
+  writes only the switch. Switching the message back on finds its cost.
+- The shop page shows only what a piece offers, in the panels, tiles,
+  summary and sticky total bar first built for a standalone card page
+  (`src/components/shop/customiser.tsx`). The choices live in
+  `CustomiserProvider` around the whole page, so the panels in the details
+  column and the bar at the end of the page share them. Nothing starts
+  chosen. A piece with options has its details unpinned (`pinDetails`),
+  since they can be taller than the screen.
+- The rules - price, what is missing, the summary's words - are
+  `src/lib/customisation/choices.ts`, pure, for the basket to check by too.
+- **No basket yet**: Add to basket is `aria-disabled` but never faded; pressed
+  too soon it shows what is missing and moves to the first of it, and once
+  everything is chosen it says ordering opens soon.
+- **Delivery straight to the recipient belongs in checkout**, for every
+  product, not here - and so does an emailed receipt. Neither exists yet.
+- Not in the CSV/JSON/XML export or import yet.
 
 ## Usual costs
 

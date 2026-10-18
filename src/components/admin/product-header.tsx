@@ -5,12 +5,23 @@ import { ui } from "@/lib/brand/ui";
 /**
  * A product's header, pinned beneath the admin's top bar while the page
  * scrolls: the way back and Previous and Next, the name and its Save, and
- * the Details and Price tabs - everything for moving about a product, and
+ * the tabs - everything for moving about a product, and
  * what you came to press. It paints the page's
  * ground so the form passes beneath it, and runs to the edges of the page's
  * padding so nothing shows either side.
  */
-export function ProductHeader({ productId, name, steps }: { productId: string; name: string; steps?: React.ReactNode }) {
+export function ProductHeader({
+  productId,
+  name,
+  steps,
+  customisable = false,
+}: {
+  productId: string;
+  name: string;
+  steps?: React.ReactNode;
+  /** A card or bookmark, which has a Customise tab. */
+  customisable?: boolean;
+}) {
   return (
     <div data-pinned className={`sticky top-14 z-20 -mx-6 flex flex-col gap-3 px-6 pt-3 md:-mx-10 md:px-10 ${ui.page}`}>
       {steps}
@@ -19,7 +30,7 @@ export function ProductHeader({ productId, name, steps }: { productId: string; n
         {/* Each tab's form puts its Save here. */}
         <SaveSlot />
       </div>
-      <ProductTabs productId={productId} />
+      <ProductTabs productId={productId} customisable={customisable} />
     </div>
   );
 }
