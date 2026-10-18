@@ -1,8 +1,8 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import { DepartmentNav } from "@/components/shop/department-nav";
 import { HeaderIcons } from "@/components/shop/header-icons";
+import { ShopLogo } from "@/components/shop/shop-logo";
 import { TopNav } from "@/components/shop/top-nav";
 import { currentCustomer } from "@/lib/account/dal";
 import { db } from "@/lib/db";
@@ -36,19 +36,10 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
     <div className={`flex min-h-dvh flex-col ${ui.shopPage}`}>
       <header className={`sticky top-0 z-30 border-b ${ui.shopRule} ${ui.shopPage}`}>
         <div className="mx-auto max-w-shop px-4 sm:px-6">
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 py-4">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 py-4 sm:gap-4">
             <TopNav />
 
-            <Link href="/" aria-label="Nyoki Handmade, home" className="justify-self-center">
-              <Image
-                src="/brand/nyoki-logo.png"
-                alt="Nyoki Handmade"
-                width={959}
-                height={600}
-                priority
-                className="h-24 w-auto md:h-30"
-              />
-            </Link>
+            <ShopLogo />
 
             <HeaderIcons signedIn={shopper !== null} savedCount={savedCount} />
           </div>

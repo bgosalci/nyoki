@@ -16,6 +16,13 @@ describe("HeaderIcons", () => {
     }
   });
 
+  it("draws its icons a size smaller and closer together on a phone, so the logo has room", () => {
+    const { container } = render(<HeaderIcons />);
+
+    expect(screen.getByRole("list")).toHaveClass("gap-3", "sm:gap-5");
+    for (const icon of container.querySelectorAll("svg")) expect(icon).toHaveClass("size-5", "sm:size-6");
+  });
+
   it("sends a visitor who is not signed in to sign in", () => {
     render(<HeaderIcons />);
 

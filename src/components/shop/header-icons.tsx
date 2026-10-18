@@ -1,6 +1,7 @@
 import Link from "next/link";
 
-const ICON = "size-6 stroke-nyoki-navy";
+// A size smaller and closer together on a phone, leaving the logo room.
+const ICON = "size-5 stroke-nyoki-navy sm:size-6";
 
 /**
  * Search, account and basket.
@@ -17,7 +18,7 @@ export function HeaderIcons({
   savedCount?: number;
 }) {
   return (
-    <ul className="flex items-center justify-end gap-5">
+    <ul className="flex items-center justify-end gap-3 sm:gap-5">
       <li>
         <button type="button" disabled aria-label="Search" title="Search coming soon" className="block opacity-40">
           <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.5" aria-hidden="true" className={ICON}>
