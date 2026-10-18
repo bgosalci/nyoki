@@ -6,6 +6,7 @@ import Link from "next/link";
 import { AlsoLikeField, type ChosenPiece } from "@/components/admin/also-like-field";
 import { CategoryChooser } from "@/components/admin/category-chooser";
 import type { PickerProduct } from "@/components/admin/product-picker";
+import { RichTextField } from "@/components/admin/rich-text-field";
 import { Field, inputClass } from "@/components/admin/field";
 import { TopSaveButton } from "@/components/admin/save-slot";
 import { UnsavedChanges } from "@/components/admin/unsaved-changes";
@@ -91,14 +92,7 @@ export function ProductForm({
         </Field>
 
         <Field label="Description" name="description" error={errors.description}>
-          {(props) => (
-            <textarea
-              {...props}
-              rows={5}
-              defaultValue={product?.description ?? ""}
-              className={inputClass}
-            />
-          )}
+          {(props) => <RichTextField {...props} defaultValue={product?.description ?? ""} />}
         </Field>
       </section>
 
@@ -189,15 +183,7 @@ export function ProductForm({
         <h2 className="text-sm font-semibold">About the piece</h2>
 
         <Field label="Materials" name="materials" error={errors.materials}>
-          {(props) => (
-            <input
-              {...props}
-              type="text"
-              defaultValue={product?.materials ?? ""}
-              placeholder="Stoneware, matt glaze"
-              className={inputClass}
-            />
-          )}
+          {(props) => <RichTextField {...props} defaultValue={product?.materials ?? ""} />}
         </Field>
 
         <Field label="Dimensions" name="dimensions" error={errors.dimensions}>

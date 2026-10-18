@@ -56,7 +56,8 @@ export type ProductValidation =
 
 function text(form: FormData, key: string): string {
   const value = form.get(key);
-  return typeof value === "string" ? value.trim() : "";
+  // A textarea submits its line breaks as \r\n; store plain \n.
+  return typeof value === "string" ? value.replace(/\r\n?/g, "\n").trim() : "";
 }
 
 function optionalText(form: FormData, key: string): string | null {

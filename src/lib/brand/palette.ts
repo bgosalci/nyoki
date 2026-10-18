@@ -18,6 +18,11 @@ export const brand = {
   navy: "#4a5667",
   /** Fill of moth.svg, the secondary mark. */
   ink: "#0b063c",
+  /**
+   * Sage itself, every channel scaled by one factor, to the lightest shade
+   * that meets AA on the page: the logo's colour, readable as small text.
+   */
+  sageDeep: "#637273",
 } as const;
 
 export const neutral = {
@@ -41,7 +46,7 @@ export const night = {
   rule: "#313842",
 } as const;
 
-export type PaletteSource = "logo-svg" | "logo-pixels" | "moth-svg" | "colour-palette.css" | "theme-board";
+export type PaletteSource = "logo-svg" | "logo-pixels" | "moth-svg" | "colour-palette.css" | "theme-board" | "derived";
 
 export type PaletteRole = "brand" | "text" | "surface" | "decorative";
 
@@ -60,6 +65,7 @@ export const palette: readonly PaletteEntry[] = [
   { name: "Sage light", token: "nyoki-sage-light", hex: brand.sageLight, role: "decorative", source: "logo-pixels", note: "The script in the wordmark. Decorative only - never copy." },
   { name: "Navy", token: "nyoki-navy", hex: brand.navy, role: "text", source: "logo-pixels", note: "HANDMADE. The working text and button colour on every light surface." },
   { name: "Ink", token: "nyoki-ink", hex: brand.ink, role: "text", source: "moth-svg", note: "The moth. The one text colour that reads on sage." },
+  { name: "Sage deep", token: "nyoki-sage-deep", hex: brand.sageDeep, role: "text", source: "derived", note: "Sage, deepened just enough to read. Small accent headings on the page, such as Need to know." },
   { name: "Beige", token: "nyoki-beige", hex: neutral.beige, role: "surface", source: "colour-palette.css", note: "Page background." },
   { name: "Accent beige", token: "nyoki-accent-beige", hex: neutral.accentBeige, role: "surface", source: "colour-palette.css", note: "Cards and panels on the beige page." },
   { name: "Soft ash", token: "nyoki-soft-ash", hex: neutral.softAsh, role: "surface", source: "colour-palette.css", note: "Image placeholders, quiet fills." },
@@ -99,6 +105,7 @@ export const APPROVED_TEXT_PAIRINGS: readonly Pairing[] = [
   { text: brand.ink, surface: neutral.beige, use: "Headlines" },
   { text: brand.ink, surface: neutral.white, use: "Headlines" },
   { text: brand.ink, surface: neutral.accentBeige, use: "Headlines on a quiet band" },
+  { text: brand.sageDeep, surface: neutral.beige, use: "Accent headings in the logo's colour" },
   { text: neutral.white, surface: brand.navy, use: "Primary button" },
   { text: neutral.white, surface: brand.ink, use: "Footer, dark bands" },
   { text: neutral.beige, surface: brand.navy, use: "Primary button, warmer" },

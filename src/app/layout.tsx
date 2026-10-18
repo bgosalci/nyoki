@@ -6,6 +6,9 @@ import "./globals.css";
 const jost = Jost({
   variable: "--font-jost",
   subsets: ["latin"],
+  // The real italic, for italics in descriptions; without it the browser
+  // slants the upright letters. Only downloaded where italic text is shown.
+  style: ["normal", "italic"],
 });
 
 const geistMono = Geist_Mono({

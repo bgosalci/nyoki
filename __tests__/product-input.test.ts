@@ -128,6 +128,22 @@ describe("validateProductInput", () => {
     expect(result.ok && result.data.dimensions).toBeNull();
   });
 
+  it("saves line breaks as plain \\n, whatever the browser sent", () => {
+    // A textarea submits \r\n; storing that leaves a stray \r in the CSV
+    // export and in anything else that splits the text into lines.
+    const result = validateProductInput(
+      form({
+        description: "First.\r\n\r\nSecond.",
+        materials: "Card\r\nRibbon",
+        careInstructions: "Wipe clean.\rKeep dry.",
+      }),
+    );
+
+    expect(result.ok && result.data.description).toBe("First.\n\nSecond.");
+    expect(result.ok && result.data.materials).toBe("Card\nRibbon");
+    expect(result.ok && result.data.careInstructions).toBe("Wipe clean.\nKeep dry.");
+  });
+
   it("has no categories unless some are ticked", () => {
     const result = validateProductInput(form());
 

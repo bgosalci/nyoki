@@ -38,7 +38,7 @@ export function Field({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-sm font-medium">
+      <label htmlFor={id} id={labelIdFor(id)} className="text-sm font-medium">
         {label}
       </label>
 
@@ -64,4 +64,11 @@ export function Field({
   );
 }
 
-export const inputClass = `rounded-md border px-3 py-2 text-sm outline-none aria-[invalid]:border-red-400 ${ui.input}`;
+/**
+ * The id of a Field's label. A control that is not a form element - the
+ * formatting editor - cannot be named by the label's htmlFor, so names itself
+ * with aria-labelledby instead.
+ */
+export const labelIdFor = (id: string) => `${id}-label`;
+
+export const inputClass =`rounded-md border px-3 py-2 text-sm outline-none aria-[invalid]:border-red-400 ${ui.input}`;

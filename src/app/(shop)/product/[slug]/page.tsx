@@ -12,7 +12,12 @@ import { currentCustomer } from "@/lib/account/dal";
 import { formatPence } from "@/lib/money";
 import { effectivePricePence } from "@/lib/pricing";
 import { chainTo } from "@/lib/products/category-pills";
+import { BuyBar } from "@/components/shop/buy-bar";
+import { Disclosure } from "@/components/shop/disclosure";
+import { ProductLayout } from "@/components/shop/product-layout";
+import { RichText } from "@/components/shop/rich-text";
 import { productFacts } from "@/lib/storefront/facts";
+import { summaryOf } from "@/lib/rich-text/parse";
 import { alsoLike } from "@/lib/products/also-like";
 import { automaticAlsoLike, CARD_SELECT, toCards } from "@/lib/storefront/queries";
 
@@ -32,7 +37,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const product = await findProduct((await params).slug);
   return {
     title: product?.name ?? "Not found",
-    description: product?.description?.split("\n")[0] ?? undefined,
+    description: summaryOf(product?.description ?? ""),
   };
 }
 
@@ -70,6 +75,20 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const trail = own ? chainTo(categories, own.slug) : [];
   const wasPence = price.sale ? product.pricePence : product.compareAtPence;
 
+  const [mainImage, ...moreImages] = product.images;
+  const photo = (image: (typeof product.images)[number], index: number) => (
+    <div key={image.id} className="relative aspect-square w-full overflow-hidden rounded-lg bg-nyoki-soft-ash">
+      <Image
+        src={image.url}
+        alt={image.alt ?? (index === 0 ? product.name : "")}
+        fill
+        sizes="(min-width: 768px) 50vw, 100vw"
+        priority={index === 0}
+        className="object-cover"
+      />
+    </div>
+  );
+
   return (
     <div className="mx-auto max-w-shop px-4 py-10 sm:px-6">
       <nav aria-label="Breadcrumb">
@@ -84,26 +103,19 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         </ol>
       </nav>
 
-      <div className="mt-6 grid gap-10 md:grid-cols-2">
-        <div className="flex flex-col gap-3">
-          {product.images.map((image, index) => (
-            <div key={image.id} className="relative aspect-square w-full overflow-hidden rounded-lg bg-nyoki-soft-ash">
-              <Image
-                src={image.url}
-                alt={image.alt ?? (index === 0 ? product.name : "")}
-                fill
-                sizes="(min-width: 768px) 50vw, 100vw"
-                priority={index === 0}
-                className="object-cover"
-              />
-            </div>
-          ))}
-        </div>
-
-        <div className="flex flex-col gap-6 md:sticky md:top-40 md:self-start">
+      <ProductLayout
+        mainPhoto={mainImage ? photo(mainImage, 0) : null}
+        morePhotos={
+          moreImages.length > 0 ? (
+            <div className="flex flex-col gap-3">{moreImages.map((image, index) => photo(image, index + 1))}</div>
+          ) : null
+        }
+      >
+        <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-3">
             <h1 className={`text-3xl leading-tight tracking-tight ${ui.shopHeading}`}>{product.name}</h1>
-            <p className="flex items-baseline gap-3 text-xl tabular-nums">
+            {/* On a phone the price is in the bar at the bottom of the screen. */}
+            <p className="hidden items-baseline gap-3 text-xl tabular-nums md:flex">
               {formatPence(price.pricePence)}
               {wasPence !== null ? (
                 <>
@@ -118,11 +130,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           </div>
 
           {product.description ? (
-            <div className={`flex flex-col gap-3 leading-relaxed ${ui.shopMuted}`}>
-              {product.description.split("\n\n").map((paragraph, i) => (
-                <p key={i}>{paragraph}</p>
-              ))}
-            </div>
+            <RichText text={product.description} className={`leading-relaxed ${ui.shopMuted}`} />
           ) : null}
 
           {product.variants.length > 0 ? (
@@ -148,19 +156,18 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           </ul>
 
           {facts.length > 0 ? (
-            <details className={`border-t pt-4 ${ui.shopRule}`} open>
-              <summary className={`cursor-pointer text-xs tracking-[0.14em] uppercase ${ui.shopHeading}`}>
-                Need to know
-              </summary>
+            <Disclosure title="Need to know" className={`border-t pt-4 ${ui.shopRule}`}>
               <dl className="mt-4 flex flex-col gap-3">
                 {facts.map((fact) => (
                   <div key={fact.label} className="grid grid-cols-[6rem_1fr] gap-3">
                     <dt className={`text-xs tracking-[0.1em] uppercase ${ui.shopMuted}`}>{fact.label}</dt>
-                    <dd className={`text-sm leading-relaxed ${ui.shopMuted}`}>{fact.value}</dd>
+                    <dd>
+                      <RichText text={fact.value} className={`text-sm leading-relaxed ${ui.shopMuted}`} />
+                    </dd>
                   </div>
                 ))}
               </dl>
-            </details>
+            </Disclosure>
           ) : null}
 
           <div className={`flex items-center gap-3 border-t pt-5 ${ui.shopRule}`}>
@@ -181,7 +188,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             Online ordering is coming soon. In the meantime, get in touch to buy this piece.
           </p>
         </div>
-      </div>
+      </ProductLayout>
 
       {related.length > 0 ? (
         <section className="mt-20">
@@ -191,6 +198,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           </div>
         </section>
       ) : null}
+
+      {/* Last, so it holds to the bottom of the screen over the whole page. */}
+      <BuyBar pricePence={price.pricePence} wasPence={wasPence} />
     </div>
   );
 }

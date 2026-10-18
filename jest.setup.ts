@@ -16,6 +16,23 @@ if (typeof Blob !== "undefined" && typeof Blob.prototype.arrayBuffer !== "functi
   };
 }
 
+// jsdom lays nothing out, so it has no Range geometry and no
+// elementFromPoint - which the formatting editor (ProseMirror) asks for to
+// scroll the cursor into view and to place a click. Answered as a page with
+// no layout would answer; only where jsdom lacks them.
+if (typeof Range !== "undefined" && typeof Range.prototype.getClientRects !== "function") {
+  Range.prototype.getClientRects = function getClientRects() {
+    return Object.assign([], { item: () => null }) as unknown as DOMRectList;
+  };
+  Range.prototype.getBoundingClientRect = function getBoundingClientRect() {
+    return { x: 0, y: 0, top: 0, left: 0, bottom: 0, right: 0, width: 0, height: 0, toJSON: () => ({}) } as DOMRect;
+  };
+}
+
+if (typeof document !== "undefined" && typeof document.elementFromPoint !== "function") {
+  document.elementFromPoint = () => null;
+}
+
 if (typeof Blob !== "undefined" && typeof Blob.prototype.text !== "function") {
   Blob.prototype.text = function text(this: Blob): Promise<string> {
     return new Promise((resolve, reject) => {

@@ -51,9 +51,22 @@ describe("brand colours come from the logo files, not a guess", () => {
     }
   });
 
+  it("deepens sage just far enough to read as small text on the page", () => {
+    // The logo's own sage, every channel scaled by one factor - so the same
+    // colour, darker - and the lightest such shade that meets AA on beige.
+    const channels = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    const scaled = (factor: number) =>
+      `#${channels(brand.sage).map((c) => Math.round(c * factor).toString(16).padStart(2, "0")).join("")}`;
+    const factors = Array.from({ length: 70 }, (_, i) => 1 - i / 100);
+    const lightestReadable = factors.map(scaled).find((hex) => contrastRatio(hex, neutral.beige) >= AA_TEXT);
+
+    expect(brand.sageDeep).toBe(lightestReadable);
+    expect(brand.sageDeep).toBe("#637273");
+  });
+
   it("records where every colour came from", () => {
     for (const entry of palette) {
-      expect(entry.source).toMatch(/^(logo-svg|logo-pixels|moth-svg|colour-palette\.css|theme-board)$/);
+      expect(entry.source).toMatch(/^(logo-svg|logo-pixels|moth-svg|colour-palette\.css|theme-board|derived)$/);
       expect(entry.hex).toMatch(/^#[0-9a-f]{6}$/);
     }
   });

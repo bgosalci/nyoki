@@ -50,6 +50,16 @@ describe("ProductForm", () => {
     expect(screen.getByLabelText(/made to order/i)).toBeInTheDocument();
   });
 
+  it("lets the description and the materials be formatted", async () => {
+    render(<ProductForm action={noopAction} />);
+
+    for (const name of [/description/i, /materials/i]) {
+      expect(await screen.findByRole("textbox", { name })).toHaveAttribute("contenteditable", "true");
+    }
+    expect(screen.getAllByRole("button", { name: "Bold" })).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: "Bullet list" })).toHaveLength(2);
+  });
+
   it("has no box for a price, which is set on the Price tab", () => {
     render(<ProductForm action={noopAction} product={mug} pricing={{ productId: "p1", pricePence: 2400, compareAtPence: 3000 }} />);
 
@@ -184,11 +194,12 @@ describe("ProductForm, when a save is rejected", () => {
     render(<ProductForm action={async () => ({ errors: { name: "Give the product a name." } })} />);
     const user = userEvent.setup();
 
-    await user.type(screen.getByLabelText(/description/i), "Crocheted by hand.");
+    await user.type(await screen.findByRole("textbox", { name: /description/i }), "Crocheted by hand.");
     await user.click(screen.getByRole("button", { name: /save/i }));
     await screen.findByText("Give the product a name.");
 
-    expect(screen.getByLabelText(/description/i)).toHaveValue("Crocheted by hand.");
+    expect(screen.getByRole("textbox", { name: /description/i })).toHaveTextContent("Crocheted by hand.");
+    expect(document.querySelector<HTMLInputElement>('input[name="description"]')?.value).toBe("Crocheted by hand.");
   });
 
   it("still asks before leaving, since the typed changes are still unsaved", async () => {

@@ -77,6 +77,9 @@ export const ui = {
   shopPage: "bg-nyoki-beige text-nyoki-navy",
   shopSurface: "bg-nyoki-white text-nyoki-navy",
   shopHeading: "text-nyoki-ink",
+  // Small headings in the logo's colour. Sage itself is too pale to read on
+  // the page (2.6:1), so this is sage deepened to the first shade that does.
+  shopAccent: "text-nyoki-sage-deep",
   shopMuted: "text-nyoki-text-dark",
   shopRule: "border-nyoki-light-slate",
   shopButton: "rounded bg-nyoki-navy text-nyoki-beige hover:opacity-90",

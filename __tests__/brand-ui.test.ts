@@ -111,6 +111,11 @@ describe("CMS class recipes", () => {
     expect(approved).toContain(`${hexOfToken.get("nyoki-beige")} on ${hexOfToken.get(dark!)}`);
   });
 
+  it("gives the shop an accent heading in the logo's sage, deepened so it reads on the page", () => {
+    expect(ui.shopAccent).toMatch(/\btext-nyoki-sage-deep\b/);
+    expect(approved).toContain(`${hexOfToken.get("nyoki-sage-deep")} on ${hexOfToken.get("nyoki-beige")}`);
+  });
+
   it("nothing ever puts white or navy text on sage", () => {
     for (const classes of Object.values(ui)) {
       const onSage = /\bbg-nyoki-sage\b/.test(classes);
