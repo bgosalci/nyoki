@@ -1,6 +1,11 @@
 export interface Fact {
   label: string;
   value: string;
+  /**
+   * Written in the formatting editor, so bold, italic and bullets are meant.
+   * The rest are typed into plain boxes, where an asterisk is an asterisk.
+   */
+  rich: boolean;
 }
 
 /** A weight for shoppers: grams under a kilo, kilos above, never a trailing zero. */
@@ -22,10 +27,10 @@ export function productFacts(product: {
 }): Fact[] {
   const facts: Fact[] = [];
 
-  if (product.dimensions) facts.push({ label: "Size", value: product.dimensions });
-  if (product.materials) facts.push({ label: "Materials", value: product.materials });
-  if (product.weightGrams) facts.push({ label: "Weight", value: formatGrams(product.weightGrams) });
-  if (product.careInstructions) facts.push({ label: "Care", value: product.careInstructions });
+  if (product.dimensions) facts.push({ label: "Size", value: product.dimensions, rich: false });
+  if (product.materials) facts.push({ label: "Materials", value: product.materials, rich: true });
+  if (product.weightGrams) facts.push({ label: "Weight", value: formatGrams(product.weightGrams), rich: false });
+  if (product.careInstructions) facts.push({ label: "Care", value: product.careInstructions, rich: false });
 
   return facts;
 }

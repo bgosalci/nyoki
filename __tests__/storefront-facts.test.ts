@@ -25,17 +25,23 @@ describe("productFacts", () => {
 
   it("lists the making details in a settled order", () => {
     expect(productFacts(full)).toEqual([
-      { label: "Size", value: "9cm tall, 8cm across" },
-      { label: "Materials", value: "Stoneware, matt glaze" },
-      { label: "Weight", value: "450g" },
-      { label: "Care", value: "Hand wash only." },
+      { label: "Size", value: "9cm tall, 8cm across", rich: false },
+      { label: "Materials", value: "Stoneware, matt glaze", rich: true },
+      { label: "Weight", value: "450g", rich: false },
+      { label: "Care", value: "Hand wash only.", rich: false },
     ]);
+  });
+
+  it("marks only the materials as formatted text, the one written in the formatting editor", () => {
+    // Size and care are typed into plain boxes, where an asterisk is just an
+    // asterisk: read as formatting, "10*15*20cm" lost its stars to an italic.
+    expect(productFacts(full).filter((fact) => fact.rich).map((fact) => fact.label)).toEqual(["Materials"]);
   });
 
   it("leaves out whatever was not filled in", () => {
     expect(productFacts({ ...full, materials: null, weightGrams: null })).toEqual([
-      { label: "Size", value: "9cm tall, 8cm across" },
-      { label: "Care", value: "Hand wash only." },
+      { label: "Size", value: "9cm tall, 8cm across", rich: false },
+      { label: "Care", value: "Hand wash only.", rich: false },
     ]);
   });
 

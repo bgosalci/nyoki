@@ -14,6 +14,7 @@ import { effectivePricePence } from "@/lib/pricing";
 import { chainTo } from "@/lib/products/category-pills";
 import { BuyBar } from "@/components/shop/buy-bar";
 import { Disclosure } from "@/components/shop/disclosure";
+import { PlainText } from "@/components/shop/plain-text";
 import { ProductLayout } from "@/components/shop/product-layout";
 import { RichText } from "@/components/shop/rich-text";
 import { productFacts } from "@/lib/storefront/facts";
@@ -162,7 +163,11 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
                   <div key={fact.label} className="grid grid-cols-[6rem_1fr] gap-3">
                     <dt className={`text-xs tracking-[0.1em] uppercase ${ui.shopMuted}`}>{fact.label}</dt>
                     <dd>
-                      <RichText text={fact.value} className={`text-sm leading-relaxed ${ui.shopMuted}`} />
+                      {fact.rich ? (
+                        <RichText text={fact.value} className={`text-sm leading-relaxed ${ui.shopMuted}`} />
+                      ) : (
+                        <PlainText text={fact.value} className={`text-sm leading-relaxed ${ui.shopMuted}`} />
+                      )}
                     </dd>
                   </div>
                 ))}

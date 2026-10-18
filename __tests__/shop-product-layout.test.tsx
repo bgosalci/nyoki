@@ -32,6 +32,15 @@ describe("ProductLayout", () => {
     expect(slot("Description")).toHaveClass("md:col-start-2", "md:row-span-2", "md:row-start-1");
   });
 
+  it("gives any spare height to the last row, so tall details never push the photos apart", () => {
+    // The details span both rows; taller than the photos, their extra height
+    // was shared between the rows, and a 12px gap between the first two
+    // photos opened to 199px.
+    const { container } = renderLayout();
+
+    expect(container.firstChild).toHaveClass("md:grid-rows-[auto_1fr]");
+  });
+
   it("keeps the details in view while the photos scroll past, from md up", () => {
     const { slot } = renderLayout();
 

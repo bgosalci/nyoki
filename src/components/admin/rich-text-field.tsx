@@ -3,7 +3,7 @@
 import { ListItem } from "@tiptap/extension-list";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { labelIdFor } from "@/components/admin/field";
 import { RichText } from "@/components/shop/rich-text";
@@ -35,8 +35,12 @@ const EXTENSIONS = [
   ListItem.extend({ content: "paragraph+" }),
 ];
 
-// Spacing matches the shop's: a gap between paragraphs, discs on bullets.
-const EDITOR_CLASS = "min-h-32 px-3 py-2 text-sm leading-relaxed outline-none [&_li+li]:mt-1 [&_ul]:list-disc [&_ul]:pl-5 [&>*+*]:mt-3";
+// The box the text sits in, shared by the editor and the preview shown before
+// it starts. The spacing is the shop's: RichText spaces the preview itself, so
+// only the editor gets the rules for spacing its own paragraphs and bullets -
+// given both, the preview's gaps came out double and jumped when it started.
+const BOX_CLASS = "min-h-32 px-3 py-2 text-sm leading-relaxed outline-none";
+const EDITOR_CLASS = `${BOX_CLASS} [&_li+li]:mt-1 [&_ul]:list-disc [&_ul]:pl-5 [&>*+*]:mt-3`;
 
 const BUTTON_CLASS =
   "inline-flex size-8 items-center justify-center rounded text-sm hover:bg-nyoki-beige aria-pressed:bg-nyoki-accent-beige disabled:opacity-50 dark:hover:bg-nyoki-night-rule dark:aria-pressed:bg-nyoki-night-rule";
@@ -94,13 +98,19 @@ export function RichTextField({
   // What was saved, posted untouched until the text is changed: rewriting it
   // on arrival would count as a change nobody made.
   const [value, setValue] = useState(defaultValue);
+  // Read once. Built afresh on every render - every key typed - the editor
+  // took it for new settings and applied them all again.
+  const [content] = useState(() => toEditorDoc(defaultValue));
+  // The saved text as the editor would write it. A change undone comes back
+  // to this, and the saved text itself is posted again, exactly: the editor's
+  // own spelling of it - a \r\n tidied, a "* " bullet made "- " - would count
+  // as an unsaved change and ask before leaving.
+  const [unchanged] = useState(() => fromEditorDoc(content));
 
-  const editor = useEditor({
-    extensions: EXTENSIONS,
-    content: toEditorDoc(defaultValue),
-    // Rendered on the server too; the editor itself only exists in the browser.
-    immediatelyRender: false,
-    editorProps: {
+  // New only when the field's error does, so an error arriving after a
+  // rejected save still marks the box, and typing changes nothing here.
+  const editorProps = useMemo(
+    () => ({
       attributes: {
         id,
         role: "textbox",
@@ -110,9 +120,34 @@ export function RichTextField({
         ...(invalid ? { "aria-invalid": invalid } : {}),
         class: EDITOR_CLASS,
       },
+    }),
+    [id, describedBy, invalid],
+  );
+
+  const editor = useEditor({
+    extensions: EXTENSIONS,
+    content,
+    // Rendered on the server too; the editor itself only exists in the browser.
+    immediatelyRender: false,
+    editorProps,
+    onUpdate: ({ editor: changed }) => {
+      const written = fromEditorDoc(changed.getJSON());
+      setValue(written === unchanged ? defaultValue : written);
     },
-    onUpdate: ({ editor: changed }) => setValue(fromEditorDoc(changed.getJSON())),
   });
+
+  // A label's htmlFor is answered only by form elements, so clicking
+  // "Description" did nothing. The label is looked for when it is clicked,
+  // not found in advance, so nothing depends on what React has drawn yet.
+  useEffect(() => {
+    if (!editor) return;
+    const onClick = (event: MouseEvent) => {
+      const label = event.target instanceof Element ? event.target.closest("label") : null;
+      if (label?.htmlFor === id) editor.commands.focus();
+    };
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
+  }, [editor, id]);
 
   const active = useEditorState({
     editor,
@@ -163,7 +198,7 @@ export function RichTextField({
       </div>
 
       {/* Until the editor has started in the browser, the text as it will look. */}
-      {editor ? null : <RichText text={defaultValue} className={EDITOR_CLASS} />}
+      {editor ? null : <RichText text={defaultValue} className={BOX_CLASS} />}
       <EditorContent editor={editor} />
 
       <input type="hidden" name={name} value={value} />
