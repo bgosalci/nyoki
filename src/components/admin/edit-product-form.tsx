@@ -1,6 +1,6 @@
 "use client";
 
-import type { ChosenPiece } from "@/components/admin/also-like-field";
+import type { AlsoLikeOption, ChosenPiece } from "@/components/admin/also-like-field";
 import { ProductForm, type ProductFormCategory } from "@/components/admin/product-form";
 import type { PickerProduct } from "@/components/admin/product-picker";
 import { updateProduct } from "@/app/admin/(protected)/products/actions";
@@ -23,7 +23,7 @@ export function EditProductForm({
   product: ProductInput;
   pricing: { productId: string; pricePence: number; compareAtPence: number | null };
   categories: ProductFormCategory[];
-  alsoLike: { options: PickerProduct[]; automatic: PickerProduct[]; chosen: ChosenPiece[] };
+  alsoLike: { options: AlsoLikeOption[]; automatic: PickerProduct[]; chosen: ChosenPiece[] };
 }) {
   return (
     <ProductForm

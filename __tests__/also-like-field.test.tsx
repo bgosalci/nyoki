@@ -76,6 +76,21 @@ describe("AlsoLikeField", () => {
     expect(within(dialog).getByRole("button", { name: "Reindeer Card" })).toBeInTheDocument();
   });
 
+  it("finds a piece by its categories as well as its name, and shows where each is filed", async () => {
+    // Searching "christ" found only the pieces with Christmas in their name,
+    // and missed the Christmas cards named for what is on them.
+    const snowmen = { ...piece("p7", "Two Red Snowmen Card"), categories: ["Cards › Christmas Cards"] };
+    const { user } = setup({ options: [...options, snowmen] });
+
+    await user.click(within(field()).getByRole("button", { name: "Change Stocking Card" }));
+    const dialog = within(screen.getByRole("dialog"));
+    await user.type(dialog.getByRole("searchbox"), "christ");
+
+    expect(dialog.getByRole("button", { name: /two red snowmen card/i })).toBeInTheDocument();
+    expect(dialog.getByText("Cards › Christmas Cards")).toBeInTheDocument();
+    expect(dialog.queryByRole("button", { name: /bud vase/i })).not.toBeInTheDocument();
+  });
+
   it("shows her choices first and fills the rest automatically, as the page does", () => {
     setup({ chosen: [{ ...vase, onShop: true }, { ...stars, onShop: true }] });
 

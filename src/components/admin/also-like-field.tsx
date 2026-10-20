@@ -8,6 +8,12 @@ import { ProductThumbnail } from "@/components/admin/product-thumbnail";
 import { ui } from "@/lib/brand/ui";
 import { ALSO_LIKE_LIMIT, alsoLike } from "@/lib/products/also-like";
 
+/** A piece that could be chosen, with its categories' places in the tree. */
+export interface AlsoLikeOption extends PickerProduct {
+  /** "Cards › Christmas Cards": shown under its name, and searched. */
+  categories?: string[];
+}
+
 export interface ChosenPiece extends PickerProduct {
   /** Whether the shop shows it: one taken off since is skipped on the page. */
   onShop: boolean;
@@ -30,7 +36,7 @@ export function AlsoLikeField({
   error,
 }: {
   /** Every piece on the shop that could be chosen. */
-  options: PickerProduct[];
+  options: AlsoLikeOption[];
   /** What the page picks by itself for this product, best first. */
   automatic: PickerProduct[];
   chosen: ChosenPiece[];
@@ -129,7 +135,15 @@ export function AlsoLikeField({
         title={slot !== null && shown[slot] ? `Instead of ${shown[slot].name}` : "Add a piece"}
         items={options
           .filter((piece) => !inRow.has(piece.id))
-          .map((piece) => ({ id: piece.id, title: piece.name, details: [], imageUrl: piece.image?.url ?? null, searchText: piece.name }))}
+          // Found by its categories as well as its name, as the sale picker
+          // finds them: "christ" finds every Christmas card, named so or not.
+          .map((piece) => ({
+            id: piece.id,
+            title: piece.name,
+            details: piece.categories ?? [],
+            imageUrl: piece.image?.url ?? null,
+            searchText: (piece.categories ?? []).join(" "),
+          }))}
         onChoose={choose}
         onCancel={() => setSlot(null)}
       />

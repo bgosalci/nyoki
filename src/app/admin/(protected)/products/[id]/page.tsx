@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { EditProductForm } from "@/components/admin/edit-product-form";
 import { EditProductImages } from "@/components/admin/edit-product-images";
+import { categoryPaths, pathsOf } from "@/lib/categories/path";
 import { db } from "@/lib/db";
 import { closestFirst } from "@/lib/products/also-like";
 import { automaticAlsoLike } from "@/lib/storefront/queries";
@@ -43,6 +44,9 @@ export default async function EditProductPage({
   // field shows what the shop shows.
   const categoryIds = product.categories.map((link) => link.categoryId);
   const automatic = await automaticAlsoLike(product.id, categoryIds);
+  // Each piece's categories by their places in the tree, for the chooser to
+  // show and search.
+  const paths = categoryPaths(categories);
   // A replacement is offered nearest first: its own categories, its group,
   // then everything else, each by name.
   const ranked = closestFirst(
@@ -81,7 +85,12 @@ export default async function EditProductPage({
           pricing={{ productId: product.id, pricePence: product.pricePence, compareAtPence: product.compareAtPence }}
           categories={categories}
           alsoLike={{
-            options: ranked.map(({ id, name, images }) => ({ id, name, image: images[0] ?? null })),
+            options: ranked.map(({ id, name, images, categoryIds: filed }) => ({
+              id,
+              name,
+              image: images[0] ?? null,
+              categories: pathsOf(filed, paths),
+            })),
             automatic: automatic.map(({ id, name, images }) => ({ id, name, image: images[0] ?? null })),
             chosen: chosen.map(({ piece: { images, status, ...piece } }) => ({ ...piece, image: images[0] ?? null, onShop: status === "ACTIVE" })),
           }}

@@ -626,6 +626,10 @@ TypeScript, deployed to Vercel.
   everything else, each by name - so changing a Christmas card starts with
   Christmas cards and a cardigan comes last. Ranked on the server by the
   categories as saved. A piece in no category can only come last.
+- **The chooser finds a piece by its categories as well as its name**, as
+  the sale picker does, and shows each one's place in the tree under it:
+  searching "christ" first found only the pieces with Christmas in their
+  name. Pieces already in the row, and the product itself, are left out.
 - The automatic pieces come from one query, `automaticAlsoLike` in
   `src/lib/storefront/queries.ts`, used by the shop page and the admin
   alike, so the admin cannot show one row while the shop shows another.
