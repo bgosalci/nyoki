@@ -149,27 +149,26 @@ export function CustomiserPanels() {
 
 function UnitPanel() {
   const { offer, choices, errors, change } = useCustomiser();
-  const { one, many } = offer.noun;
+  const { one } = offer.noun;
   const headingId = useId();
   const hintId = useId();
   const anySaving = offer.packs.some((pack) => packSavingPence(offer, pack) !== null);
 
   return (
     <Panel heading="Single or pack" headingId={headingId} required hint={`Buy one ${one}, or a pack${anySaving ? " and save" : ""}.`} hintId={hintId}>
-      <TileGroup labelledBy={headingId} describedBy={hintId} error={errors.get("unit")} className="sm:grid-cols-[repeat(auto-fill,minmax(150px,190px))]">
-        <Tile name={`${headingId}-unit`} checked={choices.unit === SINGLE} onSelect={() => change({ unit: SINGLE })} answer="unit" small>
-          <span className="font-medium">Single</span>{" "}
-          <span className={`text-sm ${ui.shopMuted}`}>One {one}</span>{" "}
+      {/* "Single" and "Pack of 3" say how many on their own: a "3 cards" line
+          beneath only made the tiles taller. 10.5rem is room for a price and
+          its saving on one line; a phone takes one card to a row instead. */}
+      <TileGroup labelledBy={headingId} describedBy={hintId} error={errors.get("unit")} className="grid-cols-[repeat(auto-fill,minmax(10.5rem,1fr))]">
+        <Tile name={`${headingId}-unit`} checked={choices.unit === SINGLE} onSelect={() => change({ unit: SINGLE })} answer="unit">
+          <span className="pr-6 font-medium">Single</span>{" "}
           <Price pricePence={offer.single.pricePence} wasPence={offer.single.wasPence} />
         </Tile>
         {offer.packs.map((pack) => {
           const saving = packSavingPence(offer, pack);
           return (
-            <Tile key={pack.id} name={`${headingId}-unit`} checked={choices.unit === pack.id} onSelect={() => change({ unit: pack.id })} small>
-              <span className="font-medium">Pack of {pack.cards}</span>{" "}
-              <span className={`text-sm ${ui.shopMuted}`}>
-                {pack.cards} {many}
-              </span>{" "}
+            <Tile key={pack.id} name={`${headingId}-unit`} checked={choices.unit === pack.id} onSelect={() => change({ unit: pack.id })}>
+              <span className="pr-6 font-medium">Pack of {pack.cards}</span>{" "}
               <Price pricePence={pack.pricePence} wasPence={pack.wasPence} saving={saving} />
             </Tile>
           );
@@ -193,15 +192,14 @@ function MessagePanel() {
       hint={`We can print your words inside the ${offer.noun.one}, or leave it blank for you to write.`}
       hintId={hintId}
     >
-      <TileGroup labelledBy={headingId} describedBy={hintId} error={errors.get("message")} className="sm:grid-cols-2">
+      <TileGroup labelledBy={headingId} describedBy={hintId} error={errors.get("message")} className="grid-cols-2">
         <Tile name={`${headingId}-message`} checked={choices.message === "Blank inside"} onSelect={() => change({ message: "Blank inside" })} answer="message">
-          <span className="font-medium">Leave it blank</span>{" "}
-          <span className={`text-sm ${ui.shopMuted}`}>You&apos;ll write your own</span>
+          <span className="pr-6 font-medium">Leave it blank</span>{" "}
+          <span className={`text-xs ${ui.shopMuted}`}>You&apos;ll write your own</span>
         </Tile>
         <Tile name={`${headingId}-message`} checked={choices.message === "Printed message"} onSelect={() => change({ message: "Printed message" })}>
-          <span className="font-medium">Add a printed message</span>{" "}
-          <span className={`text-sm ${ui.shopMuted}`}>We print it for you</span>{" "}
-          <span className="mt-1 text-sm font-medium">{extraNote(message.pricePence, offer.noun)}</span>
+          <span className="pr-6 font-medium">Add a printed message</span>{" "}
+          <span className="text-xs font-medium">{extraNote(message.pricePence, offer.noun)}</span>
         </Tile>
       </TileGroup>
 
@@ -472,16 +470,19 @@ function TileGroup({
 }
 
 /**
- * One choice. The radio stays in the page - hidden from sight, not from the
- * keyboard or a screen reader - and the tile around it is its label, so Tab
- * and the arrow keys work as they do on any set of radios.
+ * One choice, as a small card: its name, then its price or what it costs.
+ * Only the name keeps clear of the circle in the corner (its own pr-6), so
+ * the line beneath has the card's whole width.
+ * The radio stays in the page - hidden from sight, not from the keyboard or
+ * a screen reader - and the card around it is its label, so Tab and the
+ * arrow keys work as they do on any set of radios. 44px at the least, for a
+ * thumb.
  */
 function Tile({
   name,
   checked,
   onSelect,
   answer,
-  small = false,
   children,
 }: {
   name: string;
@@ -489,15 +490,11 @@ function Tile({
   onSelect: () => void;
   /** Marks the tile Add to basket moves to when this choice is missing. */
   answer?: ChoiceKey;
-  /** The single-or-pack tiles, slimmer still. */
-  small?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <label
-      className={`relative flex min-h-14 cursor-pointer flex-col justify-center pr-10 transition-colors duration-150 motion-reduce:transition-none ${
-        small ? "rounded-[10px] py-2.5 pl-3" : "rounded-xl py-3 pl-4"
-      } ${
+      className={`relative flex min-h-11 cursor-pointer flex-col justify-center gap-0.5 rounded-lg px-3 py-2 text-sm leading-snug transition-colors duration-150 motion-reduce:transition-none ${
         checked ? "bg-nyoki-white ring-2 ring-nyoki-navy" : "bg-nyoki-beige ring-1 ring-nyoki-light-slate hover:bg-nyoki-accent-beige"
       } has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-nyoki-navy`}
     >
@@ -505,12 +502,12 @@ function Tile({
       {children}
       <span
         aria-hidden="true"
-        className={`absolute top-2.5 right-2.5 grid size-5 place-items-center rounded-full ${
+        className={`absolute top-2 right-2 grid size-4 place-items-center rounded-full ${
           checked ? "bg-nyoki-navy" : "border-[1.5px] border-nyoki-navy/50 bg-nyoki-white"
         }`}
       >
         {checked ? (
-          <svg viewBox="0 0 16 16" fill="none" strokeWidth="2.2" className="size-3 stroke-nyoki-white">
+          <svg viewBox="0 0 16 16" fill="none" strokeWidth="2.4" className="size-2.5 stroke-nyoki-white">
             <path d="m3.5 8.5 3 3 6-7" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         ) : null}
@@ -522,12 +519,12 @@ function Tile({
 /** A tile's price: what it sells at now, what it was in a sale, and what a pack saves. */
 function Price({ pricePence, wasPence, saving = null }: { pricePence: number; wasPence: number | null; saving?: number | null }) {
   return (
-    <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-      <span className="font-medium tabular-nums">{formatPence(pricePence)}</span>
+    <span className="flex flex-nowrap items-center gap-x-1.5 whitespace-nowrap">
+      <span className="tabular-nums">{formatPence(pricePence)}</span>
       {wasPence !== null ? (
         <>
           {" "}
-          <span className="sr-only">was</span> <s className={`text-sm tabular-nums ${ui.shopMuted}`}>{formatPence(wasPence)}</s>
+          <span className="sr-only">was</span> <s className={`text-xs tabular-nums ${ui.shopMuted}`}>{formatPence(wasPence)}</s>
         </>
       ) : null}
       {saving !== null ? (
@@ -535,7 +532,7 @@ function Price({ pricePence, wasPence, saving = null }: { pricePence: number; wa
           {" "}
           {/* An outline in the logo's sage: a fill under ink read as a heavy
               grey blob beside the price. */}
-          <span className="rounded-full border border-nyoki-sage px-2 text-xs font-medium text-nyoki-sage-deep">
+          <span className="rounded-full border border-nyoki-sage px-1.5 text-xs font-medium text-nyoki-sage-deep">
             Save {formatPence(saving)}
           </span>
         </>

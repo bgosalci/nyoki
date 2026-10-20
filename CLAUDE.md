@@ -323,6 +323,11 @@ TypeScript, deployed to Vercel.
   it, straight under the price, was tried and not wanted.
 - A pack's saving is a sage outline with deep sage text: a sage fill under
   ink read as a heavy grey blob beside the price.
+- **Choices are small cards**, a few to a row: the name, then the price or
+  what it costs, 44px tall at the least. The first ones were twice the size
+  and were too big; "Pack of 3" needs no "3 cards" line beneath it.
+  A price and its saving stay on one line: the cards are at least 10.5rem
+  wide, so a phone takes one to a row rather than break it.
 - The rules - price, what is missing, the summary's words - are
   `src/lib/customisation/choices.ts`, pure, for the basket to check by too.
 - **No basket yet**: Add to basket is `aria-disabled` but never faded; pressed

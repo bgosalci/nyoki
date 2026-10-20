@@ -78,8 +78,30 @@ describe("the customiser", () => {
     it("offers the single card and each pack, with what each costs and what the pack saves", () => {
       setup();
 
-      expect(screen.getByRole("radio", { name: "Single One card £5.50" })).not.toBeChecked();
-      expect(screen.getByRole("radio", { name: "Pack of 3 3 cards £15.00 Save £1.50" })).not.toBeChecked();
+      // "Pack of 3" says how many; a "3 cards" line beneath only made the
+      // tile taller.
+      expect(screen.getByRole("radio", { name: "Single £5.50" })).not.toBeChecked();
+      expect(screen.getByRole("radio", { name: "Pack of 3 £15.00 Save £1.50" })).not.toBeChecked();
+    });
+
+    it("draws each choice as a small card, a few to a row", () => {
+      setup();
+
+      const tile = screen.getByRole("radio", { name: /^single/i }).closest("label")!;
+      expect(tile).toHaveClass("rounded-lg", "py-2", "text-sm");
+      expect(tile).not.toHaveClass("min-h-14");
+      expect(tile.parentElement).toHaveClass("grid-cols-[repeat(auto-fill,minmax(10.5rem,1fr))]");
+    });
+
+    it("keeps a pack's price and its saving on one line", () => {
+      // The cards are at least wide enough for both, and the line never
+      // breaks: wrapped, the saving sat alone beneath the price.
+      setup();
+
+      const line = screen.getByText("£15.00").parentElement!;
+      expect(line).toContainElement(screen.getByText("Save £1.50"));
+      expect(line).toHaveClass("flex-nowrap", "whitespace-nowrap");
+      expect(line).not.toHaveClass("flex-wrap");
     });
 
     it("draws the saving as a sage outline, light beside the price", () => {
@@ -113,7 +135,8 @@ describe("the customiser", () => {
     it("says what a printed message costs a card", () => {
       setup();
 
-      expect(screen.getByRole("radio", { name: /add a printed message we print it for you \+80p a card/i })).toBeInTheDocument();
+      expect(screen.getByRole("radio", { name: "Add a printed message +80p a card" })).toBeInTheDocument();
+      expect(screen.getByRole("radio", { name: "Leave it blank You'll write your own" })).toBeInTheDocument();
     });
 
     it("opens a box for the words, as long as the card allows, with a counter", async () => {
@@ -291,7 +314,6 @@ describe("the customiser", () => {
   it("calls a bookmark a bookmark", () => {
     setup({ ...everything, noun: { one: "bookmark", many: "bookmarks" }, message: null });
 
-    expect(screen.getByRole("radio", { name: "Single One bookmark £5.50" })).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: /^pack of 3 3 bookmarks/i })).toBeInTheDocument();
+    expect(screen.getByText("Buy one bookmark, or a pack and save.")).toBeInTheDocument();
   });
 });
