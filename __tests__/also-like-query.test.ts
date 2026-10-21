@@ -11,7 +11,7 @@ import { automaticAlsoLike, CARD_SELECT } from "@/lib/storefront/queries";
 beforeEach(() => findMany.mockReset().mockResolvedValue([]));
 
 describe("automaticAlsoLike, the pieces a product's page picks by itself", () => {
-  it("asks for pieces on the shop from the same categories, not the product itself, newest first", async () => {
+  it("asks for pieces on the shop from the same categories, not the product itself, in the shop's order", async () => {
     const rows = [{ id: "p2" }];
     findMany.mockResolvedValue(rows);
 
@@ -19,7 +19,8 @@ describe("automaticAlsoLike, the pieces a product's page picks by itself", () =>
 
     expect(findMany).toHaveBeenCalledWith({
       where: { status: "ACTIVE", id: { not: "p1" }, categories: { some: { categoryId: { in: ["c1", "c2"] } } } },
-      orderBy: { createdAt: "desc" },
+      // The order set by dragging: what she puts first is suggested first.
+      orderBy: { sortKey: "desc" },
       // Twice what is shown, so pieces she has chosen herself still leave enough to fill the row.
       take: 8,
       select: CARD_SELECT,

@@ -1,7 +1,20 @@
 "use client";
 
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type Announcements,
+  type DragEndEvent,
+  type UniqueIdentifier,
+} from "@dnd-kit/core";
+import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
 import { BulkPriceDialog } from "@/components/admin/bulk-price-dialog";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
@@ -11,6 +24,7 @@ import { PINNED_BLOCK_CLASS, Th } from "@/components/admin/th";
 import { ui } from "@/lib/brand/ui";
 import { formatPence } from "@/lib/money";
 import { rememberProductList } from "@/lib/products/browse";
+import { moveInList, placeFor, type Place } from "@/lib/products/ordering";
 import type { RepriceFields } from "@/lib/products/repricing";
 import type { ProductStatus } from "@/lib/products/validate";
 
@@ -30,6 +44,12 @@ const STATUS_LABEL: Record<ProductStatus, string> = {
   ACTIVE: "Active",
   ARCHIVED: "Archived",
 };
+
+/** The list's groups, in the order the page sends them. */
+const STATUS_ORDER: readonly ProductStatus[] = ["DRAFT", "ACTIVE", "ARCHIVED"];
+
+const DRAG_INSTRUCTIONS =
+  "To move a piece, press space or enter to pick it up, use the up and down arrow keys to move it, and press space or enter again to drop it. Press escape to cancel.";
 
 /**
  * The products list, with a checkbox per row and actions that apply to
@@ -51,6 +71,12 @@ const STATUS_LABEL: Record<ProductStatus, string> = {
  * it for good. Deleting is safe for order history - a line records the name
  * and price it sold at, so an old order still reads correctly afterwards -
  * but it is still permanent, so it asks first.
+ *
+ * Each row has a handle to drag it into a new place, which is the shop's
+ * order too. Drafts, active and archived pieces stay in their own groups,
+ * so a piece moves only among its own. A move shows at once and is saved
+ * behind it; one that cannot be saved is put back, and says so. The handle
+ * works from the keyboard as well: space to pick up, arrows, space to drop.
  */
 export function ProductTable({
   rows,
@@ -58,6 +84,7 @@ export function ProductTable({
   setStatus,
   remove,
   reprice,
+  move,
 }: {
   rows: ProductRow[];
   /** Rendered by the page, pinned here so the bulk bar can share the block. */
@@ -66,23 +93,43 @@ export function ProductTable({
   setStatus: (ids: string[], status: ProductStatus) => Promise<{ unpriced: string[] }>;
   remove: (ids: string[]) => Promise<void>;
   reprice: (ids: string[], fields: RepriceFields) => Promise<void>;
+  /** Saves a piece dropped just before or after another. */
+  move: (id: string, targetId: string, place: Place) => Promise<{ ok: boolean }>;
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirming, setConfirming] = useState(false);
   const [pricing, setPricing] = useState(false);
   const [unpriced, setUnpriced] = useState<string[]>([]);
+  const [moveFailed, setMoveFailed] = useState(false);
+
+  // The rows as arranged here: a move shows at once, before the server has
+  // answered. Fresh rows from the server - after a save, a filter - start
+  // the arrangement again from theirs.
+  const [arranged, setArranged] = useState(rows);
+  const [basis, setBasis] = useState(rows);
+  if (rows !== basis) {
+    setBasis(rows);
+    setArranged(rows);
+  }
+
+  const dndId = useId();
+  const sensors = useSensors(
+    // A few pixels' travel first, so a click on the handle is only a click.
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   // What a product page steps through with Previous and Next: this list as it
   // is shown now, in this order and under these filters.
   useEffect(() => {
     rememberProductList({
       href: window.location.pathname + window.location.search,
-      items: rows.map(({ id, name }) => ({ id, name })),
+      items: arranged.map(({ id, name }) => ({ id, name })),
     });
-  }, [rows]);
+  }, [arranged]);
 
   // Kept in the table's order, so an action reads the same way the list does.
-  const chosen = rows.filter((row) => selected.has(row.id)).map((row) => row.id);
+  const chosen = arranged.filter((row) => selected.has(row.id)).map((row) => row.id);
   const allChosen = rows.length > 0 && chosen.length === rows.length;
 
   function toggle(id: string) {
@@ -106,6 +153,41 @@ export function ProductTable({
     setUnpriced(result?.unpriced ?? []);
     setSelected(new Set());
   }
+
+  async function drop({ active, over }: DragEndEvent) {
+    if (!over || active.id === over.id) return;
+    const moving = arranged.find((row) => row.id === active.id);
+    const target = arranged.find((row) => row.id === over.id);
+    // The groups are kept apart: a drop into another one is not a move.
+    if (!moving || !target || moving.status !== target.status) return;
+
+    const before = arranged;
+    const place = placeFor(
+      arranged.map((row) => row.id),
+      moving.id,
+      target.id,
+    );
+    setMoveFailed(false);
+    setArranged(moveInList(arranged, moving.id, target.id, place));
+
+    const saved = await move(moving.id, target.id, place).catch(() => ({ ok: false }));
+    if (!saved.ok) {
+      setArranged(before);
+      setMoveFailed(true);
+    }
+  }
+
+  const nameOf = (id: UniqueIdentifier) => arranged.find((row) => row.id === id)?.name ?? "the piece";
+  const announcements: Announcements = {
+    onDragStart: ({ active }) => `Picked up ${nameOf(active.id)}.`,
+    onDragOver: ({ active, over }) =>
+      over ? `${nameOf(active.id)} is over ${nameOf(over.id)}.` : `${nameOf(active.id)} is not over a piece.`,
+    onDragEnd: ({ active, over }) =>
+      over ? `${nameOf(active.id)} was dropped on ${nameOf(over.id)}.` : `${nameOf(active.id)} was put back.`,
+    onDragCancel: ({ active }) => `Moving ${nameOf(active.id)} was cancelled. It is back where it was.`,
+  };
+
+  const groups = STATUS_ORDER.map((status) => arranged.filter((row) => row.status === status)).filter((group) => group.length > 0);
 
   const actionClass = `rounded-md px-3 py-1.5 text-sm ${ui.buttonSecondary}`;
 
@@ -149,6 +231,12 @@ export function ProductTable({
           </div>
         ) : null}
 
+        {moveFailed ? (
+          <p role="status" className={`mt-4 rounded-md border p-3 text-sm ${ui.card} ${ui.ruleOnPage}`}>
+            That move could not be saved, so the list is as it was. Try it again.
+          </p>
+        ) : null}
+
         {unpriced.length > 0 ? (
           <p role="status" className={`mt-4 rounded-md border p-3 text-sm ${ui.card} ${ui.ruleOnPage}`}>
             Left as {unpriced.length === 1 ? "a draft" : "drafts"}, because {unpriced.length === 1 ? "it has" : "they have"} no
@@ -157,10 +245,17 @@ export function ProductTable({
         ) : null}
       </PinnedHeight>
 
-      <div>
+      <DndContext
+        id={dndId}
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={(event) => void drop(event)}
+        accessibility={{ announcements, screenReaderInstructions: { draggable: DRAG_INSTRUCTIONS } }}
+      >
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr>
+              <Th srOnly>Order</Th>
               <Th>
                 <input
                   type="checkbox"
@@ -178,43 +273,47 @@ export function ProductTable({
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
-              <tr key={row.id} className={`border-b ${ui.tableRow}`}>
-                <td className="py-3 pr-4">
-                  <input
-                    type="checkbox"
-                    aria-label={row.name}
-                    checked={selected.has(row.id)}
-                    onChange={() => toggle(row.id)}
-                    className={`size-4 align-middle ${ui.checkbox}`}
-                  />
-                </td>
-                <td className="py-2 pr-3">
-                  {/* The photo opens the product too. The name is the link a
-                      keyboard or screen reader meets; this is the same place
-                      again, for the mouse, so it is kept out of their way. */}
-                  <Link href={`/admin/products/${row.id}`} tabIndex={-1} aria-hidden="true" className="block w-fit">
-                    <ProductThumbnail image={row.image} size="large" />
-                  </Link>
-                </td>
-                <td className="py-3 pr-4">
-                  <Link href={`/admin/products/${row.id}`} className="font-medium underline-offset-4 hover:underline">
-                    {row.name}
-                  </Link>
-                  {row.oneOfAKind ? <span className={`ml-2 text-xs ${ui.mutedOnPage}`}>one of a kind</span> : null}
-                </td>
-                <td className={`py-3 pr-4 ${ui.mutedOnPage}`}>{STATUS_LABEL[row.status]}</td>
-                <td className="py-3 pr-4 text-right tabular-nums">{formatPence(row.pricePence)}</td>
-                <td className="py-3 pr-4 text-right tabular-nums">{row.madeToOrder ? "made to order" : row.stock}</td>
-              </tr>
+            {groups.map((group) => (
+              <SortableContext key={group[0].status} items={group.map((row) => row.id)} strategy={verticalListSortingStrategy}>
+                {group.map((row) => (
+                  <SortableRow key={row.id} id={row.id} name={row.name}>
+                    <td className="py-3 pr-4">
+                      <input
+                        type="checkbox"
+                        aria-label={row.name}
+                        checked={selected.has(row.id)}
+                        onChange={() => toggle(row.id)}
+                        className={`size-4 align-middle ${ui.checkbox}`}
+                      />
+                    </td>
+                    <td className="py-2 pr-3">
+                      {/* The photo opens the product too. The name is the link a
+                          keyboard or screen reader meets; this is the same place
+                          again, for the mouse, so it is kept out of their way. */}
+                      <Link href={`/admin/products/${row.id}`} tabIndex={-1} aria-hidden="true" className="block w-fit">
+                        <ProductThumbnail image={row.image} size="large" />
+                      </Link>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <Link href={`/admin/products/${row.id}`} className="font-medium underline-offset-4 hover:underline">
+                        {row.name}
+                      </Link>
+                      {row.oneOfAKind ? <span className={`ml-2 text-xs ${ui.mutedOnPage}`}>one of a kind</span> : null}
+                    </td>
+                    <td className={`py-3 pr-4 ${ui.mutedOnPage}`}>{STATUS_LABEL[row.status]}</td>
+                    <td className="py-3 pr-4 text-right tabular-nums">{formatPence(row.pricePence)}</td>
+                    <td className="py-3 pr-4 text-right tabular-nums">{row.madeToOrder ? "made to order" : row.stock}</td>
+                  </SortableRow>
+                ))}
+              </SortableContext>
             ))}
           </tbody>
         </table>
-      </div>
+      </DndContext>
 
       <BulkPriceDialog
         open={pricing}
-        rows={rows.filter((row) => selected.has(row.id))}
+        rows={arranged.filter((row) => selected.has(row.id))}
         onCancel={() => setPricing(false)}
         onApply={(fields) => {
           setPricing(false);
@@ -234,5 +333,44 @@ export function ProductTable({
         }}
       />
     </>
+  );
+}
+
+/**
+ * A row that can be dragged by its handle - the first cell - and only by it,
+ * so the checkbox, the photo and the name keep doing what they did. It moves
+ * up and down only.
+ */
+function SortableRow({ id, name, children }: { id: string; name: string; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id });
+
+  return (
+    <tr
+      ref={setNodeRef}
+      style={{ transform: CSS.Translate.toString(transform ? { ...transform, x: 0 } : null), transition }}
+      className={`border-b ${ui.tableRow} ${isDragging ? `relative z-10 shadow-lg ${ui.card}` : ""}`}
+    >
+      <td className="py-3 pr-1">
+        <button
+          type="button"
+          ref={setActivatorNodeRef}
+          {...attributes}
+          {...listeners}
+          aria-label={`Move ${name}`}
+          title="Drag to move"
+          className={`grid size-8 cursor-grab touch-none place-items-center rounded active:cursor-grabbing ${ui.navItem}`}
+        >
+          <svg viewBox="0 0 16 16" aria-hidden="true" className="size-4 fill-current">
+            {[4, 8, 12].map((y) => (
+              <g key={y}>
+                <circle cx="6" cy={y} r="1.2" />
+                <circle cx="10" cy={y} r="1.2" />
+              </g>
+            ))}
+          </svg>
+        </button>
+      </td>
+      {children}
+    </tr>
   );
 }

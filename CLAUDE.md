@@ -122,6 +122,31 @@ TypeScript, deployed to Vercel.
   price and code it sold at, and its product reference is SetNull rather than
   cascading - but it also removes the photos from storage, so it asks first.
 
+- **The order is set by dragging**, and it is the shop's order too: one
+  order for the whole catalogue (`Product.sortKey`, read highest first), so
+  category pages, the Shop page, the home page's pieces, each category
+  tile's photo and the automatic You may also like pieces follow it. The list keeps drafts, then active, then archived
+  apart (`PRODUCT_LIST_ORDER`), each in that order, and a piece moves only
+  among its own status. It was by last saved, which moved a piece to the top
+  on every edit, and the shop by newest created; neither could be chosen.
+- `sortKey` is a **sequence**, so a new product - made in the admin,
+  imported from a file or from Shopify - takes the highest key and lands on
+  top with no code of its own. A move (`moveUpdates`,
+  `src/lib/products/ordering.ts`) never makes a key up: it hands the keys of
+  the rows it passes round among them, so a moved piece cannot rise above a
+  newer one, and what it passes keeps its order among itself. The migration
+  started every key from the shop's old order, newest highest.
+- Dragging works in a filtered view (a category, a search): the piece lands
+  just before or after the one it was dropped on, in the whole order. Each
+  row has a handle (dnd-kit 6.3.1 / sortable 10.0.0, pinned), the only part
+  that drags, so the checkbox, photo and name keep working; it works from
+  the keyboard too (space, arrows, space) and announces moves by name. A
+  move shows at once and is saved behind it (`moveProduct`, which works the
+  move out afresh from the database); one that cannot be saved is put back
+  and says so. dnd-kit's announcements live in a `role="status"` region of
+  its own (`DndLiveRegion-…`), which tests looking for the page's notices
+  skip.
+
 - The bulk bar carries "Clear selection" beside the count, away from Delete.
 - The bulk bar changes prices across many pieces at once; a single piece is
   priced on its own Price tab. "Make active" skips anything not yet priced
@@ -161,10 +186,11 @@ TypeScript, deployed to Vercel.
   it was opened from - in that order, under those filters - on the same tab,
   so pieces can be priced one after another without going through the list.
 - The list is remembered by `ProductTable` as it renders (`rememberProductList`,
-  sessionStorage, per tab) rather than worked out again on the product page:
-  the list is sorted by what was edited last, so saving a piece moves it to
-  the top, and a "next" recalculated after every save sends you back to the
-  start. See `src/lib/products/browse.ts`.
+  sessionStorage, per tab) rather than worked out again on the product page.
+  It was first needed because the list was sorted by what was edited last,
+  so a "next" recalculated after every save sent you back to the start; the
+  list is in the dragged order now, but remembering it still keeps its
+  filters. See `src/lib/products/browse.ts`.
 - **The steps are always there.** A piece opened some other way - a reload, a
   bookmark, a new tab - steps through the whole list in its usual order
   (`PRODUCT_LIST_ORDER`, shared with the list page), which the layout sends
@@ -657,7 +683,8 @@ TypeScript, deployed to Vercel.
   `heroImageFor` falls back to the newest piece with one. A piece archived
   months after it was picked must not keep leading the page, or empty it.
 - The row of pieces shows whatever is marked **featured** on the product,
-  falling back to the newest when nothing is. That checkbox existed on the
+  in the shop's order, falling back to the first eight in that order when
+  nothing is. That checkbox existed on the
   product form from the start and did nothing until now.
 - Emptying all three promise boxes takes the sage strip off the page.
 
@@ -676,7 +703,9 @@ TypeScript, deployed to Vercel.
   nothing to 42% of the frame, so no crop suited them all and it was dropped.
 - Tiles come from `categoryTiles` in `src/lib/storefront/tiles.ts`, built in
   one pass over `tileProducts()` rather than a query per tile. A child holding
-  nothing is left out - a tile leading to an empty page is a dead end.
+  nothing is left out - a tile leading to an empty page is a dead end. A
+  tile's photo is its first piece's, in the shop's order, so dragging a piece
+  to the top of a category also gives that category's tile its photo.
 - Tile photos are square, like the product shots themselves: a landscape crop
   slices a card across the middle. The white around a subject is in the
   photograph, not the layout - trimming it properly means trimming the stored

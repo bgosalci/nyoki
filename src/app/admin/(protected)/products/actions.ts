@@ -9,6 +9,7 @@ import { db } from "@/lib/db";
 import { repriceProduct, validateRepriceInput, type RepriceFields } from "@/lib/products/repricing";
 import { activationBlockedBecause } from "@/lib/products/activation";
 import { parseAlsoLikeIds } from "@/lib/products/also-like";
+import { moveUpdates, type Place } from "@/lib/products/ordering";
 import { validateProductInput, type ProductStatus } from "@/lib/products/validate";
 import { isUniqueViolationOn } from "@/lib/db-errors";
 import { uniqueSlug } from "@/lib/slug";
@@ -191,6 +192,34 @@ export async function setProductsStatus(ids: string[], status: ProductStatus): P
  * at, and its product reference is nulled rather than cascading, so an old
  * order still reads correctly once the product is gone.
  */
+/**
+ * Move a piece just before or after another, as dropped on the products
+ * list. The order is the shop's too, so both are refreshed.
+ *
+ * Worked out afresh from the database, not from the list as the browser saw
+ * it, and kept within a status: the list groups drafts, active and archived
+ * apart, so a drop across them is a mistake, not a request. One transaction,
+ * so the keys it shuffles land together.
+ */
+export async function moveProduct(id: string, targetId: string, place: Place): Promise<{ ok: boolean }> {
+  await requireAdmin();
+  if (place !== "before" && place !== "after") return { ok: false };
+
+  const rows = await db.product.findMany({ select: { id: true, sortKey: true, status: true } });
+  const moving = rows.find((row) => row.id === id);
+  const target = rows.find((row) => row.id === targetId);
+  if (!moving || !target || moving.status !== target.status) return { ok: false };
+
+  const updates = moveUpdates(rows, id, targetId, place);
+  if (updates.length > 0) {
+    await db.$transaction(updates.map((row) => db.product.update({ where: { id: row.id }, data: { sortKey: row.sortKey } })));
+  }
+
+  revalidatePath("/admin/products");
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 export async function deleteProducts(ids: string[]): Promise<void> {
   await requireAdmin();
   if (ids.length === 0) return;

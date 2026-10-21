@@ -7,7 +7,12 @@ const STATUSES: readonly ProductStatus[] = ["DRAFT", "ACTIVE", "ARCHIVED"];
  * and a product page's Previous and Next both use it, so stepping through
  * pieces follows the list.
  */
-export const PRODUCT_LIST_ORDER: [{ status: "asc" }, { updatedAt: "desc" }] = [{ status: "asc" }, { updatedAt: "desc" }];
+/**
+ * The products list: drafts, then active, then archived, each in the order
+ * set by dragging (`sortKey`, highest first - see lib/products/ordering).
+ * It was by last saved, which moved a piece to the top on every edit.
+ */
+export const PRODUCT_LIST_ORDER: [{ status: "asc" }, { sortKey: "desc" }] = [{ status: "asc" }, { sortKey: "desc" }];
 
 export interface ProductFilter {
   q: string | null;

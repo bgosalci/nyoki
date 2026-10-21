@@ -27,11 +27,11 @@ export function toCards(rows: CardRow[], now = new Date()): CardProduct[] {
   return rows.map((row) => toCardProduct({ ...row, sales: row.sales.map((link) => link.sale) }, now));
 }
 
-/** Products on sale to the public: active only, newest first. */
+/** Products on sale to the public: active only, in the order set by dragging them in the admin. */
 export async function activeProducts(where = {}, take?: number) {
   return db.product.findMany({
     where: { status: "ACTIVE", ...where },
-    orderBy: { createdAt: "desc" },
+    orderBy: { sortKey: "desc" },
     take,
     select: CARD_SELECT,
   });
@@ -39,10 +39,11 @@ export async function activeProducts(where = {}, take?: number) {
 
 /**
  * What "You may also like" picks by itself for a product: pieces on the shop
- * from the same categories, newest first. Shared by the product's page and
- * the admin field that shows it, so what Njomza is shown is what the shop
- * shows. Twice what the row holds, so the pieces she has chosen herself
- * still leave enough to fill it.
+ * from the same categories, in the shop's order - so a piece dragged to the
+ * top of its category is suggested first too. Shared by the product's page
+ * and the admin field that shows it, so what Njomza is shown is what the
+ * shop shows. Twice what the row holds, so the pieces she has chosen
+ * herself still leave enough to fill it.
  */
 export async function automaticAlsoLike(productId: string, categoryIds: string[]) {
   if (categoryIds.length === 0) return [];
@@ -56,7 +57,8 @@ export async function automaticAlsoLike(productId: string, categoryIds: string[]
 export async function tileProducts(): Promise<TileProduct[]> {
   const rows = await db.product.findMany({
     where: { status: "ACTIVE" },
-    orderBy: { createdAt: "desc" },
+    // In the shop's own order, so a tile's photo is its first piece.
+    orderBy: { sortKey: "desc" },
     select: {
       categories: { select: { categoryId: true } },
       images: { orderBy: { position: "asc" }, take: 1, select: { url: true, alt: true } },

@@ -28,10 +28,11 @@ export interface CategoryTile {
 }
 
 /**
- * A tile per child of `parentId`, covered by the newest photo beneath it.
+ * A tile per child of `parentId`, covered by the photo of its first piece.
  *
- * `products` arrives in the order the storefront shows things - newest first -
- * so the first one carrying a photo is the freshest face for the tile. A child
+ * `products` arrives in the order the storefront shows things - the order set
+ * by dragging them in the admin - so the first one carrying a photo is the
+ * face the category's own page leads with. A child
  * holding nothing is left out: a tile leading to an empty page is a dead end,
  * not information.
  */

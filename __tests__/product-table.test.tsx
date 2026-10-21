@@ -15,6 +15,9 @@ const rows: ProductRow[] = [
   { id: "p3", name: "Bud Vase", status: "ARCHIVED", pricePence: 1800, stock: 1, madeToOrder: true, oneOfAKind: false, image: null },
 ];
 
+/** The page's own notices: not the region dragging announces itself through. */
+const notices = () => screen.queryAllByRole("status").filter((element) => !element.id.startsWith("DndLiveRegion"));
+
 function setup(overrides: Partial<React.ComponentProps<typeof ProductTable>> = {}) {
   const setStatus = jest.fn(async () => ({ unpriced: [] as string[] }));
   const remove = jest.fn(async () => {});
@@ -26,6 +29,7 @@ function setup(overrides: Partial<React.ComponentProps<typeof ProductTable>> = {
       setStatus={setStatus}
       remove={remove}
       reprice={reprice}
+      move={jest.fn(async () => ({ ok: true }))}
       {...overrides}
     />,
   );
@@ -73,6 +77,7 @@ describe("ProductTable", () => {
         setStatus={jest.fn()}
         remove={jest.fn()}
         reprice={jest.fn()}
+        move={jest.fn()}
       />,
     );
 
@@ -182,7 +187,8 @@ describe("ProductTable", () => {
     await user.click(screen.getByRole("checkbox", { name: /select all/i }));
     await user.click(screen.getByRole("button", { name: /make active/i }));
 
-    const notice = await screen.findByRole("status");
+    await screen.findByText(/stocking card/i, { selector: "[role=status]" });
+    const [notice] = notices();
     expect(notice).toHaveTextContent("Stocking Card");
     expect(notice).toHaveTextContent(/price tab/i);
   });
@@ -193,7 +199,7 @@ describe("ProductTable", () => {
     await user.click(screen.getByRole("checkbox", { name: /stocking card/i }));
     await user.click(screen.getByRole("button", { name: /make active/i }));
 
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(notices()).toEqual([]);
   });
 
   it("pins the bulk actions with the header, so they do not scroll away from the rows they act on", async () => {

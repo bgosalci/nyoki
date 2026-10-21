@@ -1,4 +1,4 @@
-import { parseProductFilter, productWhere } from "@/lib/products/filter";
+import { PRODUCT_LIST_ORDER, parseProductFilter, productWhere } from "@/lib/products/filter";
 
 describe("parseProductFilter", () => {
   it("reads a search term and a status from the query string", () => {
@@ -53,5 +53,13 @@ describe("productWhere", () => {
 
   it("combines both", () => {
     expect(productWhere({ q: "mug", status: "ACTIVE", category: null })).toMatchObject({ status: "ACTIVE", OR: expect.any(Array) });
+  });
+});
+
+describe("PRODUCT_LIST_ORDER", () => {
+  it("groups drafts, then active, then archived, each in the order set by dragging", () => {
+    // Not by when each was last saved: that moved a piece to the top every
+    // time it was edited, so the list never read the same way twice.
+    expect(PRODUCT_LIST_ORDER).toEqual([{ status: "asc" }, { sortKey: "desc" }]);
   });
 });
