@@ -36,7 +36,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       // inside it is.
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      {/* Browser extensions write onto <body> before React hydrates -
+          Grammarly's data-gr-ext-installed, for one - which the dev overlay
+          reported as a hydration error on every page. Again only this
+          element's own attributes. */}
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>
+        {children}
+      </body>
     </html>
   );
 }

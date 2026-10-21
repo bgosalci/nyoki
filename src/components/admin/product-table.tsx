@@ -2,7 +2,6 @@
 
 import {
   DndContext,
-  KeyboardSensor,
   PointerSensor,
   closestCenter,
   useSensor,
@@ -11,10 +10,10 @@ import {
   type DragEndEvent,
   type UniqueIdentifier,
 } from "@dnd-kit/core";
-import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 
 import { BulkPriceDialog } from "@/components/admin/bulk-price-dialog";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
@@ -72,11 +71,19 @@ const DRAG_INSTRUCTIONS =
  * and price it sold at, so an old order still reads correctly afterwards -
  * but it is still permanent, so it asks first.
  *
- * Each row has a handle to drag it into a new place, which is the shop's
- * order too. Drafts, active and archived pieces stay in their own groups,
- * so a piece moves only among its own. A move shows at once and is saved
- * behind it; one that cannot be saved is put back, and says so. The handle
- * works from the keyboard as well: space to pick up, arrows, space to drop.
+ * A row drags into a new place from anywhere on it, which is the shop's
+ * order too; a click still opens or ticks it, since a drag starts only after
+ * a few pixels' travel. Drafts, active and archived pieces stay in their own
+ * groups: a row dropped among another group's lands at the nearest end of
+ * its own. A move shows at once and is saved behind it; one that cannot be
+ * saved is put back, and says so.
+ *
+ * Each row's handle is the way in from the keyboard - space to pick the
+ * piece up, an arrow moves it one place, space puts it down, escape puts it
+ * back - and for touch, where the rest of the row scrolls the page. The
+ * keyboard is handled here rather than by dnd-kit's sensor, which scrolls
+ * the page instead of moving a row when the next one is below the middle of
+ * the screen - with rows this tall, nearly always.
  */
 export function ProductTable({
   rows,
@@ -114,10 +121,22 @@ export function ProductTable({
 
   const dndId = useId();
   const sensors = useSensors(
-    // A few pixels' travel first, so a click on the handle is only a click.
+    // A few pixels' travel first, so a click on a row is only a click.
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+
+  // A piece picked up from the keyboard, and the arrangement it was picked
+  // up from, to go back to on escape.
+  const [lifted, setLifted] = useState<{ id: string; from: ProductRow[] } | null>(null);
+  const [said, setSaid] = useState("");
+  const tableRef = useRef<HTMLTableElement>(null);
+
+  // Moving a row moves its element, which can drop the focus; the piece
+  // being moved keeps it.
+  useLayoutEffect(() => {
+    if (!lifted) return;
+    tableRef.current?.querySelector<HTMLElement>(`[data-handle="${lifted.id}"]`)?.focus();
+  }, [arranged, lifted]);
 
   // What a product page steps through with Previous and Next: this list as it
   // is shown now, in this order and under these filters.
@@ -154,27 +173,94 @@ export function ProductTable({
     setSelected(new Set());
   }
 
+  /** Saves a move already shown; one that cannot be saved puts `undo` back. */
+  async function save(id: string, targetId: string, place: Place, undo: ProductRow[]) {
+    setMoveFailed(false);
+    const saved = await move(id, targetId, place).catch(() => ({ ok: false }));
+    if (!saved.ok) {
+      setArranged(undo);
+      setMoveFailed(true);
+    }
+  }
+
+  /**
+   * Where a row dropped on another lands: beside it - or, dropped among
+   * another group's rows, at the nearest end of its own. Dragged up past the
+   * drafts, an active piece means "first of the active ones". Null for a
+   * drop that leaves it where it was.
+   */
+  function landing(moving: ProductRow, onto: ProductRow): { target: ProductRow; place: Place } | null {
+    if (onto.status === moving.status) {
+      return { target: onto, place: placeFor(arranged.map((row) => row.id), moving.id, onto.id) };
+    }
+    const own = arranged.filter((row) => row.status === moving.status);
+    const above = STATUS_ORDER.indexOf(onto.status) < STATUS_ORDER.indexOf(moving.status);
+    const edge = above ? own[0] : own[own.length - 1];
+    return edge.id === moving.id ? null : { target: edge, place: above ? "before" : "after" };
+  }
+
   async function drop({ active, over }: DragEndEvent) {
     if (!over || active.id === over.id) return;
     const moving = arranged.find((row) => row.id === active.id);
-    const target = arranged.find((row) => row.id === over.id);
-    // The groups are kept apart: a drop into another one is not a move.
-    if (!moving || !target || moving.status !== target.status) return;
+    const onto = arranged.find((row) => row.id === over.id);
+    const lands = moving && onto ? landing(moving, onto) : null;
+    if (!moving || !lands) return;
 
     const before = arranged;
-    const place = placeFor(
-      arranged.map((row) => row.id),
-      moving.id,
-      target.id,
-    );
-    setMoveFailed(false);
-    setArranged(moveInList(arranged, moving.id, target.id, place));
+    setArranged(moveInList(arranged, moving.id, lands.target.id, lands.place));
+    await save(moving.id, lands.target.id, lands.place, before);
+  }
 
-    const saved = await move(moving.id, target.id, place).catch(() => ({ ok: false }));
-    if (!saved.ok) {
-      setArranged(before);
-      setMoveFailed(true);
+  /** The keyboard on a row's handle: pick up, move a place at a time, put down or back. */
+  function onHandleKey(event: React.KeyboardEvent, row: ProductRow) {
+    const own = arranged.filter((other) => other.status === row.status);
+    const at = own.findIndex((other) => other.id === row.id);
+    const holding = lifted?.id === row.id ? lifted : null;
+
+    if (event.key === " " || event.key === "Enter") {
+      event.preventDefault();
+      if (holding) {
+        void putDown(row, holding.from);
+      } else {
+        setLifted({ id: row.id, from: arranged });
+        setSaid(`Picked up ${row.name}, ${at + 1} of ${own.length}. Use the up and down arrow keys to move it, space to put it down, or escape to cancel.`);
+      }
+      return;
     }
+    if (!holding) return;
+
+    if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+      event.preventDefault();
+      const up = event.key === "ArrowUp";
+      const neighbour = own[at + (up ? -1 : 1)];
+      if (!neighbour) {
+        setSaid(`${row.name} is already ${up ? "first" : "last"}.`);
+        return;
+      }
+      setArranged(moveInList(arranged, row.id, neighbour.id, up ? "before" : "after"));
+      setSaid(`${row.name}, ${at + (up ? 0 : 2)} of ${own.length}.`);
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      setArranged(holding.from);
+      setLifted(null);
+      setSaid(`${row.name} is back where it was.`);
+    }
+  }
+
+  async function putDown(row: ProductRow, from: ProductRow[]) {
+    setLifted(null);
+    const own = arranged.filter((other) => other.status === row.status);
+    const at = own.findIndex((other) => other.id === row.id);
+    const was = from.filter((other) => other.status === row.status).findIndex((other) => other.id === row.id);
+    if (at === was) {
+      setSaid(`${row.name} was put down where it was.`);
+      return;
+    }
+
+    setSaid(`${row.name} put down, ${at + 1} of ${own.length}.`);
+    // Saved beside its new neighbour: after the one above it, or before the one below when it is first.
+    const [target, place]: [ProductRow, Place] = at > 0 ? [own[at - 1], "after"] : [own[1], "before"];
+    await save(row.id, target.id, place, from);
   }
 
   const nameOf = (id: UniqueIdentifier) => arranged.find((row) => row.id === id)?.name ?? "the piece";
@@ -195,6 +281,10 @@ export function ProductTable({
     <>
       <PinnedHeight className={PINNED_BLOCK_CLASS}>
         {header}
+
+        <p className={`mt-1 text-sm ${ui.mutedOnPage}`}>
+          Drag a row to change its place on the shop. Drafts, active and archived pieces each keep to their own group.
+        </p>
 
         {chosen.length > 0 ? (
           <div className={`mt-4 flex flex-wrap items-center gap-3 rounded-md border p-3 ${ui.card} ${ui.ruleOnPage}`}>
@@ -252,7 +342,7 @@ export function ProductTable({
         onDragEnd={(event) => void drop(event)}
         accessibility={{ announcements, screenReaderInstructions: { draggable: DRAG_INSTRUCTIONS } }}
       >
-        <table className="w-full border-collapse text-sm">
+        <table ref={tableRef} className="w-full border-collapse text-sm">
           <thead>
             <tr>
               <Th srOnly>Order</Th>
@@ -276,7 +366,13 @@ export function ProductTable({
             {groups.map((group) => (
               <SortableContext key={group[0].status} items={group.map((row) => row.id)} strategy={verticalListSortingStrategy}>
                 {group.map((row) => (
-                  <SortableRow key={row.id} id={row.id} name={row.name}>
+                  <SortableRow
+                    key={row.id}
+                    id={row.id}
+                    name={row.name}
+                    lifted={lifted?.id === row.id}
+                    onHandleKey={(event) => onHandleKey(event, row)}
+                  >
                     <td className="py-3 pr-4">
                       <input
                         type="checkbox"
@@ -311,6 +407,11 @@ export function ProductTable({
         </table>
       </DndContext>
 
+      {/* What the keyboard is doing, for a screen reader. */}
+      <p data-testid="order-announcer" aria-live="assertive" aria-atomic="true" className="sr-only">
+        {said}
+      </p>
+
       <BulkPriceDialog
         open={pricing}
         rows={arranged.filter((row) => selected.has(row.id))}
@@ -337,34 +438,51 @@ export function ProductTable({
 }
 
 /**
- * A row that can be dragged by its handle - the first cell - and only by it,
- * so the checkbox, the photo and the name keep doing what they did. It moves
- * up and down only.
+ * A row that drags from anywhere on it with a mouse - dnd-kit's pointer
+ * listener sits on the whole row - and from its handle with the keyboard
+ * or a finger: on touch, the rest of the row scrolls the page as usual.
+ * It moves up and down only.
  */
-function SortableRow({ id, name, children }: { id: string; name: string; children: React.ReactNode }) {
+function SortableRow({
+  id,
+  name,
+  lifted,
+  onHandleKey,
+  children,
+}: {
+  id: string;
+  name: string;
+  /** Picked up from the keyboard. */
+  lifted: boolean;
+  onHandleKey: (event: React.KeyboardEvent) => void;
+  children: React.ReactNode;
+}) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id });
 
   return (
     <tr
       ref={setNodeRef}
+      onPointerDown={listeners?.onPointerDown as React.PointerEventHandler | undefined}
       style={{ transform: CSS.Translate.toString(transform ? { ...transform, x: 0 } : null), transition }}
-      className={`border-b ${ui.tableRow} ${isDragging ? `relative z-10 shadow-lg ${ui.card}` : ""}`}
+      className={`cursor-grab border-b active:cursor-grabbing ${ui.tableRow} ${isDragging || lifted ? `relative z-10 shadow-lg ${ui.card}` : ""}`}
     >
       <td className="py-3 pr-1">
         <button
           type="button"
           ref={setActivatorNodeRef}
           {...attributes}
-          {...listeners}
+          aria-pressed={lifted || undefined}
+          onKeyDown={onHandleKey}
+          data-handle={id}
           aria-label={`Move ${name}`}
-          title="Drag to move"
-          className={`grid size-8 cursor-grab touch-none place-items-center rounded active:cursor-grabbing ${ui.navItem}`}
+          title="Drag to move, or press space and use the arrow keys"
+          className={`grid size-9 touch-none place-items-center rounded-md border ${ui.rule} ${ui.navItem}`}
         >
-          <svg viewBox="0 0 16 16" aria-hidden="true" className="size-4 fill-current">
-            {[4, 8, 12].map((y) => (
+          <svg viewBox="0 0 20 20" aria-hidden="true" className="size-5 fill-current">
+            {[5, 10, 15].map((y) => (
               <g key={y}>
-                <circle cx="6" cy={y} r="1.2" />
-                <circle cx="10" cy={y} r="1.2" />
+                <circle cx="7.5" cy={y} r="1.6" />
+                <circle cx="12.5" cy={y} r="1.6" />
               </g>
             ))}
           </svg>

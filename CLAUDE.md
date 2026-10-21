@@ -99,6 +99,9 @@ TypeScript, deployed to Vercel.
   Following the system means *no* attribute, so CSS answers it alone: no
   JavaScript, no flash. `THEME_BOOTSTRAP` runs inline ahead of React for an
   outright choice, which is why `<html>` carries `suppressHydrationWarning`.
+  `<body>` carries it too, for browser extensions: Grammarly writes
+  `data-gr-ext-installed` onto it, and the dev overlay showed that as a
+  hydration error on every page. Each covers only its own attributes.
 - `pnpm brand:board` regenerates docs/brand/theme-board.html from the module.
   Never edit the board by hand.
 
@@ -137,15 +140,28 @@ TypeScript, deployed to Vercel.
   newer one, and what it passes keeps its order among itself. The migration
   started every key from the shop's old order, newest highest.
 - Dragging works in a filtered view (a category, a search): the piece lands
-  just before or after the one it was dropped on, in the whole order. Each
-  row has a handle (dnd-kit 6.3.1 / sortable 10.0.0, pinned), the only part
-  that drags, so the checkbox, photo and name keep working; it works from
-  the keyboard too (space, arrows, space) and announces moves by name. A
-  move shows at once and is saved behind it (`moveProduct`, which works the
-  move out afresh from the database); one that cannot be saved is put back
-  and says so. dnd-kit's announcements live in a `role="status"` region of
-  its own (`DndLiveRegion-…`), which tests looking for the page's notices
-  skip.
+  just before or after the one it was dropped on, in the whole order.
+- **A row drags from anywhere on it with the mouse** (dnd-kit 6.3.1 /
+  sortable 10.0.0, pinned; its pointer listener sits on the `<tr>`), after
+  4px of travel, so a click still ticks the box or opens the piece. It first
+  shipped dragging only by a small handle of faint dots, and "unable to
+  change position" was the result. A row dropped among another status's
+  rows lands at the nearest end of its own group - an active piece dragged
+  up past the drafts becomes the first active one - rather than snapping
+  back without a word.
+- **The handle is the keyboard's and the finger's way in**: on touch the
+  rest of the row scrolls the page. The keyboard is ours, not dnd-kit's
+  KeyboardSensor: space picks up, an arrow moves one place within the
+  group, space puts down and saves, escape puts back, each said aloud. The
+  sensor scrolled the page instead of moving the row whenever the next row
+  was below the middle of the screen - with 129px rows, nearly always - so
+  in a real browser the arrows did nothing; jsdom, with short fake rows,
+  passed. Keep the drag tests' rows short only for the mouse.
+- A move shows at once and is saved behind it (`moveProduct`, which works
+  the move out afresh from the database); one that cannot be saved is put
+  back and says so. dnd-kit's announcements live in a `role="status"`
+  region of its own (`DndLiveRegion-…`), which tests looking for the page's
+  notices skip.
 
 - The bulk bar carries "Clear selection" beside the count, away from Delete.
 - The bulk bar changes prices across many pieces at once; a single piece is
