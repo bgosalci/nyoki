@@ -15,6 +15,8 @@ import { chainTo } from "@/lib/products/category-pills";
 import { BuyBar } from "@/components/shop/buy-bar";
 import { CustomiserBar, CustomiserPanels, CustomiserProvider } from "@/components/shop/customiser";
 import { Disclosure } from "@/components/shop/disclosure";
+import { ASK_ID, AskLink, QuestionForm } from "@/components/shop/question-form";
+import { askQuestion } from "@/app/(shop)/contact/actions";
 import { PlainText } from "@/components/shop/plain-text";
 import { ProductLayout } from "@/components/shop/product-layout";
 import { RichText } from "@/components/shop/rich-text";
@@ -198,6 +200,18 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             </Disclosure>
           ) : null}
 
+          {/* Named in some pieces' own details ("use 'Ask a question' below"). */}
+          <Disclosure id={ASK_ID} title="Ask a question" className={`border-t pt-4 ${ui.shopRule}`}>
+            <p className={`mt-4 mb-4 text-sm leading-relaxed ${ui.shopMuted}`}>
+              About this piece, a size you cannot see, or an order for a gift. We will reply by email.
+            </p>
+            <QuestionForm
+              action={askQuestion}
+              productId={product.id}
+              shopper={shopper ? { name: shopper.name, email: shopper.email } : undefined}
+            />
+          </Disclosure>
+
           <div className={`flex items-center gap-3 border-t pt-5 ${ui.shopRule}`}>
             <FavouriteButton
               productId={product.id}
@@ -213,7 +227,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           </div>
 
           <p className={`text-sm ${ui.shopMuted}`}>
-            Online ordering is coming soon. In the meantime, get in touch to buy this piece.
+            Online ordering is coming soon. In the meantime, <AskLink>send us a question</AskLink> to buy this piece.
           </p>
         </div>
       </ProductLayout>

@@ -299,7 +299,7 @@ describe("the customiser", () => {
       expect(status()).toHaveTextContent("All done. Online ordering opens soon.");
 
       await user.click(addButton());
-      expect(status()).toHaveTextContent("Online ordering opens soon. Until then, get in touch to order this one.");
+      expect(status()).toHaveTextContent("Online ordering opens soon. Until then, send us a question to order this one.");
     });
   });
 

@@ -37,7 +37,7 @@ const PANEL =
 const INPUT =
   "w-full scroll-mt-60 scroll-mb-48 rounded-[14px] border-2 border-transparent bg-nyoki-beige px-4 py-3 text-base text-nyoki-navy outline-none transition-colors duration-150 placeholder:text-nyoki-text-dark/60 focus:border-nyoki-navy focus:bg-nyoki-white aria-[invalid=true]:border-red-700 motion-reduce:transition-none";
 
-const NOT_YET = "Online ordering opens soon. Until then, get in touch to order this one.";
+const NOT_YET = "Online ordering opens soon. Until then, send us a question to order this one.";
 const SOLD_OUT = "Out of stock for now.";
 
 interface Customiser {

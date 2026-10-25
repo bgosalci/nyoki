@@ -671,8 +671,8 @@ TypeScript, deployed to Vercel.
 
 - Public pages live in the `(shop)` route group: `/`, `/shop`,
   `/shop/[category]`, `/product/[slug]`. Only ACTIVE products are visible.
-- The header is two tiers split by a sage rule: utility links (Shop, About us)
-  and the logo above it, product departments below. The top row is a three
+- The header is two tiers split by a sage rule: utility links (Shop, About us,
+  Contact) and the logo above it, product departments below. The top row is a three
   column grid whose empty right column is reserved for search, account and
   basket - it keeps the logo centred until those exist.
 - Storefront pages are held to one width by `max-w-shop`, generated from the
@@ -694,6 +694,35 @@ TypeScript, deployed to Vercel.
   nothing is filled in - most imported cards have no dimensions or care notes.
 - No cart yet: product pages say ordering is coming soon rather than showing a
   button that does nothing.
+
+## Shoppers' questions
+
+- **Ask a question** is on every product page, a closed disclosure beneath
+  Need to know, and the **Contact page** (`/contact`, in the header and the
+  footer) takes questions about anything. One form, `QuestionForm`, does
+  both. The pages' "get in touch" lines lead to it through `AskLink`, which
+  opens the disclosure on the way: not every browser opens a `<details>` it
+  is sent to. A disclosure needs `scroll-mt-60` to clear the shop's sticky
+  header (206px); `scroll-mt-40` left its title underneath.
+- Questions are `Question` rows, listed at `/admin/questions` - waiting, then
+  answered - with a count of those waiting on the Overview. **The shop sends
+  no email**: Reply by email opens the admin's own mail program, addressed,
+  titled and quoting the question (`replyLink`), and she marks it answered.
+  An email service, which would also bring password reset and receipts, was
+  offered as the next step and is not built.
+- A question keeps the **piece's name as it was asked** (`productName`), as
+  an order line does, and its product reference is SetNull. One about a piece
+  taken off the shop since the page was opened is kept without the piece.
+- **Spam**: a hidden box only a bot fills in (`HONEYPOT` - a bot is told it
+  worked and nothing is kept) and five questions an hour per address
+  (`QUESTIONS_PER_HOUR`). No puzzle to solve: it would stop shoppers too.
+- What was typed survives a rejected send (`useActionForm`); once sent, a
+  thank-you takes the form's place.
+- **Kept until deleted.** Each holds a shopper's email address, and the page
+  says to delete one once it is no longer needed; nothing expires them yet.
+- Pieces imported from Not On The High Street pointed shoppers at its "Ask
+  seller a question" button. The migration that made questions rewrote that
+  to "'Ask a question' below", matching only the exact quoted wording.
 
 ## You may also like
 

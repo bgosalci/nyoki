@@ -111,6 +111,7 @@ model Product {
   priceListEntry PriceListEntry?
   sales          SaleProduct[]
   orderItems     OrderItem[]
+  questions      Question[]
 
   // "You may also like": the pieces Njomza chose for this one, and the
   // products that chose this one.
@@ -366,6 +367,34 @@ model PriceListEntry {
  * type and the form can be validated like any other. Everything the page
  * shows that is not simply the catalogue lives here.
  */
+/**
+ * A question a shopper sent: about a piece, from its page, or about anything,
+ * from the Contact page. Answered by email from the admin's Questions list -
+ * the shop sends no email itself yet. Kept until deleted.
+ */
+model Question {
+  id String @id @default(cuid())
+
+  // The piece it is about, and its name when it was asked: a piece renamed or
+  // deleted since must not change what the question says it was about.
+  productId   String?  @map("product_id")
+  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productName String?  @map("product_name")
+
+  name    String
+  email   String
+  message String
+
+  // When it was marked answered; null while it waits.
+  answeredAt DateTime? @map("answered_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  // How many one address sent in the last hour; what waits, newest first.
+  @@index([email, createdAt])
+  @@index([answeredAt, createdAt])
+  @@map("questions")
+}
+
 model HomePage {
   id String @id @default("home")
 

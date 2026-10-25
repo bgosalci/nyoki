@@ -64,6 +64,9 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
             <Link href="/about" className={`text-sm hover:underline hover:underline-offset-4 ${ui.shopMuted}`}>
               More about us
             </Link>
+            <Link href="/contact" className={`text-sm hover:underline hover:underline-offset-4 ${ui.shopMuted}`}>
+              Contact us
+            </Link>
           </div>
           <div className="flex flex-col gap-3">
             <p className={`text-sm font-medium tracking-[0.12em] uppercase ${ui.shopHeading}`}>Shop</p>

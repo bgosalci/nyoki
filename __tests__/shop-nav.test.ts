@@ -15,6 +15,10 @@ describe("topNavCurrent", () => {
     expect(topNavCurrent("/about")).toBe("about");
   });
 
+  it("marks Contact on the contact page", () => {
+    expect(topNavCurrent("/contact")).toBe("contact");
+  });
+
   it("marks nothing on the home page, which is neither", () => {
     expect(topNavCurrent("/")).toBeNull();
   });

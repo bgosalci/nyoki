@@ -32,12 +32,15 @@ export function overviewStats(
     live,
     drafts,
     toFulfil,
+    questions,
     sales,
     codes,
   }: {
     live: number;
     drafts: number;
     toFulfil: number;
+    /** Shoppers' questions not yet marked answered. */
+    questions: number;
     sales: readonly Pick<PricingSale, "active" | "startsAt" | "endsAt">[];
     codes: readonly Pick<RedeemableCode, "active" | "startsAt" | "endsAt" | "usageLimit" | "usedCount">[];
   },
@@ -47,6 +50,7 @@ export function overviewStats(
     { label: "Live products", value: live, href: "/admin/products?status=ACTIVE" },
     { label: "Drafts", value: drafts, href: "/admin/products?status=DRAFT" },
     { label: "Orders to fulfil", value: toFulfil, href: "/admin/orders" },
+    { label: "Questions waiting", value: questions, href: "/admin/questions" },
     {
       label: "Running sales",
       value: sales.filter((sale) => isSaleLive(sale, now)).length,

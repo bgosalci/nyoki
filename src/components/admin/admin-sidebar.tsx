@@ -43,6 +43,13 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M13 8v8" strokeDasharray="2 2.5" strokeLinecap="round" />
     </>
   ),
+  "/admin/questions": (
+    <>
+      <path d="M4.5 5.5h15v10h-9l-4 3.5v-3.5h-2v-10Z" strokeLinejoin="round" />
+      <path d="M10.2 8.8a1.8 1.8 0 1 1 2.6 1.6c-.5.3-.8.6-.8 1.1" strokeLinecap="round" />
+      <path d="M12 13.4h.01" strokeLinecap="round" />
+    </>
+  ),
   "/admin/orders": (
     <>
       <path d="M5 8h14l-1 12H6L5 8Z" strokeLinejoin="round" />

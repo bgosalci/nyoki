@@ -8,6 +8,7 @@ import { topNavCurrent } from "@/lib/storefront/nav";
 const LINKS = [
   { href: "/shop", label: "Shop", section: "shop" as const },
   { href: "/about", label: "About us", section: "about" as const },
+  { href: "/contact", label: "Contact", section: "contact" as const },
 ];
 
 /** The header's top row: where the shop sits alongside everything that is not shopping. */

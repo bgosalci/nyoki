@@ -5,22 +5,23 @@ import { ui } from "@/lib/brand/ui";
 import { db } from "@/lib/db";
 
 export default async function AdminOverviewPage() {
-  const [live, drafts, toFulfil, sales, codes] = await Promise.all([
+  const [live, drafts, toFulfil, questions, sales, codes] = await Promise.all([
     db.product.count({ where: { status: "ACTIVE" } }),
     db.product.count({ where: { status: "DRAFT" } }),
     db.order.count({ where: { status: "PAID" } }),
+    db.question.count({ where: { answeredAt: null } }),
     // Few enough to judge one by one, by the rules the shop and checkout use.
     db.sale.findMany({ select: { active: true, startsAt: true, endsAt: true } }),
     db.discountCode.findMany({ select: { active: true, startsAt: true, endsAt: true, usageLimit: true, usedCount: true } }),
   ]);
 
-  const stats = overviewStats({ live, drafts, toFulfil, sales, codes }, new Date());
+  const stats = overviewStats({ live, drafts, toFulfil, questions, sales, codes }, new Date());
 
   return (
     <>
       <h1 className="text-xl font-semibold tracking-tight">Overview</h1>
 
-      <dl className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+      <dl className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         {stats.map((stat) => (
           // The label is the link, stretched over the card, so the whole card
           // opens the page behind the figure while the list stays a list.

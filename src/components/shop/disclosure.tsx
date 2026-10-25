@@ -7,15 +7,18 @@ import { ui } from "@/lib/brand/ui";
  */
 export function Disclosure({
   title,
+  id,
   className = "",
   children,
 }: {
   title: string;
+  /** For a link that leads to it - and opens it on the way (`AskLink`). */
+  id?: string;
   className?: string;
   children: React.ReactNode;
 }) {
   return (
-    <details className={`group ${className}`}>
+    <details id={id} className={`group scroll-mt-60 ${className}`}>
       <summary
         className={`flex cursor-pointer list-none items-center gap-3 text-base font-bold tracking-[0.14em] uppercase [&::-webkit-details-marker]:hidden ${ui.shopAccent}`}
       >
