@@ -2,6 +2,7 @@ import { ui } from "@/lib/brand/ui";
 import {
   ORDER_STATUSES,
   customerOrderStatusLabel,
+  formatDateTime,
   formatOrderDate,
   isAwaitingFulfilment,
   orderStatusBadge,
@@ -63,5 +64,17 @@ describe("formatOrderDate", () => {
     // Half past eleven at night in UTC is already the next day in British
     // Summer Time, and the shop keeps London hours.
     expect(formatOrderDate(new Date("2026-09-20T23:30:00Z"))).toBe("21 Sep 2026");
+  });
+});
+
+describe("formatDateTime", () => {
+  it("gives the day and the time on a 24-hour clock, in London", () => {
+    // British Summer Time until the last Sunday of October.
+    expect(formatDateTime(new Date("2026-10-20T10:05:00Z"))).toBe("20 Oct 2026, 11:05");
+    expect(formatDateTime(new Date("2026-12-01T09:30:00Z"))).toBe("1 Dec 2026, 09:30");
+  });
+
+  it("puts a time late at night on London's day, not the server's", () => {
+    expect(formatDateTime(new Date("2026-06-30T23:30:00Z"))).toBe("1 Jul 2026, 00:30");
   });
 });

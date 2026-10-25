@@ -15,8 +15,8 @@ describe("topNavCurrent", () => {
     expect(topNavCurrent("/about")).toBe("about");
   });
 
-  it("marks Contact on the contact page", () => {
-    expect(topNavCurrent("/contact")).toBe("contact");
+  it("marks nothing on the contact page, which the header does not link to", () => {
+    expect(topNavCurrent("/contact")).toBeNull();
   });
 
   it("marks nothing on the home page, which is neither", () => {

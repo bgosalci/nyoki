@@ -682,9 +682,8 @@ TypeScript, deployed to Vercel.
 
 - Public pages live in the `(shop)` route group: `/`, `/shop`,
   `/shop/[category]`, `/product/[slug]`. Only ACTIVE products are visible.
-- The header is two tiers split by a sage rule: utility links (Shop, About us,
-  and from `sm` up Contact - on a phone a third link squeezed the logo to a
-  sliver) and the logo above it, product departments below. The top row is a three
+- The header is two tiers split by a sage rule: utility links (Shop, About us)
+  and the logo above it, product departments below. The top row is a three
   column grid whose empty right column is reserved for search, account and
   basket - it keeps the logo centred until those exist.
 - Storefront pages are held to one width by `max-w-shop`, generated from the
@@ -710,8 +709,9 @@ TypeScript, deployed to Vercel.
 ## Shoppers' questions
 
 - **Ask a question** is on every product page, a closed disclosure beneath
-  Need to know, and the **Contact page** (`/contact`, in the header and the
-  footer) takes questions about anything. One form, `QuestionForm`, does
+  Need to know, and the **Contact page** (`/contact`, linked from the footer
+  only - as a third header link it squeezed the logo on a phone) takes
+  questions about anything. One form, `QuestionForm`, does
   both. The pages' "get in touch" lines lead to it through `AskLink`, which
   opens the disclosure on the way: not every browser opens a `<details>` it
   is sent to. A disclosure needs `scroll-mt-60` to clear the shop's sticky
@@ -722,6 +722,24 @@ TypeScript, deployed to Vercel.
   titled and quoting the question (`replyLink`), and she marks it answered.
   An email service, which would also bring password reset and receipts, was
   offered as the next step and is not built.
+- **Every admin page hears about new questions** (`QuestionAlertsProvider`,
+  in the protected layout): it asks `/admin/questions/waiting` every ten
+  seconds - background tabs too - and at once when the tab is come back to.
+  The count waiting shows on Questions in the sidebar; a question arriving
+  chimes and shows a toast saying who asked about what. Only the Questions
+  page and the Overview refresh themselves then: a refresh anywhere else
+  could cost an unsaved edit.
+- The route counts what arrived after the time asked about **up to the
+  moment it looked**, and the next ask starts there, so nothing is counted
+  twice. Ten seconds is as instant as a page gets without a push service; a
+  notification with the admin closed needs web push or email, not built.
+- The chime is made in the browser (Web Audio, no sound file), off with the
+  switch on the Questions page, remembered per browser. A browser plays
+  sound only after a click or key press on the page, so the first chime
+  needs one.
+- Each question shows when it was **sent** and when it was **answered**, day
+  and time in London (`formatDateTime`). Answered is when it was marked so:
+  the shop cannot see the reply email go.
 - A question keeps the **piece's name as it was asked** (`productName`), as
   an order line does, and its product reference is SetNull. One about a piece
   taken off the shop since the page was opened is kept without the piece.

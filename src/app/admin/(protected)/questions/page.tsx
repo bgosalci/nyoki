@@ -1,5 +1,6 @@
 import { deleteQuestion, setQuestionAnswered } from "@/app/admin/(protected)/questions/actions";
 import { PinnedHeight } from "@/components/admin/pinned-height";
+import { QuestionSoundToggle } from "@/components/admin/question-alerts";
 import { QuestionList } from "@/components/admin/question-list";
 import { PINNED_BLOCK_CLASS } from "@/components/admin/th";
 import { ui } from "@/lib/brand/ui";
@@ -20,9 +21,13 @@ export default async function QuestionsPage() {
       <PinnedHeight className={PINNED_BLOCK_CLASS}>
         <h1 className="text-xl font-semibold tracking-tight">Questions</h1>
         <p className={`mt-4 max-w-prose text-sm ${ui.mutedOnPage}`}>
-          {waiting.length} waiting · {answeredCount} answered. Reply from your own email; the shop sends none yet. Each
+          {waiting.length} waiting · {answeredCount} answered. Reply from your own email - the shop sends none yet - then
+          mark the question answered: the time it shows is when you did, since the shop cannot see your email go. Each
           question holds a shopper&apos;s email address, so delete it once you no longer need it.
         </p>
+        <div className="mt-3">
+          <QuestionSoundToggle />
+        </div>
       </PinnedHeight>
 
       {waiting.length === 0 && answered.length === 0 ? (

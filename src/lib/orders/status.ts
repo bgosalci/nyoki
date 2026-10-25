@@ -76,3 +76,20 @@ export function formatOrderDate(date: Date): string {
 
   return `${Number(parts.day)} ${MONTHS[Number(parts.month) - 1]} ${parts.year}`;
 }
+
+const TIME_PARTS = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "numeric",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+  timeZone: "Europe/London",
+});
+
+/** "20 Oct 2026, 11:05": the day as `formatOrderDate` gives it, then the time on a 24-hour clock, both in London. */
+export function formatDateTime(date: Date): string {
+  const parts = Object.fromEntries(TIME_PARTS.formatToParts(date).map((part) => [part.type, part.value]));
+
+  return `${Number(parts.day)} ${MONTHS[Number(parts.month) - 1]} ${parts.year}, ${parts.hour}:${parts.minute}`;
+}

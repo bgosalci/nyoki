@@ -1,4 +1,4 @@
-export type TopNavSection = "shop" | "about" | "contact" | null;
+export type TopNavSection = "shop" | "about" | null;
 
 /**
  * Which of the header's top-row links is the current one.
@@ -11,6 +11,5 @@ export function topNavCurrent(pathname: string): TopNavSection {
   if (pathname === "/shop" || pathname.startsWith("/shop/")) return "shop";
   if (pathname === "/product" || pathname.startsWith("/product/")) return "shop";
   if (pathname === "/about" || pathname.startsWith("/about/")) return "about";
-  if (pathname === "/contact" || pathname.startsWith("/contact/")) return "contact";
   return null;
 }

@@ -5,7 +5,7 @@ import { useId, useRef, useState } from "react";
 
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { ui } from "@/lib/brand/ui";
-import { formatOrderDate } from "@/lib/orders/status";
+import { formatDateTime } from "@/lib/orders/status";
 import { replyLink } from "@/lib/questions/reply";
 
 export interface QuestionRow {
@@ -56,8 +56,12 @@ function QuestionCard({ question, setAnswered, remove }: { question: QuestionRow
           <span className={`text-sm ${ui.mutedOnPanel}`}>{question.email}</span>
         </p>
         <p className={`text-sm ${ui.mutedOnPanel}`}>
-          {formatOrderDate(question.createdAt)}
-          {question.answeredAt ? ` · Answered ${formatOrderDate(question.answeredAt)}` : null}
+          Sent <time dateTime={question.createdAt.toISOString()}>{formatDateTime(question.createdAt)}</time>
+          {question.answeredAt ? (
+            <>
+              {" · "}Answered <time dateTime={question.answeredAt.toISOString()}>{formatDateTime(question.answeredAt)}</time>
+            </>
+          ) : null}
         </p>
       </div>
 

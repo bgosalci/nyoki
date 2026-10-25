@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSyncExternalStore } from "react";
 
+import { useWaitingQuestions } from "@/components/admin/question-alerts";
 import { ADMIN_NAV, isCurrent } from "@/lib/admin/nav";
 import { ui } from "@/lib/brand/ui";
 
@@ -121,6 +122,7 @@ function remember(collapsed: boolean): void {
 export function AdminSidebar() {
   const pathname = usePathname();
   const collapsed = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const waiting = useWaitingQuestions();
 
   return (
     <aside
@@ -130,19 +132,31 @@ export function AdminSidebar() {
         <nav aria-label="Shop admin" className="flex flex-col gap-0.5">
           {ADMIN_NAV.map((item) => {
             const current = isCurrent(pathname, item.href);
+            // Shoppers' questions not yet answered, counted live.
+            const count = item.href === "/admin/questions" ? waiting : 0;
 
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 aria-current={current ? "page" : undefined}
+                // Said whole, rather than pieced together from the label and the badge.
+                aria-label={count > 0 ? `${item.label}, ${count} waiting` : undefined}
                 title={collapsed ? item.label : undefined}
-                className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm ${collapsed ? "md:justify-center" : ""} ${current ? ui.navActive : ui.navItem}`}
+                className={`relative flex items-center gap-3 rounded-md px-3 py-2 text-sm ${collapsed ? "md:justify-center" : ""} ${current ? ui.navActive : ui.navItem}`}
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true" className="size-5 shrink-0">
                   {ICONS[item.href]}
                 </svg>
                 <span className={collapsed ? "md:sr-only" : undefined}>{item.label}</span>
+                {count > 0 ? (
+                  <span
+                    aria-hidden="true"
+                    className={`ml-auto min-w-5 rounded-full px-1.5 text-center text-xs leading-5 font-semibold tabular-nums ${ui.badgeSale} ${collapsed ? "md:absolute md:top-0 md:right-0 md:ml-0" : ""}`}
+                  >
+                    {count}
+                  </span>
+                ) : null}
               </Link>
             );
           })}

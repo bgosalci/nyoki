@@ -40,8 +40,15 @@ describe("QuestionList", () => {
 
     const question = card("Ada Lovelace");
     expect(question).toHaveTextContent("ada@example.com");
-    expect(question).toHaveTextContent("20 Oct 2026");
+    expect(question).toHaveTextContent("Sent 20 Oct 2026, 11:00");
     expect(within(question).getByText(/Do you have it in 5-6 years\?/)).toHaveClass("whitespace-pre-line");
+  });
+
+  it("marks the times up for a machine as well as a reader", () => {
+    setup([{ ...coat, answeredAt: new Date("2026-10-21T09:00:00Z") }]);
+
+    const times = card("Ada Lovelace").querySelectorAll("time");
+    expect([...times].map((time) => time.getAttribute("datetime"))).toEqual(["2026-10-20T10:00:00.000Z", "2026-10-21T09:00:00.000Z"]);
   });
 
   it("links the piece to its page in the admin, and says where a question came from otherwise", () => {
@@ -73,7 +80,7 @@ describe("QuestionList", () => {
   it("says when an answered one was answered, and can put it back to waiting", async () => {
     const { setAnswered, user } = setup([{ ...coat, answeredAt: new Date("2026-10-21T09:00:00Z") }]);
 
-    expect(card("Ada Lovelace")).toHaveTextContent("Answered 21 Oct 2026");
+    expect(card("Ada Lovelace")).toHaveTextContent("Answered 21 Oct 2026, 10:00");
     await user.click(within(card("Ada Lovelace")).getByRole("button", { name: "Mark as waiting" }));
 
     expect(setAnswered.mock.calls[0][0].get("answered")).toBe("false");

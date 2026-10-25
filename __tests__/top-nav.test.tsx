@@ -12,11 +12,9 @@ describe("TopNav", () => {
     for (const link of screen.getAllByRole("link")) expect(link).toHaveClass("text-xs", "sm:text-sm");
   });
 
-  it("keeps Contact off a phone's top row, where it squeezed the logo to a sliver; the footer has it", () => {
+  it("leaves Contact to the footer", () => {
     render(<TopNav />);
 
-    expect(screen.getByRole("link", { name: "Contact" }).closest("li")).toHaveClass("hidden", "sm:block");
-    expect(screen.getByRole("link", { name: "Shop" }).closest("li")).not.toHaveClass("hidden");
-    expect(screen.getByRole("link", { name: "About us" }).closest("li")).not.toHaveClass("hidden");
+    expect(screen.getAllByRole("link").map((link) => link.textContent)).toEqual(["Shop", "About us"]);
   });
 });
