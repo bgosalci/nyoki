@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useId, useState } from "react";
+import { createContext, useContext, useEffect, useId, useState } from "react";
 
 import { ShopField } from "@/components/shop/field";
 import { ui } from "@/lib/brand/ui";
@@ -9,12 +9,12 @@ import {
   QUANTITY_MAX,
   QUANTITY_MIN,
   SINGLE,
+  barHint,
   clampQuantity,
   extraNote,
   initialChoices,
   missingChoices,
   packSavingPence,
-  statusLine,
   summarise,
   totalPence,
   type ChoiceKey,
@@ -27,8 +27,9 @@ import { formatPence } from "@/lib/money";
 // Soft 20px panels, slim tiles and pill controls, in the shop's own colours:
 // white panels on the beige page, navy for what is chosen, accent beige for
 // tags and notices.
-const PANEL =
-  "rounded-[20px] border-[1.5px] border-nyoki-light-slate bg-nyoki-white p-7 shadow-[0_1px_2px_rgb(0_0_0/0.03),0_10px_30px_-18px_rgb(0_0_0/0.18)]";
+const PANEL_SURFACE =
+  "rounded-[20px] border-[1.5px] border-nyoki-light-slate bg-nyoki-white shadow-[0_1px_2px_rgb(0_0_0/0.03),0_10px_30px_-18px_rgb(0_0_0/0.18)]";
+const PANEL = `${PANEL_SURFACE} p-7`;
 
 // Filled boxes with a 2px outline that turns navy in use and red when wrong.
 // 16px text, or a phone zooms in on the box. The scroll margins keep a box
@@ -38,7 +39,7 @@ const INPUT =
   "w-full scroll-mt-60 scroll-mb-48 rounded-[14px] border-2 border-transparent bg-nyoki-beige px-4 py-3 text-base text-nyoki-navy outline-none transition-colors duration-150 placeholder:text-nyoki-text-dark/60 focus:border-nyoki-navy focus:bg-nyoki-white aria-[invalid=true]:border-red-700 motion-reduce:transition-none";
 
 const NOT_YET = "Online ordering opens soon. Until then, send us a question to order this one.";
-const SOLD_OUT = "Out of stock for now.";
+const SOLD_OUT = "Out of stock for now";
 
 interface Customiser {
   offer: Offer;
@@ -49,7 +50,10 @@ interface Customiser {
   /** Shown only once Add to basket has been pressed too soon. */
   errors: Map<ChoiceKey, string>;
   totalPence: number | null;
-  status: string;
+  /** The line beneath the total: what is still to choose. */
+  hint: string;
+  /** Shown above the bar a while, once Add to basket is pressed with everything chosen. */
+  notice: string | null;
   change: (patch: Partial<Choices>) => void;
   changeField: (id: string, value: string) => void;
   changeQuantity: (text: string) => void;
@@ -93,6 +97,13 @@ export function CustomiserProvider({ offer, children }: { offer: Offer; children
 
   const touched = () => setPressedWhenDone(false);
 
+  // Said a while, then gone: it covers the page above the bar.
+  useEffect(() => {
+    if (!pressedWhenDone) return;
+    const timer = setTimeout(() => setPressedWhenDone(false), 6000);
+    return () => clearTimeout(timer);
+  }, [pressedWhenDone]);
+
   const customiser: Customiser = {
     offer,
     formId,
@@ -101,7 +112,8 @@ export function CustomiserProvider({ offer, children }: { offer: Offer; children
     missing,
     errors: new Map(attempted ? missing.map((entry) => [entry.key, entry.message]) : []),
     totalPence: totalPence(offer, choices),
-    status: outOfStock ? SOLD_OUT : missing.length === 0 && pressedWhenDone ? NOT_YET : statusLine(missing.length),
+    hint: outOfStock ? SOLD_OUT : barHint(missing),
+    notice: !outOfStock && missing.length === 0 && pressedWhenDone ? NOT_YET : null,
     change: (patch) => {
       setAnswers((previous) => ({ ...previous, ...patch }));
       touched();
@@ -151,6 +163,7 @@ export function CustomiserPanels() {
       {offer.packs.length > 0 ? <UnitPanel /> : null}
       {offer.message ? <MessagePanel /> : null}
       {offer.personalisation ? <PersonalisationPanel /> : null}
+      <QuantityPanel />
       <SummaryPanel />
     </form>
   );
@@ -418,6 +431,40 @@ function PersonalisationInput({ field }: { field: PersonalisationFieldOffer }) {
   );
 }
 
+/** How many: with the choices rather than in the bar, so the bar can be one slim row. */
+function QuantityPanel() {
+  const { choices, quantityText, changeQuantity, tidyQuantity } = useCustomiser();
+  const quantityId = useId();
+
+  return (
+    <div className={`flex items-center justify-between gap-4 py-3 pr-3 pl-7 ${PANEL_SURFACE}`}>
+      <label htmlFor={quantityId} className={`text-xl font-medium tracking-tight ${ui.shopHeading}`}>
+        Quantity
+      </label>
+      <div className="flex items-center rounded-full bg-nyoki-beige ring-1 ring-nyoki-light-slate">
+        <StepButton label="One fewer" onClick={() => changeQuantity(String(clampQuantity(choices.quantity - 1)))}>
+          <path d="M5 10h10" />
+        </StepButton>
+        <input
+          id={quantityId}
+          type="number"
+          inputMode="numeric"
+          min={QUANTITY_MIN}
+          max={QUANTITY_MAX}
+          step={1}
+          value={quantityText}
+          onChange={(event) => changeQuantity(event.target.value)}
+          onBlur={tidyQuantity}
+          className="w-10 [appearance:textfield] bg-transparent text-center tabular-nums outline-none focus-visible:rounded focus-visible:outline-2 focus-visible:outline-nyoki-navy [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        />
+        <StepButton label="One more" onClick={() => changeQuantity(String(clampQuantity(choices.quantity + 1)))}>
+          <path d="M5 10h10M10 5v10" />
+        </StepButton>
+      </div>
+    </div>
+  );
+}
+
 function SummaryPanel() {
   const { offer, choices } = useCustomiser();
   const headingId = useId();
@@ -440,64 +487,54 @@ function SummaryPanel() {
 }
 
 /**
- * The total, how many, and Add to basket, held 12px off the bottom of the
- * screen while the page scrolls and at rest at its end.
+ * The total, what is still to choose, and Add to basket, in one slim row held
+ * at the bottom of the screen while the page scrolls, at rest at its end. On a
+ * phone it runs edge to edge in the page's own colour, as the buy bar of a
+ * piece with nothing to choose does: a band that reads as the page, not as
+ * another floating control above Safari's. From md up it floats as a card.
+ * It was a card of three rows - total and quantity, the button, a sentence -
+ * and took a fifth of a phone's screen.
  */
 export function CustomiserBar() {
-  const { formId, choices, quantityText, totalPence: total, status, changeQuantity, tidyQuantity } = useCustomiser();
-  const quantityId = useId();
+  const { formId, totalPence: total, hint, notice } = useCustomiser();
 
   return (
-    <div className="sticky bottom-3 z-20 mt-10 rounded-2xl border-[1.5px] border-nyoki-light-slate bg-nyoki-white px-4 py-3 shadow-[0_8px_30px_-12px_rgb(0_0_0/0.25)] sm:px-5">
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-        <p className="flex items-baseline gap-2">
-          <span className={`text-sm ${ui.shopMuted}`}>Total</span>
-          <span data-testid="customiser-total" className="text-xl font-semibold tabular-nums">
-            {total === null ? "—" : formatPence(total)}
-          </span>
+    <div
+      data-testid="customiser-bar"
+      className={`sticky bottom-0 z-20 -mx-4 mt-10 border-t px-4 pb-[env(safe-area-inset-bottom)] sm:-mx-6 sm:px-6 md:bottom-3 md:mx-0 md:rounded-2xl md:border-[1.5px] md:bg-nyoki-white md:px-5 md:shadow-[0_8px_30px_-12px_rgb(0_0_0/0.25)] ${ui.shopRule} ${ui.shopPage}`}
+    >
+      {notice ? (
+        <p
+          data-testid="customiser-notice"
+          role="status"
+          className="absolute inset-x-4 bottom-full mb-3 rounded-2xl bg-nyoki-ink px-4 py-2.5 text-center text-sm leading-snug text-nyoki-beige shadow-[0_8px_24px_-10px_rgb(0_0_0/0.4)] sm:inset-x-6 md:inset-x-auto md:right-0 md:max-w-sm"
+        >
+          {notice}
         </p>
+      ) : null}
 
-        <div className="flex items-center gap-2">
-          <label htmlFor={quantityId} className={`text-sm ${ui.shopMuted}`}>
-            Quantity
-          </label>
-          <div className="flex items-center rounded-full bg-nyoki-beige ring-1 ring-nyoki-light-slate">
-            <StepButton label="One fewer" onClick={() => changeQuantity(String(clampQuantity(choices.quantity - 1)))}>
-              <path d="M5 10h10" />
-            </StepButton>
-            <input
-              id={quantityId}
-              type="number"
-              inputMode="numeric"
-              min={QUANTITY_MIN}
-              max={QUANTITY_MAX}
-              step={1}
-              value={quantityText}
-              onChange={(event) => changeQuantity(event.target.value)}
-              onBlur={tidyQuantity}
-              className="w-10 [appearance:textfield] bg-transparent text-center tabular-nums outline-none focus-visible:rounded focus-visible:outline-2 focus-visible:outline-nyoki-navy [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-            />
-            <StepButton label="One more" onClick={() => changeQuantity(String(clampQuantity(choices.quantity + 1)))}>
-              <path d="M5 10h10M10 5v10" />
-            </StepButton>
-          </div>
+      <div className="flex h-16 items-center gap-3">
+        <div className="flex min-w-0 flex-1 flex-col">
+          <p className="text-xl leading-tight font-semibold tabular-nums">
+            <span className="sr-only">Total </span>
+            <span data-testid="customiser-total">{total === null ? "—" : formatPence(total)}</span>
+          </p>
+          <p data-testid="customiser-status" aria-live="polite" className={`truncate text-xs ${ui.shopMuted}`}>
+            {hint}
+          </p>
         </div>
 
-        {/* Never faded out or switched off: pressed too soon, it says what is
+        {/* Never faded out or switched off: pressed too soon, it shows what is
             missing. Unavailable until there is a basket to add to. */}
         <button
           type="submit"
           form={formId}
           aria-disabled="true"
-          className="w-full rounded-full bg-nyoki-navy px-7 py-2.5 text-sm font-medium tracking-[0.14em] text-nyoki-beige uppercase transition-colors duration-150 hover:bg-nyoki-ink focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-nyoki-navy min-[560px]:ml-auto min-[560px]:w-auto motion-reduce:transition-none"
+          className="h-11 shrink-0 rounded-full bg-nyoki-navy px-6 text-sm font-medium tracking-[0.12em] text-nyoki-beige uppercase transition-colors duration-150 hover:bg-nyoki-ink focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-nyoki-navy motion-reduce:transition-none"
         >
           Add to basket
         </button>
       </div>
-
-      <p data-testid="customiser-status" aria-live="polite" className={`mt-2 text-sm ${ui.shopMuted}`}>
-        {status}
-      </p>
     </div>
   );
 }

@@ -375,6 +375,17 @@ TypeScript, deployed to Vercel.
 - **No basket yet**: Add to basket is `aria-disabled` but never faded; pressed
   too soon it shows what is missing and moves to the first of it, and once
   everything is chosen it says ordering opens soon.
+- **The bar is one slim row** (`CustomiserBar`): the total, a short line of
+  what is still to choose (`barHint`, from each missing choice's `short`), and
+  Add to basket. Edge to edge on a phone in the page's own colour, as
+  `BuyBar` is; a floating card from `md` up. It was a card of three rows -
+  total and quantity, the button, a sentence - and took a fifth of a phone's
+  screen; quantity has its own panel now, above Your choices. A floating
+  pill, a bar that shrinks on scroll and a floating button were drawn as
+  well: each would sit right on Safari's own floating bar, where a full-width
+  band reads as the page.
+- Pressed with everything chosen, it says how to order meanwhile in a notice
+  above the bar, gone after six seconds or the next change.
 - **Delivery straight to the recipient belongs in checkout**, for every
   product, not here - and so does an emailed receipt. Neither exists yet.
 - Not in the CSV/JSON/XML export or import yet.
@@ -672,7 +683,8 @@ TypeScript, deployed to Vercel.
 - Public pages live in the `(shop)` route group: `/`, `/shop`,
   `/shop/[category]`, `/product/[slug]`. Only ACTIVE products are visible.
 - The header is two tiers split by a sage rule: utility links (Shop, About us,
-  Contact) and the logo above it, product departments below. The top row is a three
+  and from `sm` up Contact - on a phone a third link squeezed the logo to a
+  sliver) and the logo above it, product departments below. The top row is a three
   column grid whose empty right column is reserved for search, account and
   basket - it keeps the logo centred until those exist.
 - Storefront pages are held to one width by `max-w-shop`, generated from the

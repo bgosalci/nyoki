@@ -110,7 +110,10 @@ export type ChoiceKey = "colour" | "size" | "unit" | "message" | "messageText" |
 
 export interface MissingChoice {
   key: ChoiceKey;
+  /** In full, beside the choice. */
   message: string;
+  /** In a few words, for the line beneath the total in the bar. */
+  short: string;
 }
 
 const blank = (text: string | undefined) => (text ?? "").trim() === "";
@@ -127,26 +130,28 @@ export function missingChoices(offer: Offer, choices: Choices): MissingChoice[] 
   if (clothing) {
     const colour = clothing.colours.length > 0 && choices.colour !== null && clothing.colours.includes(choices.colour) ? choices.colour : null;
     const size = clothing.sizes.length > 0 && choices.size !== null && clothing.sizes.includes(choices.size) ? choices.size : null;
-    if (clothing.colours.length > 0 && colour === null) missing.push({ key: "colour", message: "Please choose a colour." });
+    if (clothing.colours.length > 0 && colour === null) missing.push({ key: "colour", message: "Please choose a colour.", short: "Choose a colour" });
     if (clothing.sizes.length > 0 && size === null) {
-      missing.push({ key: "size", message: "Please choose a size." });
+      missing.push({ key: "size", message: "Please choose a size.", short: "Choose a size" });
     } else if (missing.length === 0 && !inStock(clothing, colour, size)) {
       // The page will not offer it, but the basket checks by this too.
       const sized = clothing.sizes.length > 0;
-      const what = sized && clothing.colours.length > 0 ? "that size is out of stock in that colour" : sized ? "that size is out of stock" : "that colour is out of stock";
-      missing.push({ key: sized ? "size" : "colour", message: `Sorry, ${what}. Please choose another.` });
+      const both = sized && clothing.colours.length > 0;
+      const what = both ? "that size is out of stock in that colour" : sized ? "that size is out of stock" : "that colour is out of stock";
+      const short = both ? "Out of stock in that colour" : sized ? "That size is out of stock" : "That colour is out of stock";
+      missing.push({ key: sized ? "size" : "colour", message: `Sorry, ${what}. Please choose another.`, short });
     }
   }
 
   if (!chosenUnit(offer, choices)) {
-    missing.push({ key: "unit", message: `Please choose a single ${offer.noun.one} or a pack.` });
+    missing.push({ key: "unit", message: `Please choose a single ${offer.noun.one} or a pack.`, short: "Choose single or pack" });
   }
 
   if (offer.message) {
     if (choices.message === null) {
-      missing.push({ key: "message", message: "Please choose a message option." });
+      missing.push({ key: "message", message: "Please choose a message option.", short: "Choose a message option" });
     } else if (choices.message === "Printed message" && blank(choices.messageText)) {
-      missing.push({ key: "messageText", message: "Please type the message you want printed." });
+      missing.push({ key: "messageText", message: "Please type the message you want printed.", short: "Type your message" });
     }
   }
 
@@ -155,9 +160,9 @@ export function missingChoices(offer: Offer, choices: Choices): MissingChoice[] 
       const value = choices.personalisation[field.id];
       const what = field.label.toLowerCase();
       if (field.kind === "TEXT" && blank(value)) {
-        missing.push({ key: `field:${field.id}`, message: `Please fill in the ${what}.` });
+        missing.push({ key: `field:${field.id}`, message: `Please fill in the ${what}.`, short: `Fill in the ${what}` });
       } else if (field.kind === "CHOICE" && !field.choices.includes(value ?? "")) {
-        missing.push({ key: `field:${field.id}`, message: `Please choose the ${what}.` });
+        missing.push({ key: `field:${field.id}`, message: `Please choose the ${what}.`, short: `Choose the ${what}` });
       }
     }
   }
@@ -166,12 +171,16 @@ export function missingChoices(offer: Offer, choices: Choices): MissingChoice[] 
 }
 
 /**
- * The line beneath Add to basket. There is no basket yet, so complete
- * choices say so rather than inviting a press that cannot add anything.
+ * The line beneath the total in the bar: what is still to choose, in a few
+ * words - a colour and size together, one thing by name, more by count - and
+ * once nothing is, that ordering opens soon. There is no basket yet.
  */
-export function statusLine(missing: number): string {
-  if (missing === 0) return "All done. Online ordering opens soon.";
-  return `${missing} ${missing === 1 ? "answer" : "answers"} still needed before you can add this to your basket`;
+export function barHint(missing: MissingChoice[]): string {
+  if (missing.length === 0) return "Online ordering opens soon";
+  const [first, second] = missing;
+  // Out of stock is only ever said alone, so a colour and a size together are both still to choose.
+  if (missing.length === 2 && first.key === "colour" && second.key === "size") return "Choose a colour and size";
+  return missing.length === 1 ? first.short : `${missing.length} choices still needed`;
 }
 
 export interface SummaryRow {

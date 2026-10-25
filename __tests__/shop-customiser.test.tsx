@@ -32,6 +32,7 @@ function setup(offer: Offer = everything) {
 const panel = (title: RegExp) => screen.getByRole("region", { name: title });
 const total = () => screen.getByTestId("customiser-total");
 const status = () => screen.getByTestId("customiser-status");
+const bar = () => screen.getByTestId("customiser-bar");
 const addButton = () => screen.getByRole("button", { name: "Add to basket" });
 const summaryValue = (label: string) => {
   const row = within(screen.getByTestId("customiser-summary")).getByText(label).closest("div")!;
@@ -236,6 +237,31 @@ describe("the customiser", () => {
     });
   });
 
+  describe("the bar", () => {
+    it("is one slim row: the total, a line saying what is left, and Add to basket", () => {
+      setup();
+
+      expect(within(bar()).getByTestId("customiser-total")).toBeInTheDocument();
+      expect(within(bar()).getByTestId("customiser-status")).toBeInTheDocument();
+      expect(within(bar()).getByRole("button", { name: "Add to basket" })).toBeInTheDocument();
+      expect(within(bar()).getByTestId("customiser-total").closest(".h-16")).not.toBeNull();
+    });
+
+    it("keeps quantity with the choices, out of the bar", () => {
+      setup();
+
+      const quantity = screen.getByLabelText("Quantity");
+      expect(bar()).not.toContainElement(quantity);
+      expect(quantity.closest("form")).toBe(document.querySelector("form"));
+    });
+
+    it("runs edge to edge on a phone, and floats as a card from a tablet up", () => {
+      setup();
+
+      expect(bar()).toHaveClass("-mx-4", "sticky", "bottom-0", "md:rounded-2xl");
+    });
+  });
+
   describe("the summary", () => {
     it("follows each choice", async () => {
       const { user } = setup();
@@ -266,10 +292,10 @@ describe("the customiser", () => {
       expect(addButton().className).not.toMatch(/opacity/);
     });
 
-    it("counts what is still needed", () => {
+    it("says in a short line what is still needed", () => {
       setup();
 
-      expect(status()).toHaveTextContent("2 answers still needed before you can add this to your basket");
+      expect(status()).toHaveTextContent("2 choices still needed");
       expect(status()).toHaveAttribute("aria-live", "polite");
     });
 
@@ -292,14 +318,16 @@ describe("the customiser", () => {
       expect(screen.queryByText("Please choose a message option.")).not.toBeInTheDocument();
     });
 
-    it("says ordering opens soon once everything is chosen, and again when pressed", async () => {
+    it("says ordering opens soon once everything is chosen, and how to order meanwhile when pressed", async () => {
       const { user } = setup();
       await chooseEverything(user);
 
-      expect(status()).toHaveTextContent("All done. Online ordering opens soon.");
+      expect(status()).toHaveTextContent("Online ordering opens soon");
+      expect(screen.queryByTestId("customiser-notice")).not.toBeInTheDocument();
 
       await user.click(addButton());
-      expect(status()).toHaveTextContent("Online ordering opens soon. Until then, send us a question to order this one.");
+      expect(screen.getByTestId("customiser-notice")).toHaveTextContent("Online ordering opens soon. Until then, send us a question to order this one.");
+      expect(screen.getByTestId("customiser-notice")).toHaveAttribute("role", "status");
     });
   });
 
@@ -348,6 +376,14 @@ const dress: Offer = {
 const tile = (name: string) => screen.getByRole("radio", { name: new RegExp(`^${name}`) });
 
 describe("colour and size", () => {
+  it("says in the bar which of the two is still to choose", async () => {
+    const { user } = setup(dress);
+    expect(status()).toHaveTextContent("Choose a colour and size");
+
+    await user.click(tile("Gypsum"));
+    expect(status()).toHaveTextContent("Choose a size");
+  });
+
   it("asks for a colour and a size, each required", () => {
     setup(dress);
 
@@ -399,7 +435,7 @@ describe("colour and size", () => {
     await user.click(tile("Gypsum"));
     await user.click(tile("M"));
 
-    expect(status()).toHaveTextContent("All done. Online ordering opens soon.");
+    expect(status()).toHaveTextContent("Online ordering opens soon");
     expect(summaryValue("Colour")).toBe("Gypsum");
     expect(summaryValue("Size")).toBe("M");
     expect(total()).toHaveTextContent("£5.50");
@@ -414,9 +450,9 @@ describe("colour and size", () => {
   it("says so when nothing is left in any colour or size", async () => {
     const { user } = setup({ ...dress, clothing: { ...dress.clothing!, stock: [] } });
 
-    expect(status()).toHaveTextContent("Out of stock for now.");
+    expect(status()).toHaveTextContent("Out of stock for now");
     await user.click(addButton());
-    expect(status()).toHaveTextContent("Out of stock for now.");
+    expect(status()).toHaveTextContent("Out of stock for now");
     expect(screen.queryByText("Please choose a colour.")).not.toBeInTheDocument();
   });
 });

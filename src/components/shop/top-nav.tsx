@@ -5,10 +5,12 @@ import { usePathname } from "next/navigation";
 
 import { topNavCurrent } from "@/lib/storefront/nav";
 
+// Contact waits for a wider screen: on a phone a third link squeezed the logo
+// to a sliver. The footer, and Ask a question on every piece, cover it there.
 const LINKS = [
-  { href: "/shop", label: "Shop", section: "shop" as const },
-  { href: "/about", label: "About us", section: "about" as const },
-  { href: "/contact", label: "Contact", section: "contact" as const },
+  { href: "/shop", label: "Shop", section: "shop" as const, phone: true },
+  { href: "/about", label: "About us", section: "about" as const, phone: true },
+  { href: "/contact", label: "Contact", section: "contact" as const, phone: false },
 ];
 
 /** The header's top row: where the shop sits alongside everything that is not shopping. */
@@ -22,7 +24,7 @@ export function TopNav() {
         {LINKS.map((link) => {
           const active = current === link.section;
           return (
-            <li key={link.href}>
+            <li key={link.href} className={link.phone ? undefined : "hidden sm:block"}>
               <Link
                 href={link.href}
                 aria-current={active ? "page" : undefined}

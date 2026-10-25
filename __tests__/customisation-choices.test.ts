@@ -7,7 +7,7 @@ import {
   isPersonalising,
   missingChoices,
   packSavingPence,
-  statusLine,
+  barHint,
   summarise,
   totalPence,
   unitPricePence,
@@ -169,8 +169,8 @@ describe("missingChoices", () => {
 
   it("starts by asking for single or pack and a message option, but not personalisation, which is optional", () => {
     expect(missingChoices(offer, EMPTY_CHOICES)).toEqual([
-      { key: "unit", message: "Please choose a single card or a pack." },
-      { key: "message", message: "Please choose a message option." },
+      { key: "unit", message: "Please choose a single card or a pack.", short: "Choose single or pack" },
+      { key: "message", message: "Please choose a message option.", short: "Choose a message option" },
     ]);
   });
 
@@ -186,7 +186,7 @@ describe("missingChoices", () => {
 
   it("asks for the words of a printed message, and counts only spaces as none", () => {
     expect(missingChoices(offer, { ...complete, messageText: "  \n " })).toEqual([
-      { key: "messageText", message: "Please type the message you want printed." },
+      { key: "messageText", message: "Please type the message you want printed.", short: "Type your message" },
     ]);
   });
 
@@ -196,8 +196,8 @@ describe("missingChoices", () => {
 
   it("asks for each thing to personalise once personalising, in order", () => {
     expect(missingChoices(offer, { ...complete, personalisation: {} })).toEqual([
-      { key: "field:f1", message: "Please fill in the name." },
-      { key: "field:f2", message: "Please choose the zodiac sign." },
+      { key: "field:f1", message: "Please fill in the name.", short: "Fill in the name" },
+      { key: "field:f2", message: "Please choose the zodiac sign.", short: "Choose the zodiac sign" },
     ]);
   });
 
@@ -227,14 +227,21 @@ describe("missingChoices", () => {
   });
 });
 
-describe("statusLine", () => {
-  it("counts what is still needed", () => {
-    expect(statusLine(2)).toBe("2 answers still needed before you can add this to your basket");
-    expect(statusLine(1)).toBe("1 answer still needed before you can add this to your basket");
+describe("barHint", () => {
+  const missing = (o: Offer, choices: Choices) => barHint(missingChoices(o, choices));
+
+  it("says the one thing still to choose, short enough for a line of the bar", () => {
+    expect(missing(offer, { ...complete, messageText: "" })).toBe("Type your message");
+    expect(missing(dress, { ...EMPTY_CHOICES, colour: "Lupin" })).toBe("Choose a size");
   });
 
-  it("says plainly that ordering opens soon once everything is answered", () => {
-    expect(statusLine(0)).toBe("All done. Online ordering opens soon.");
+  it("asks for a colour and size together, and counts anything else", () => {
+    expect(missing(dress, EMPTY_CHOICES)).toBe("Choose a colour and size");
+    expect(missing(offer, EMPTY_CHOICES)).toBe("2 choices still needed");
+  });
+
+  it("says plainly that ordering opens soon once everything is chosen", () => {
+    expect(missing(offer, complete)).toBe("Online ordering opens soon");
   });
 });
 
@@ -300,8 +307,8 @@ const dress: Offer = {
 describe("clothes", () => {
   it("asks for a colour, then a size", () => {
     expect(missingChoices(dress, EMPTY_CHOICES)).toEqual([
-      { key: "colour", message: "Please choose a colour." },
-      { key: "size", message: "Please choose a size." },
+      { key: "colour", message: "Please choose a colour.", short: "Choose a colour" },
+      { key: "size", message: "Please choose a size.", short: "Choose a size" },
     ]);
   });
 
@@ -311,7 +318,7 @@ describe("clothes", () => {
 
   it("will not take a colour in a size that is out of stock, should one be chosen", () => {
     expect(missingChoices(dress, { ...EMPTY_CHOICES, colour: "Lupin", size: "M" })).toEqual([
-      { key: "size", message: "Sorry, that size is out of stock in that colour. Please choose another." },
+      { key: "size", message: "Sorry, that size is out of stock in that colour. Please choose another.", short: "Out of stock in that colour" },
     ]);
   });
 
