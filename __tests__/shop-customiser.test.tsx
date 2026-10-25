@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 
 import { CustomiserBar, CustomiserPanels, CustomiserProvider } from "@/components/shop/customiser";
 import type { Offer } from "@/lib/customisation/offer";
+import { toClothingOffer } from "@/lib/clothes/stock";
 
 const name = { id: "f1", label: "Name", kind: "TEXT" as const, maxLength: 12, choices: [] };
 const sign = { id: "f2", label: "Zodiac sign", kind: "CHOICE" as const, maxLength: null, choices: ["♈ Aries", "♌ Leo"] };
@@ -14,6 +15,7 @@ const everything: Offer = {
   packs: [{ id: "p3", cards: 3, pricePence: 1500, wasPence: null }],
   message: { pricePence: 80, maxLength: 200 },
   personalisation: { pricePence: 150, required: false, fields: [name, sign] },
+  clothing: null,
 };
 
 function setup(offer: Offer = everything) {
@@ -315,5 +317,106 @@ describe("the customiser", () => {
     setup({ ...everything, noun: { one: "bookmark", many: "bookmarks" }, message: null });
 
     expect(screen.getByText("Buy one bookmark, or a pack and save.")).toBeInTheDocument();
+  });
+});
+
+/**
+ * A dress in three colours and two sizes. Lupin is in stock in S only, Gypsum
+ * in both, and Pepper in neither.
+ */
+const dress: Offer = {
+  ...everything,
+  noun: { one: "piece", many: "pieces" },
+  packs: [],
+  message: null,
+  personalisation: null,
+  clothing: toClothingOffer({
+    colours: ["Lupin", "Gypsum", "Pepper"],
+    sizes: ["S", "M"],
+    madeToOrder: false,
+    variants: [
+      { colour: "Lupin", size: "S", stock: 2 },
+      { colour: "Lupin", size: "M", stock: 0 },
+      { colour: "Gypsum", size: "S", stock: 1 },
+      { colour: "Gypsum", size: "M", stock: 3 },
+      { colour: "Pepper", size: "S", stock: 0 },
+      { colour: "Pepper", size: "M", stock: 0 },
+    ],
+  }),
+};
+
+const tile = (name: string) => screen.getByRole("radio", { name: new RegExp(`^${name}`) });
+
+describe("colour and size", () => {
+  it("asks for a colour and a size, each required", () => {
+    setup(dress);
+
+    expect(panel(/^colour/i)).toHaveTextContent(/required/i);
+    expect(panel(/^size/i)).toHaveTextContent(/required/i);
+    expect(screen.getAllByRole("radio").map((radio) => radio.closest("label")!.textContent)).toEqual([
+      "Lupin",
+      "Gypsum",
+      "Pepper Out of stock",
+      "S",
+      "M",
+    ]);
+  });
+
+  it("shows a colour out of stock in every size as out of stock, and will not take it", () => {
+    setup(dress);
+
+    expect(tile("Pepper")).toBeDisabled();
+    expect(tile("Pepper")).toHaveAccessibleName(/out of stock/i);
+  });
+
+  it("shows a size out of stock in the colour chosen, and the colours out of stock in the size chosen", async () => {
+    const { user } = setup(dress);
+
+    await user.click(tile("Lupin"));
+    expect(tile("M")).toBeDisabled();
+    expect(tile("M")).toHaveAccessibleName(/out of stock/i);
+    expect(tile("S")).toBeEnabled();
+
+    await user.click(tile("Gypsum"));
+    await user.click(tile("M"));
+    expect(tile("Lupin")).toBeDisabled();
+    expect(tile("Gypsum")).toBeChecked();
+  });
+
+  it("says what is missing when Add to basket is pressed too soon, and moves to the colour", async () => {
+    const { user } = setup(dress);
+
+    await user.click(addButton());
+
+    expect(panel(/^colour/i)).toHaveTextContent("Please choose a colour.");
+    expect(panel(/^size/i)).toHaveTextContent("Please choose a size.");
+    expect(tile("Lupin")).toHaveFocus();
+  });
+
+  it("is done once a colour and a size in stock are chosen, and shows both in the summary", async () => {
+    const { user } = setup(dress);
+
+    await user.click(tile("Gypsum"));
+    await user.click(tile("M"));
+
+    expect(status()).toHaveTextContent("All done. Online ordering opens soon.");
+    expect(summaryValue("Colour")).toBe("Gypsum");
+    expect(summaryValue("Size")).toBe("M");
+    expect(total()).toHaveTextContent("£5.50");
+  });
+
+  it("chooses the only colour there is for the shopper", () => {
+    setup({ ...dress, clothing: { ...dress.clothing!, colours: ["Gypsum"], stock: dress.clothing!.stock.filter((row) => row.colour === "Gypsum") } });
+
+    expect(tile("Gypsum")).toBeChecked();
+  });
+
+  it("says so when nothing is left in any colour or size", async () => {
+    const { user } = setup({ ...dress, clothing: { ...dress.clothing!, stock: [] } });
+
+    expect(status()).toHaveTextContent("Out of stock for now.");
+    await user.click(addButton());
+    expect(status()).toHaveTextContent("Out of stock for now.");
+    expect(screen.queryByText("Please choose a colour.")).not.toBeInTheDocument();
   });
 });

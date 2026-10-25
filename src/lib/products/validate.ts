@@ -45,8 +45,12 @@ export type ProductField =
   | "madeToOrder"
   | "leadTimeDays"
   | "categoryIds"
-  // Read apart, by parseAlsoLikeIds; here so its problem shows on the form.
-  | "alsoLikeIds";
+  // Read apart, by parseAlsoLikeIds and parseClothing; here so their problems
+  // show on the form.
+  | "alsoLikeIds"
+  | "colours"
+  | "sizes"
+  | "variantStock";
 
 export type ProductErrors = Partial<Record<ProductField, string>>;
 
@@ -80,6 +84,19 @@ function count(value: string): number | null | undefined {
 
   const parsed = Number.parseInt(value, 10);
   return Number.isSafeInteger(parsed) ? parsed : null;
+}
+
+/** The categories ticked, each once. Read apart too, to tell what kind of piece it is. */
+export function postedCategoryIds(form: FormData): string[] {
+  return [
+    ...new Set(
+      form
+        .getAll("categoryIds")
+        .filter((entry): entry is string => typeof entry === "string")
+        .map((id) => id.trim())
+        .filter((id) => id.length > 0),
+    ),
+  ];
 }
 
 /**
@@ -151,15 +168,7 @@ export function validateProductInput(form: FormData): ProductValidation {
       oneOfAKind,
       madeToOrder,
       leadTimeDays: leadParsed ?? null,
-      categoryIds: [
-        ...new Set(
-          form
-            .getAll("categoryIds")
-            .filter((entry): entry is string => typeof entry === "string")
-            .map((id) => id.trim())
-            .filter((id) => id.length > 0),
-        ),
-      ],
+      categoryIds: postedCategoryIds(form),
     },
   };
 }

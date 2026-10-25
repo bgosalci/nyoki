@@ -22,9 +22,10 @@ export default async function EditProductPage({
       include: {
         images: { orderBy: { position: "asc" } },
         categories: { select: { categoryId: true } },
+        variants: { orderBy: { position: "asc" }, select: { colour: true, size: true, stock: true } },
       },
     }),
-    db.category.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, parentId: true } }),
+    db.category.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, slug: true, parentId: true } }),
     // "You may also like": what is chosen, in order, and the pieces on the
     // shop that could be.
     db.alsoLike.findMany({
@@ -84,6 +85,7 @@ export default async function EditProductPage({
           product={initial}
           pricing={{ productId: product.id, pricePence: product.pricePence, compareAtPence: product.compareAtPence }}
           categories={categories}
+          clothing={{ colours: product.colours, sizes: product.sizes, variants: product.variants }}
           alsoLike={{
             options: ranked.map(({ id, name, images, categoryIds: filed }) => ({
               id,

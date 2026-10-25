@@ -26,15 +26,20 @@ export interface ChooserCategory {
  * category's place in the tree - so a group's name finds its types - and a
  * match keeps its group beside it. Rows are hidden, never removed, so a tick
  * filtered out of view is still saved.
+ *
+ * `onChange` hears every tick, for a form that changes with what a piece is -
+ * colours and sizes for clothes.
  */
 export function CategoryChooser({
   categories,
   chosen: initial,
   error,
+  onChange,
 }: {
   categories: ChooserCategory[];
   chosen: string[];
   error?: string;
+  onChange?: (chosen: string[]) => void;
 }) {
   const [chosen, setChosen] = useState(() => new Set(initial));
   const [open, setOpen] = useState(false);
@@ -54,13 +59,13 @@ export function CategoryChooser({
   const paths = categoryPaths(categories);
   const path = (id: string) => paths.get(id) ?? "";
 
-  const toggle = (id: string) =>
-    setChosen((current) => {
-      const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  const toggle = (id: string) => {
+    const next = new Set(chosen);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setChosen(next);
+    onChange?.([...next]);
+  };
 
   // In the tree's own order, so the summary reads as the list does.
   const picked = tree.filter(({ row }) => chosen.has(row.id));

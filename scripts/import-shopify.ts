@@ -13,6 +13,7 @@
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 
+import { axesFromOptions, axesOf, variantLabel } from "@/lib/clothes/variants";
 import { db } from "@/lib/db";
 import { validateImageUpload } from "@/lib/images/validate";
 import { parseShopifyExport, type ImportedProduct } from "@/lib/import/shopify";
@@ -60,11 +61,24 @@ async function importProduct(p: ImportedProduct, categoryIds: Map<string, string
 
   const categoryId = p.category ? categoryIds.get(p.category.name) : undefined;
 
+  // A variant's colour and size, its product's colours and sizes in order,
+  // and a stock that is the total of its variants' - as the Details tab keeps them.
+  const axes = p.variants.map((v) => axesFromOptions(v.options));
+  const { colours, sizes } = axesOf(axes);
+  const stock = p.variants.length > 0 ? p.variants.reduce((total, v) => total + v.stock, 0) : p.stock;
+
   const product = await db.product.create({
     data: {
       slug: p.slug, name: p.name, description: p.description, status: p.status,
-      pricePence: p.pricePence, compareAtPence: p.compareAtPence, sku: p.sku, stock: p.stock, weightGrams: p.weightGrams,
-      variants: { create: p.variants.map((v) => ({ name: v.name, options: v.options, sku: v.sku, pricePence: v.pricePence, stock: v.stock, position: v.position })) },
+      pricePence: p.pricePence, compareAtPence: p.compareAtPence, sku: p.sku, stock, weightGrams: p.weightGrams,
+      colours, sizes,
+      variants: {
+        create: p.variants.map((v, index) => ({
+          ...axes[index],
+          name: variantLabel(axes[index].colour, axes[index].size) || v.name,
+          sku: v.sku, pricePence: v.pricePence, stock: v.stock, position: v.position,
+        })),
+      },
       ...(categoryId ? { categories: { create: [{ categoryId }] } } : {}),
     },
   });

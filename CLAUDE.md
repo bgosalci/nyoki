@@ -379,6 +379,54 @@ TypeScript, deployed to Vercel.
   product, not here - and so does an emailed receipt. Neither exists yet.
 - Not in the CSV/JSON/XML export or import yet.
 
+## Clothes: colours, sizes and stock
+
+- **Clothing is anything under Clothes** (`isClothes`,
+  `src/lib/clothes/group.ts`), itself or anywhere above, told the way cards
+  are (`findInLineage`, `src/lib/categories/lineage.ts`). Its Details tab has
+  **Colours and Sizes in place of Dimensions**, switching the moment a
+  Clothes category is ticked. Dimensions stay in the form, hidden and posted,
+  so neither is lost by saving the other, and the shop leaves a clothing
+  piece's dimensions off too.
+- `Product.colours` and `Product.sizes` are ordered lists, and **each colour
+  in each size is a `ProductVariant`** with `colour`, `size` and `stock` (null
+  where the piece has no colours, or no sizes). A shopper must choose a colour
+  if there are colours and a size if there are sizes.
+- **Stock is kept per colour and size**, in the grid beneath the lists. The
+  Stock box at the top becomes their total, and `Product.stock` is that total,
+  written on every save, so the products list and the export read one number.
+  Clothes in no colours or sizes keep the plain Stock box.
+- **A variant is updated, never replaced** (`planVariants`,
+  `src/lib/clothes/variants.ts`): every row posts the name it was saved under
+  (`colourWas`, `sizeWas`), so a stock change or a rename keeps the variant -
+  an order line points at it, and it holds Shopify's code and size price. The
+  first colour added to a sized piece takes over its sized variants (the
+  editor moves their stock under it); removing the last colour hands it back.
+- After a save the editor starts again from what was saved, so each row knows
+  the name it is now saved under. The editor's rules are
+  `src/lib/clothes/editor.ts`, pure.
+- **One price for every colour and size.** On 14 imported pieces Shopify had
+  the larger sizes £5-£10 dearer; those prices stay on the variants
+  (`pricePence`), unused. Chosen, not overlooked.
+- On the shop the choices are the customiser's (`ColourPanel`, `SizePanel`),
+  by the rules in `src/lib/clothes/stock.ts`: a colour is out of stock with
+  none in the size chosen - or in any size, until one is chosen - and a size
+  likewise. A combination never stocked has none. Out of stock is a dashed
+  tile, its name struck through, that cannot be chosen. **Made to order is
+  never out of stock.** The only colour, or only size, starts chosen; a piece
+  with nothing left at all says "Out of stock for now".
+- A piece moved out of Clothes keeps its colours, sizes and variants but
+  offers none of them, and has the plain Stock box again; saving anything
+  that is not clothing never touches them.
+- The migration turned Shopify's `options` (Colour or Color, and Size) into
+  the columns, set each product's lists in variant order, and set its stock
+  to its variants' total - the import had left it at 0. The Shopify import
+  script now writes them the same way.
+- **The products import refuses a Stock change** on clothing in colours or
+  sizes, whose total is theirs; its total as it stands is no change, so an
+  untouched export still imports. Colours and sizes themselves are not in the
+  CSV/JSON/XML export or import yet.
+
 ## Usual costs
 
 - A category can carry **usual costs** (`CategoryCostLine`, edited on its

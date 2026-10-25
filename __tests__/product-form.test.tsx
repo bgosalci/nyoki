@@ -8,9 +8,9 @@ import { SaveSlot, SaveSlotProvider } from "@/components/admin/save-slot";
 const noopAction = async () => ({ errors: {} });
 
 const categories = [
-  { id: "cat_tableware", name: "Tableware", parentId: null },
-  { id: "cat_mugs", name: "Mugs", parentId: "cat_tableware" },
-  { id: "cat_vases", name: "Vases", parentId: null },
+  { id: "cat_tableware", name: "Tableware", slug: "tableware", parentId: null },
+  { id: "cat_mugs", name: "Mugs", slug: "mugs", parentId: "cat_tableware" },
+  { id: "cat_vases", name: "Vases", slug: "vases", parentId: null },
 ];
 
 const mug = {

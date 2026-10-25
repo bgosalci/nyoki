@@ -7,7 +7,7 @@ export default async function NewProductPage() {
   const [categories, options] = await Promise.all([
     db.category.findMany({
       orderBy: { name: "asc" },
-      select: { id: true, name: true, parentId: true },
+      select: { id: true, name: true, slug: true, parentId: true },
     }),
     // The pieces on the shop that could be suggested under "You may also like".
     db.product.findMany({

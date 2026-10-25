@@ -1,14 +1,16 @@
+import { inStock } from "@/lib/clothes/stock";
 import type { ItemNoun } from "@/lib/customisation/group";
 import type { Offer } from "@/lib/customisation/offer";
 import { formatPence } from "@/lib/money";
 
 /**
- * A shopper's choices on a card or bookmark, and what they come to.
+ * A shopper's choices - on a card or bookmark, or a piece of clothing - and
+ * what they come to.
  *
  * Pure, so the page works from the same rules the basket will check by. Each
  * extra is charged per card: a pack of three with an 80p message pays £2.40
  * for it. A pack carries one message and one personalisation, printed in
- * every card.
+ * every card. Every colour and size of a piece sells at its own price.
  */
 
 /** The single card, as the unit chosen; a pack is chosen by its id. */
@@ -25,6 +27,9 @@ export interface Choices {
   personalise: boolean;
   /** Field id to what was typed or chosen. */
   personalisation: Record<string, string>;
+  /** Clothing only. */
+  colour: string | null;
+  size: string | null;
   quantity: number;
 }
 
@@ -38,8 +43,26 @@ export const EMPTY_CHOICES: Choices = {
   messageText: "",
   personalise: false,
   personalisation: {},
+  colour: null,
+  size: null,
   quantity: 1,
 };
+
+/**
+ * Where a shopper starts: nothing chosen, except a colour or a size that is
+ * the only one there is - and in stock - since there is no choosing it.
+ */
+export function initialChoices(offer: Offer): Choices {
+  const clothing = offer.clothing;
+  if (!clothing) return EMPTY_CHOICES;
+
+  const only = (values: string[], available: (value: string) => boolean) => (values.length === 1 && available(values[0]) ? values[0] : null);
+  return {
+    ...EMPTY_CHOICES,
+    colour: only(clothing.colours, (colour) => inStock(clothing, colour, null)),
+    size: only(clothing.sizes, (size) => inStock(clothing, null, size)),
+  };
+}
 
 /** The single card or pack chosen, or null while a choice is still owed. */
 function chosenUnit(offer: Offer, choices: Choices): { cards: number; pricePence: number } | null {
@@ -82,8 +105,8 @@ export function extraNote(pricePence: number, noun: ItemNoun): string {
   return `+${pricePence < 100 ? `${pricePence}p` : formatPence(pricePence)} a ${noun.one}`;
 }
 
-/** What the page can be missing: the unit, the message, or a field by id. */
-export type ChoiceKey = "unit" | "message" | "messageText" | `field:${string}`;
+/** What the page can be missing: a colour or size, the unit, the message, or a field by id. */
+export type ChoiceKey = "colour" | "size" | "unit" | "message" | "messageText" | `field:${string}`;
 
 export interface MissingChoice {
   key: ChoiceKey;
@@ -99,6 +122,21 @@ const blank = (text: string | undefined) => (text ?? "").trim() === "";
  */
 export function missingChoices(offer: Offer, choices: Choices): MissingChoice[] {
   const missing: MissingChoice[] = [];
+
+  const clothing = offer.clothing;
+  if (clothing) {
+    const colour = clothing.colours.length > 0 && choices.colour !== null && clothing.colours.includes(choices.colour) ? choices.colour : null;
+    const size = clothing.sizes.length > 0 && choices.size !== null && clothing.sizes.includes(choices.size) ? choices.size : null;
+    if (clothing.colours.length > 0 && colour === null) missing.push({ key: "colour", message: "Please choose a colour." });
+    if (clothing.sizes.length > 0 && size === null) {
+      missing.push({ key: "size", message: "Please choose a size." });
+    } else if (missing.length === 0 && !inStock(clothing, colour, size)) {
+      // The page will not offer it, but the basket checks by this too.
+      const sized = clothing.sizes.length > 0;
+      const what = sized && clothing.colours.length > 0 ? "that size is out of stock in that colour" : sized ? "that size is out of stock" : "that colour is out of stock";
+      missing.push({ key: sized ? "size" : "colour", message: `Sorry, ${what}. Please choose another.` });
+    }
+  }
 
   if (!chosenUnit(offer, choices)) {
     missing.push({ key: "unit", message: `Please choose a single ${offer.noun.one} or a pack.` });
@@ -145,6 +183,11 @@ export interface SummaryRow {
 export function summarise(offer: Offer, choices: Choices): SummaryRow[] {
   const rows: SummaryRow[] = [];
   const { one } = offer.noun;
+
+  if (offer.clothing) {
+    if (offer.clothing.colours.length > 0) rows.push({ label: "Colour", value: choices.colour ?? "Not chosen yet" });
+    if (offer.clothing.sizes.length > 0) rows.push({ label: "Size", value: choices.size ?? "Not chosen yet" });
+  }
 
   if (offer.packs.length > 0) {
     const pack = offer.packs.find((p) => p.id === choices.unit);

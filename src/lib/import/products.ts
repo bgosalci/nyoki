@@ -242,7 +242,17 @@ const EMPTY_PLAN = (error: string, source?: Pick<ProductSource, "format" | "unit
   counts: { added: 0, changed: 0, unchanged: 0, withProblems: 0 },
 });
 
-export function planImport(text: string, existing: readonly ExistingProduct[], categories: readonly ImportCategory[]): ImportPlan {
+export function planImport(
+  text: string,
+  existing: readonly ExistingProduct[],
+  categories: readonly ImportCategory[],
+  {
+    stockByVariant = new Set(),
+  }: {
+    /** Clothing in colours or sizes, whose stock is kept for each and totalled by its Details tab. */
+    stockByVariant?: ReadonlySet<string>;
+  } = {},
+): ImportPlan {
   let source: ProductSource;
   try {
     source = readProducts(text);
@@ -398,6 +408,10 @@ export function planImport(text: string, existing: readonly ExistingProduct[], c
 
     const stock = read("stock", whole, "Stock: write a whole number, zero or more.");
     if (stock !== undefined) values.stock = stock;
+    // Its total is its colours' and sizes'; a figure written here would part from them.
+    if (product && stockByVariant.has(product.id) && values.stock !== base.stock) {
+      problems.push("Stock: this piece keeps its stock for each colour and size. Change it on its Details tab.");
+    }
 
     const weight = read("weightGrams", optionalWhole, "Weight (g): write a whole number of grams.");
     if (weight !== undefined) values.weightGrams = weight.n;

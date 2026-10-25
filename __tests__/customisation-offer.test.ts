@@ -124,3 +124,18 @@ describe("offersAnything", () => {
     expect(offersAnything(toOffer({ ...base, customisation: { ...customisation, message: false }, fields }))).toBe(true);
   });
 });
+
+describe("a piece of clothing's offer", () => {
+  const clothing = { colours: ["Lupin"], sizes: ["S"], stock: [{ colour: "Lupin", size: "S", stock: 1 }], madeToOrder: false };
+
+  it("carries its colours and sizes, and nothing for anything else", () => {
+    const base = { product, customisation: null, fields: [], packs: [], sales: [], noun: card, now };
+
+    expect(toOffer({ ...base, clothing }).clothing).toEqual(clothing);
+    expect(toOffer(base).clothing).toBeNull();
+  });
+
+  it("has something to choose when it has colours or sizes", () => {
+    expect(offersAnything(toOffer({ product, customisation: null, fields: [], packs: [], sales: [], noun: card, now, clothing }))).toBe(true);
+  });
+});

@@ -60,8 +60,9 @@ model Product {
   compareAtPence Int? @map("compare_at_pence")
 
   sku         String? @unique
-  // Stock for products with no variants. When variants exist, each variant
-  // carries its own stock and this is ignored.
+  // How many there are. For clothes sold in colours or sizes it is the total
+  // of the variants' stock, kept in step whenever the Details tab is saved,
+  // so the products list and the export read one number.
   stock       Int     @default(0)
   weightGrams Int?    @map("weight_grams")
   featured    Boolean @default(false)
@@ -79,6 +80,12 @@ model Product {
   // fields that do not suit every piece.
   dimensions       String?
   materials        String?
+
+  // Clothes only: the colours and the sizes a shopper chooses from, in the
+  // order they are shown. Each colour in each size is a variant, with stock of
+  // its own. Kept when a piece leaves Clothes, but offered only within it.
+  colours String[] @default([])
+  sizes   String[] @default([])
   careInstructions String? @map("care_instructions")
 
   // A one-of-a-kind piece. Shown as such on the storefront, and it is a
@@ -229,16 +236,19 @@ model ProductVariant {
   id        String @id @default(cuid())
   productId String @map("product_id")
 
-  // Human-readable label Njomza sees and the customer picks, e.g. "Large / Red".
+  // One colour in one size of a piece of clothing; null where the piece has
+  // no colours, or no sizes. Always one of the product's own colours and
+  // sizes - the Details tab keeps them in step.
+  colour String?
+  size   String?
+
+  // "Lupin / 3-4 years": what an order line will snapshot as variant_name.
   name String
 
-  // Structured form of the same thing, e.g. { "Size": "L", "Colour": "Red" }.
-  // Kept alongside `name` so the storefront can build option pickers without
-  // parsing the label.
-  options Json?
-
   sku        String? @unique
-  pricePence Int?    @map("price_pence") // null = inherit the product price
+  // The price Shopify sold this size at, where it differed. Kept, not used:
+  // every colour and size sells at the product's own price.
+  pricePence Int?    @map("price_pence")
   stock      Int     @default(0)
   position   Int     @default(0)
 

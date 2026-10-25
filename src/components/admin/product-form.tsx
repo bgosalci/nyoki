@@ -2,9 +2,11 @@
 
 import { ui } from "@/lib/brand/ui";
 import Link from "next/link";
+import { useState } from "react";
 
 import { AlsoLikeField, type ChosenPiece } from "@/components/admin/also-like-field";
 import { CategoryChooser } from "@/components/admin/category-chooser";
+import { CLOTHING_STOCK_ID, ClothingFields } from "@/components/admin/clothing-fields";
 import type { PickerProduct } from "@/components/admin/product-picker";
 import { RichTextField } from "@/components/admin/rich-text-field";
 import { Field, inputClass } from "@/components/admin/field";
@@ -13,6 +15,9 @@ import { UnsavedChanges } from "@/components/admin/unsaved-changes";
 import { formatPence } from "@/lib/money";
 import type { ProductErrors, ProductInput } from "@/lib/products/validate";
 import { useActionForm } from "@/lib/forms/action-form";
+import { isClothes } from "@/lib/clothes/group";
+import { editorFrom, totalStock } from "@/lib/clothes/editor";
+import type { StockRow } from "@/lib/clothes/stock";
 
 export interface ProductFormState {
   errors: ProductErrors;
@@ -26,10 +31,20 @@ export type ProductFormAction = (
 export interface ProductFormCategory {
   id: string;
   name: string;
+  /** Tells what kind of piece it is: anything under Clothes is sold in colours and sizes. */
+  slug: string;
   parentId: string | null;
 }
 
+/** A piece of clothing's colours and sizes, and the stock of each colour in each size, as saved. */
+export interface ProductFormClothing {
+  colours: string[];
+  sizes: string[];
+  variants: StockRow[];
+}
+
 const EMPTY: ProductFormState = { errors: {} };
+const NO_CLOTHING: ProductFormClothing = { colours: [], sizes: [], variants: [] };
 
 export function ProductForm({
   action,
@@ -37,6 +52,7 @@ export function ProductForm({
   pricing,
   categories = [],
   alsoLike,
+  clothing = NO_CLOTHING,
   initialState = EMPTY,
   submitLabel = "Save product",
 }: {
@@ -50,11 +66,28 @@ export function ProductForm({
   categories?: ProductFormCategory[];
   /** The pieces to suggest under "You may also like": what can be, and what is. */
   alsoLike?: { options: PickerProduct[]; automatic: PickerProduct[]; chosen: ChosenPiece[] };
+  /** Kept whatever the piece is, and offered while it is in Clothes. */
+  clothing?: ProductFormClothing;
   initialState?: ProductFormState;
   submitLabel?: string;
 }) {
   const { state, formAction, isPending, formRef, onSubmit } = useActionForm(action, initialState, (result) => Object.keys(result.errors).length > 0);
   const errors = state.errors;
+
+  // What the piece is follows the categories as they are ticked.
+  const [categoryIds, setCategoryIds] = useState(product?.categoryIds ?? []);
+  const clothes = isClothes(categoryIds, categories);
+
+  // Started again from what is saved whenever a save changes it, so each row
+  // knows the name it is now saved under.
+  const savedClothing = JSON.stringify(clothing);
+  const [basis, setBasis] = useState(savedClothing);
+  const [editor, setEditor] = useState(() => editorFrom(clothing));
+  if (basis !== savedClothing) {
+    setBasis(savedClothing);
+    setEditor(editorFrom(clothing));
+  }
+  const stockPerVariant = clothes && (editor.colours.length > 0 || editor.sizes.length > 0);
 
   return (
     <form id="product-details" ref={formRef} action={formAction} onSubmit={onSubmit} className="flex max-w-2xl flex-col gap-8">
@@ -124,17 +157,32 @@ export function ProductForm({
           )}
         </div>
 
-        <Field label="Stock" name="stock" error={errors.stock}>
-          {(props) => (
-            <input
-              {...props}
-              type="text"
-              inputMode="numeric"
-              defaultValue={String(product?.stock ?? 0)}
-              className={inputClass}
-            />
-          )}
-        </Field>
+        {stockPerVariant ? (
+          // Kept for each colour in each size, further down; this is their total.
+          <div role="group" aria-labelledby="product-stock-label" className="flex flex-col gap-1.5">
+            <p id="product-stock-label" className="text-sm font-medium">
+              Stock
+            </p>
+            <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm">
+              <span className="text-base font-medium tabular-nums">{totalStock(editor)} in all</span>
+              <a href={`#${CLOTHING_STOCK_ID}`} className={ui.link}>
+                Set for each colour and size
+              </a>
+            </p>
+          </div>
+        ) : (
+          <Field label="Stock" name="stock" error={errors.stock}>
+            {(props) => (
+              <input
+                {...props}
+                type="text"
+                inputMode="numeric"
+                defaultValue={String(product?.stock ?? 0)}
+                className={inputClass}
+              />
+            )}
+          </Field>
+        )}
 
         <Field label="Product code" name="sku" error={errors.sku}>
           {(props) => (
@@ -186,17 +234,23 @@ export function ProductForm({
           {(props) => <RichTextField {...props} defaultValue={product?.materials ?? ""} />}
         </Field>
 
-        <Field label="Dimensions" name="dimensions" error={errors.dimensions}>
-          {(props) => (
-            <input
-              {...props}
-              type="text"
-              defaultValue={product?.dimensions ?? ""}
-              placeholder="9cm tall, 8cm across"
-              className={inputClass}
-            />
-          )}
-        </Field>
+        {/* Clothing has colours and sizes instead. Both stay in the form
+            while out of sight, so neither is lost by saving the other. */}
+        <div hidden={clothes}>
+          <Field label="Dimensions" name="dimensions" error={errors.dimensions}>
+            {(props) => (
+              <input
+                {...props}
+                type="text"
+                defaultValue={product?.dimensions ?? ""}
+                placeholder="9cm tall, 8cm across"
+                className={inputClass}
+              />
+            )}
+          </Field>
+        </div>
+
+        <ClothingFields editor={editor} onChange={setEditor} errors={errors} hidden={!clothes} />
 
         <Field
           label="Care instructions"
@@ -261,7 +315,7 @@ export function ProductForm({
         </label>
       </section>
 
-      <CategoryChooser categories={categories} chosen={product?.categoryIds ?? []} error={errors.categoryIds} />
+      <CategoryChooser categories={categories} chosen={product?.categoryIds ?? []} error={errors.categoryIds} onChange={setCategoryIds} />
 
       {alsoLike ? <AlsoLikeField options={alsoLike.options} automatic={alsoLike.automatic} chosen={alsoLike.chosen} error={errors.alsoLikeIds} /> : null}
 

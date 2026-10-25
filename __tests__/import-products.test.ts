@@ -219,6 +219,17 @@ describe("planImport, problems", () => {
     ]);
   });
 
+  it("will not change the stock of clothing kept for each colour and size, which its Details tab totals", () => {
+    const stockByVariant = new Set([cardigan.id]);
+    const file = (stock: string) => csv([["Web address", "Stock"], ["bamboo-cardigan", stock]]);
+
+    expect(planImport(file("9"), existing, categories, { stockByVariant }).rows[0].problems).toEqual([
+      "Stock: this piece keeps its stock for each colour and size. Change it on its Details tab.",
+    ]);
+    // Its total as it stands is no change, so an untouched export still imports.
+    expect(planImport(file("0"), existing, categories, { stockByVariant }).rows[0].problems).toEqual([]);
+  });
+
   it("will not take the same product twice", () => {
     const result = plan([["Web address", "Price"], ["snowflake-card", "6.50"], ["snowflake-card", "7.00"]]);
 

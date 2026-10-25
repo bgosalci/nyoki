@@ -1,3 +1,7 @@
+import { findInLineage, type CategoryNode } from "@/lib/categories/lineage";
+
+export type { CategoryNode };
+
 /**
  * Which products can be customised: cards and bookmarks, and nothing else.
  *
@@ -18,27 +22,7 @@ const BOOKMARK: ItemNoun = { one: "bookmark", many: "bookmarks" };
 
 const GROUPS: Record<string, ItemNoun> = { cards: CARD, card: CARD, bookmarks: BOOKMARK, bookmark: BOOKMARK };
 
-export interface CategoryNode {
-  id: string;
-  slug: string;
-  parentId: string | null;
-}
-
 /** What the piece is, if it is a card or a bookmark; otherwise null. */
 export function customisationGroup(categoryIds: readonly string[], categories: readonly CategoryNode[]): ItemNoun | null {
-  const byId = new Map(categories.map((category) => [category.id, category]));
-
-  for (const id of categoryIds) {
-    const seen = new Set<string>();
-    let category = byId.get(id);
-    // A tree that loops is a mistake elsewhere; here it must not hang.
-    while (category && !seen.has(category.id)) {
-      const group = GROUPS[category.slug];
-      if (group) return group;
-      seen.add(category.id);
-      category = category.parentId ? byId.get(category.parentId) : undefined;
-    }
-  }
-
-  return null;
+  return findInLineage(categoryIds, categories, (category) => GROUPS[category.slug]);
 }

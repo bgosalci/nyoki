@@ -3,6 +3,7 @@ import {
   SINGLE,
   clampQuantity,
   extraNote,
+  initialChoices,
   isPersonalising,
   missingChoices,
   packSavingPence,
@@ -13,6 +14,7 @@ import {
   type Choices,
 } from "@/lib/customisation/choices";
 import type { Offer } from "@/lib/customisation/offer";
+import { toClothingOffer } from "@/lib/clothes/stock";
 
 const name = { id: "f1", label: "Name", kind: "TEXT" as const, maxLength: 20, choices: [] };
 const sign = { id: "f2", label: "Zodiac sign", kind: "CHOICE" as const, maxLength: null, choices: ["♈ Aries", "♌ Leo"] };
@@ -27,6 +29,7 @@ const offer: Offer = {
   ],
   message: { pricePence: 80, maxLength: 300 },
   personalisation: { pricePence: 150, required: false, fields: [name, sign] },
+  clothing: null,
 };
 
 /** A card with nothing but the card itself. */
@@ -45,7 +48,16 @@ const complete: Choices = {
 
 describe("to begin with", () => {
   it("nothing is chosen, personalising is off and one is wanted", () => {
-    expect(EMPTY_CHOICES).toEqual({ unit: null, message: null, messageText: "", personalise: false, personalisation: {}, quantity: 1 });
+    expect(EMPTY_CHOICES).toEqual({
+      unit: null,
+      message: null,
+      messageText: "",
+      personalise: false,
+      personalisation: {},
+      colour: null,
+      size: null,
+      quantity: 1,
+    });
   });
 });
 
@@ -266,5 +278,88 @@ describe("summarise", () => {
       { label: "Single or pack", value: "Single bookmark" },
       { label: "Inside the bookmark", value: "Not chosen yet" },
     ]);
+  });
+});
+
+/** A dress in two colours and two sizes: Lupin in S, Gypsum in S, nothing in M. */
+const dress: Offer = {
+  ...plain,
+  noun: { one: "piece", many: "pieces" },
+  clothing: toClothingOffer({
+    colours: ["Lupin", "Gypsum"],
+    sizes: ["S", "M"],
+    madeToOrder: false,
+    variants: [
+      { colour: "Lupin", size: "S", stock: 2 },
+      { colour: "Lupin", size: "M", stock: 0 },
+      { colour: "Gypsum", size: "S", stock: 1 },
+    ],
+  }),
+};
+
+describe("clothes", () => {
+  it("asks for a colour, then a size", () => {
+    expect(missingChoices(dress, EMPTY_CHOICES)).toEqual([
+      { key: "colour", message: "Please choose a colour." },
+      { key: "size", message: "Please choose a size." },
+    ]);
+  });
+
+  it("asks for nothing more once a colour and a size in stock are chosen", () => {
+    expect(missingChoices(dress, { ...EMPTY_CHOICES, colour: "Gypsum", size: "S" })).toEqual([]);
+  });
+
+  it("will not take a colour in a size that is out of stock, should one be chosen", () => {
+    expect(missingChoices(dress, { ...EMPTY_CHOICES, colour: "Lupin", size: "M" })).toEqual([
+      { key: "size", message: "Sorry, that size is out of stock in that colour. Please choose another." },
+    ]);
+  });
+
+  it("will not take a colour or a size the piece does not have", () => {
+    expect(missingChoices(dress, { ...EMPTY_CHOICES, colour: "Teal", size: "XL" }).map((entry) => entry.key)).toEqual(["colour", "size"]);
+  });
+
+  it("asks only for what the piece has", () => {
+    const sized: Offer = { ...dress, clothing: { ...dress.clothing!, colours: [], stock: [{ colour: null, size: "S", stock: 1 }] } };
+
+    expect(missingChoices(sized, EMPTY_CHOICES).map((entry) => entry.key)).toEqual(["size"]);
+  });
+
+  it("sells every colour and size at the piece's own price", () => {
+    expect(unitPricePence(dress, { ...EMPTY_CHOICES, colour: "Lupin", size: "S" })).toBe(550);
+  });
+
+  it("summarises the colour and the size", () => {
+    expect(summarise(dress, EMPTY_CHOICES)).toEqual([
+      { label: "Colour", value: "Not chosen yet" },
+      { label: "Size", value: "Not chosen yet" },
+    ]);
+    expect(summarise(dress, { ...EMPTY_CHOICES, colour: "Lupin", size: "S" })).toEqual([
+      { label: "Colour", value: "Lupin" },
+      { label: "Size", value: "S" },
+    ]);
+  });
+});
+
+describe("initialChoices", () => {
+  it("chooses nothing, for a piece with more than one of each", () => {
+    expect(initialChoices(dress)).toEqual(EMPTY_CHOICES);
+    expect(initialChoices(offer)).toEqual(EMPTY_CHOICES);
+  });
+
+  it("starts with the only colour, or the only size, there is - while it is in stock", () => {
+    const tuberose: Offer = {
+      ...dress,
+      clothing: toClothingOffer({
+        colours: ["Tuberose"],
+        sizes: ["S", "M"],
+        madeToOrder: false,
+        variants: [{ colour: "Tuberose", size: "S", stock: 1 }],
+      }),
+    };
+    expect(initialChoices(tuberose)).toEqual({ ...EMPTY_CHOICES, colour: "Tuberose" });
+
+    const soldOut: Offer = { ...tuberose, clothing: { ...tuberose.clothing!, stock: [] } };
+    expect(initialChoices(soldOut)).toEqual(EMPTY_CHOICES);
   });
 });

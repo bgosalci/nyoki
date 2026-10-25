@@ -4,13 +4,14 @@ import { createContext, useContext, useId, useState } from "react";
 
 import { ShopField } from "@/components/shop/field";
 import { ui } from "@/lib/brand/ui";
+import { inStock, soldOut } from "@/lib/clothes/stock";
 import {
-  EMPTY_CHOICES,
   QUANTITY_MAX,
   QUANTITY_MIN,
   SINGLE,
   clampQuantity,
   extraNote,
+  initialChoices,
   missingChoices,
   packSavingPence,
   statusLine,
@@ -37,6 +38,7 @@ const INPUT =
   "w-full scroll-mt-60 scroll-mb-48 rounded-[14px] border-2 border-transparent bg-nyoki-beige px-4 py-3 text-base text-nyoki-navy outline-none transition-colors duration-150 placeholder:text-nyoki-text-dark/60 focus:border-nyoki-navy focus:bg-nyoki-white aria-[invalid=true]:border-red-700 motion-reduce:transition-none";
 
 const NOT_YET = "Online ordering opens soon. Until then, get in touch to order this one.";
+const SOLD_OUT = "Out of stock for now.";
 
 interface Customiser {
   offer: Offer;
@@ -64,26 +66,30 @@ function useCustomiser(): Customiser {
 }
 
 /**
- * A card or bookmark's choices - single or pack, a printed message,
- * personalisation - shared between the panels, which sit with the product's
- * details, and the bar held at the bottom of the screen, which sits at the end
- * of the page so it holds over all of it.
+ * A piece's choices - a card or bookmark's single or pack, printed message
+ * and personalisation, or a piece of clothing's colour and size - shared
+ * between the panels, which sit with the product's details, and the bar held
+ * at the bottom of the screen, which sits at the end of the page so it holds
+ * over all of it.
  *
- * Nothing starts chosen, so every shopper decides for themselves. There is no
- * basket yet: Add to basket is marked unavailable but never faded, pressing it
- * too soon shows what is missing and moves to the first of it, and once
- * everything is chosen it says ordering opens soon.
+ * Nothing starts chosen, so every shopper decides for themselves - except a
+ * colour or size that is the only one. There is no basket yet: Add to basket
+ * is marked unavailable but never faded, pressing it too soon shows what is
+ * missing and moves to the first of it, and once everything is chosen it says
+ * ordering opens soon.
  */
 export function CustomiserProvider({ offer, children }: { offer: Offer; children: React.ReactNode }) {
   const formId = useId();
-  const [answers, setAnswers] = useState<Choices>(EMPTY_CHOICES);
+  const [answers, setAnswers] = useState<Choices>(() => initialChoices(offer));
   // As typed, so the box can be blank mid-edit; tidied when it is left.
-  const [quantityText, setQuantityText] = useState(String(EMPTY_CHOICES.quantity));
+  const [quantityText, setQuantityText] = useState(String(answers.quantity));
   const [attempted, setAttempted] = useState(false);
   const [pressedWhenDone, setPressedWhenDone] = useState(false);
 
   const choices: Choices = { ...answers, quantity: clampQuantity(quantityText) };
   const missing = missingChoices(offer, choices);
+  // Nothing left in any colour or size: nothing to choose, nothing to say is missing.
+  const outOfStock = offer.clothing !== null && soldOut(offer.clothing);
 
   const touched = () => setPressedWhenDone(false);
 
@@ -95,7 +101,7 @@ export function CustomiserProvider({ offer, children }: { offer: Offer; children
     missing,
     errors: new Map(attempted ? missing.map((entry) => [entry.key, entry.message]) : []),
     totalPence: totalPence(offer, choices),
-    status: missing.length === 0 && pressedWhenDone ? NOT_YET : statusLine(missing.length),
+    status: outOfStock ? SOLD_OUT : missing.length === 0 && pressedWhenDone ? NOT_YET : statusLine(missing.length),
     change: (patch) => {
       setAnswers((previous) => ({ ...previous, ...patch }));
       touched();
@@ -111,6 +117,7 @@ export function CustomiserProvider({ offer, children }: { offer: Offer; children
     tidyQuantity: () => setQuantityText(String(clampQuantity(quantityText))),
     submit: (event) => {
       event.preventDefault();
+      if (outOfStock) return;
       if (missing.length === 0) {
         setPressedWhenDone(true);
         return;
@@ -139,11 +146,105 @@ export function CustomiserPanels() {
     // POST, though nothing is sent: pressed before the page has loaded its
     // script, a GET would put what was typed in the address.
     <form id={formId} noValidate method="post" onSubmit={submit} className="flex flex-col gap-5">
+      {offer.clothing && offer.clothing.colours.length > 0 ? <ColourPanel /> : null}
+      {offer.clothing && offer.clothing.sizes.length > 0 ? <SizePanel /> : null}
       {offer.packs.length > 0 ? <UnitPanel /> : null}
       {offer.message ? <MessagePanel /> : null}
       {offer.personalisation ? <PersonalisationPanel /> : null}
       <SummaryPanel />
     </form>
+  );
+}
+
+function ColourPanel() {
+  const { offer, choices, errors, change } = useCustomiser();
+  const clothing = offer.clothing!;
+  return (
+    <ChoicePanel
+      heading="Colour"
+      hint="Choose your colour."
+      values={clothing.colours}
+      chosen={choices.colour}
+      // In stock in the size chosen, or in any size until one is.
+      available={(colour) => inStock(clothing, colour, choices.size)}
+      onSelect={(colour) => change({ colour })}
+      answer="colour"
+      error={errors.get("colour")}
+    />
+  );
+}
+
+function SizePanel() {
+  const { offer, choices, errors, change } = useCustomiser();
+  const clothing = offer.clothing!;
+  return (
+    <ChoicePanel
+      heading="Size"
+      hint="Choose your size."
+      values={clothing.sizes}
+      chosen={choices.size}
+      available={(size) => inStock(clothing, choices.colour, size)}
+      onSelect={(size) => change({ size })}
+      answer="size"
+      error={errors.get("size")}
+    />
+  );
+}
+
+/**
+ * One of a piece's colours or sizes, as small cards of its names. One out of
+ * stock - in whatever else is chosen - says so and cannot be chosen.
+ */
+function ChoicePanel({
+  heading,
+  hint,
+  values,
+  chosen,
+  available,
+  onSelect,
+  answer,
+  error,
+}: {
+  heading: string;
+  hint: string;
+  values: string[];
+  chosen: string | null;
+  available: (value: string) => boolean;
+  onSelect: (value: string) => void;
+  answer: ChoiceKey;
+  error?: string;
+}) {
+  const headingId = useId();
+  const hintId = useId();
+  // Add to basket moves to the first that can be chosen.
+  const first = values.find(available);
+
+  return (
+    <Panel heading={heading} headingId={headingId} required hint={hint} hintId={hintId}>
+      <TileGroup labelledBy={headingId} describedBy={hintId} error={error} className="grid-cols-[repeat(auto-fill,minmax(7rem,1fr))]">
+        {values.map((value) => {
+          const inStockNow = available(value);
+          return (
+            <Tile
+              key={value}
+              name={`${headingId}-choice`}
+              checked={chosen === value}
+              onSelect={() => onSelect(value)}
+              answer={value === first ? answer : undefined}
+              disabled={!inStockNow}
+            >
+              <span className={`pr-6 font-medium ${inStockNow ? "" : `line-through ${ui.shopMuted}`}`}>{value}</span>
+              {inStockNow ? null : (
+                <>
+                  {" "}
+                  <span className={`text-xs ${ui.shopMuted}`}>Out of stock</span>
+                </>
+              )}
+            </Tile>
+          );
+        })}
+      </TileGroup>
+    </Panel>
   );
 }
 
@@ -483,6 +584,7 @@ function Tile({
   checked,
   onSelect,
   answer,
+  disabled = false,
   children,
 }: {
   name: string;
@@ -490,28 +592,45 @@ function Tile({
   onSelect: () => void;
   /** Marks the tile Add to basket moves to when this choice is missing. */
   answer?: ChoiceKey;
+  /** Out of stock: shown, with a dashed edge on the panel's white, but cannot be chosen. */
+  disabled?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <label
-      className={`relative flex min-h-11 cursor-pointer flex-col justify-center gap-0.5 rounded-lg px-3 py-2 text-sm leading-snug transition-colors duration-150 motion-reduce:transition-none ${
-        checked ? "bg-nyoki-white ring-2 ring-nyoki-navy" : "bg-nyoki-beige ring-1 ring-nyoki-light-slate hover:bg-nyoki-accent-beige"
+      className={`relative flex min-h-11 flex-col justify-center gap-0.5 rounded-lg px-3 py-2 text-sm leading-snug transition-colors duration-150 motion-reduce:transition-none ${
+        disabled
+          ? "cursor-not-allowed border border-dashed border-nyoki-light-slate bg-nyoki-white"
+          : checked
+            ? "cursor-pointer bg-nyoki-white ring-2 ring-nyoki-navy"
+            : "cursor-pointer bg-nyoki-beige ring-1 ring-nyoki-light-slate hover:bg-nyoki-accent-beige"
       } has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-nyoki-navy`}
     >
-      <input type="radio" name={name} checked={checked} onChange={onSelect} data-answer={answer} className="sr-only scroll-mt-60 scroll-mb-48" />
+      <input
+        type="radio"
+        name={name}
+        checked={checked}
+        disabled={disabled}
+        onChange={onSelect}
+        data-answer={answer}
+        className="sr-only scroll-mt-60 scroll-mb-48"
+      />
       {children}
-      <span
-        aria-hidden="true"
-        className={`absolute top-2 right-2 grid size-4 place-items-center rounded-full ${
-          checked ? "bg-nyoki-navy" : "border-[1.5px] border-nyoki-navy/50 bg-nyoki-white"
-        }`}
-      >
-        {checked ? (
-          <svg viewBox="0 0 16 16" fill="none" strokeWidth="2.4" className="size-2.5 stroke-nyoki-white">
-            <path d="m3.5 8.5 3 3 6-7" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        ) : null}
-      </span>
+      {/* No circle to tick on one that cannot be chosen. */}
+      {disabled ? null : (
+        <span
+          aria-hidden="true"
+          className={`absolute top-2 right-2 grid size-4 place-items-center rounded-full ${
+            checked ? "bg-nyoki-navy" : "border-[1.5px] border-nyoki-navy/50 bg-nyoki-white"
+          }`}
+        >
+          {checked ? (
+            <svg viewBox="0 0 16 16" fill="none" strokeWidth="2.4" className="size-2.5 stroke-nyoki-white">
+              <path d="m3.5 8.5 3 3 6-7" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          ) : null}
+        </span>
+      )}
     </label>
   );
 }

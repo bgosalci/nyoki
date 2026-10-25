@@ -10,7 +10,10 @@ import { repriceProduct, validateRepriceInput, type RepriceFields } from "@/lib/
 import { activationBlockedBecause } from "@/lib/products/activation";
 import { parseAlsoLikeIds } from "@/lib/products/also-like";
 import { moveUpdates, type Place } from "@/lib/products/ordering";
-import { validateProductInput, type ProductStatus } from "@/lib/products/validate";
+import { postedCategoryIds, validateProductInput, type ProductErrors, type ProductStatus } from "@/lib/products/validate";
+import { isClothes } from "@/lib/clothes/group";
+import { parseClothing, type ClothingInput } from "@/lib/clothes/settings";
+import { planVariants, type StoredVariant } from "@/lib/clothes/variants";
 import { isUniqueViolationOn } from "@/lib/db-errors";
 import { uniqueSlug } from "@/lib/slug";
 import { createImageStorage } from "@/lib/storage";
@@ -48,6 +51,38 @@ async function alsoLikeFrom(formData: FormData, selfId: string | null) {
   return { ok: true as const, create: ids.map((pieceId, position) => ({ pieceId, position })) };
 }
 
+/**
+ * The colours, sizes and stock posted for a piece of clothing, checked - or
+ * null for anything else, which keeps whatever it has, offered or not, so a
+ * piece moved out of Clothes and back loses nothing.
+ */
+async function clothingFrom(formData: FormData) {
+  const categories = await db.category.findMany({ select: { id: true, slug: true, parentId: true } });
+  return isClothes(postedCategoryIds(formData), categories) ? parseClothing(formData) : null;
+}
+
+/**
+ * What a piece of clothing's save writes to the product and its variants.
+ * In colours or sizes, its stock is the total of theirs; in neither, the
+ * Stock box's, and any variants left go.
+ */
+function clothingWrites(clothing: ClothingInput, stored: readonly StoredVariant[]) {
+  const total = clothing.combos.reduce((sum, combo) => sum + combo.stock, 0);
+  return {
+    fields: {
+      colours: clothing.colours,
+      sizes: clothing.sizes,
+      ...(clothing.combos.length > 0 ? { stock: total } : {}),
+    },
+    plan: planVariants(stored, clothing.combos),
+  };
+}
+
+/** Every problem with the details and the clothing together, so the form shows them all at once. */
+function problems(details: ReturnType<typeof validateProductInput>, clothing: Awaited<ReturnType<typeof clothingFrom>>): ProductErrors {
+  return { ...(details.ok ? {} : details.errors), ...(clothing && !clothing.ok ? clothing.errors : {}) };
+}
+
 export async function createProduct(
   _state: ProductFormState,
   formData: FormData,
@@ -55,7 +90,8 @@ export async function createProduct(
   await requireAdmin();
 
   const result = validateProductInput(formData);
-  if (!result.ok) return { errors: result.errors };
+  const clothing = await clothingFrom(formData);
+  if (!result.ok || (clothing && !clothing.ok)) return { errors: problems(result, clothing) };
 
   // A new product has no price until its Price tab gives it one, so it
   // cannot start out on the shop.
@@ -67,16 +103,19 @@ export async function createProduct(
 
   const slug = uniqueSlug(result.data.slug, await takenSlugs(result.data.slug));
   const { categoryIds, ...fields } = result.data;
+  const writes = clothing ? clothingWrites(clothing.data, []) : null;
 
   let id: string;
   try {
     const created = await db.product.create({
       data: {
         ...fields,
+        ...writes?.fields,
         pricePence: 0,
         slug,
         categories: { create: categoryIds.map((categoryId) => ({ categoryId })) },
         alsoLike: { create: alsoLike.create },
+        ...(writes ? { variants: { create: writes.plan.create } } : {}),
       },
     });
     id = created.id;
@@ -100,7 +139,8 @@ export async function updateProduct(
   await requireAdmin();
 
   const result = validateProductInput(formData);
-  if (!result.ok) return { errors: result.errors };
+  const clothing = await clothingFrom(formData);
+  if (!result.ok || (clothing && !clothing.ok)) return { errors: problems(result, clothing) };
 
   if (result.data.status === "ACTIVE") {
     const current = await db.product.findUnique({ where: { id }, select: { pricePence: true } });
@@ -115,10 +155,15 @@ export async function updateProduct(
   // change it or reset it - only the Price tab can.
   const slug = uniqueSlug(result.data.slug, await takenSlugs(result.data.slug, id));
   const { categoryIds, ...fields } = result.data;
+  const writes = clothing
+    ? clothingWrites(clothing.data, await db.productVariant.findMany({ where: { productId: id }, select: { id: true, colour: true, size: true } }))
+    : null;
+  const plan = writes?.plan;
 
   try {
-    // Replace the category set and the chosen pieces in one transaction, so a
-    // failure part-way cannot leave the product with half of either.
+    // Replace the category set and the chosen pieces, and bring the variants
+    // into step, in one transaction, so a failure part-way cannot leave the
+    // product with half of any of them.
     await db.$transaction([
       db.categoryProduct.deleteMany({ where: { productId: id } }),
       db.alsoLike.deleteMany({ where: { productId: id } }),
@@ -126,11 +171,17 @@ export async function updateProduct(
         where: { id },
         data: {
           ...fields,
+          ...writes?.fields,
           slug,
           categories: { create: categoryIds.map((categoryId) => ({ categoryId })) },
           alsoLike: { create: alsoLike.create },
         },
       }),
+      ...(plan && plan.remove.length > 0 ? [db.productVariant.deleteMany({ where: { id: { in: plan.remove } } })] : []),
+      ...(plan?.update ?? []).map(({ id: variantId, ...data }) => db.productVariant.update({ where: { id: variantId }, data })),
+      ...(plan && plan.create.length > 0
+        ? [db.productVariant.createMany({ data: plan.create.map((write) => ({ productId: id, ...write })) })]
+        : []),
     ]);
   } catch (error) {
     if (isUniqueViolationOn(error, { table: "products", column: "sku" })) {
