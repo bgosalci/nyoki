@@ -287,6 +287,12 @@ TypeScript, deployed to Vercel.
   after a failure, as people expect. The admin login, shop sign-in and
   register forms already send the email back in their state instead, and
   are left as they are.
+- **A `<select>` with a `defaultValue` is keyed by that value** (a product's
+  Status, a category's Parent). React reads a select's `defaultValue` only
+  when it first draws it, and resets the form after a save, so an active
+  piece saved as a draft went back to showing Active - and the next save,
+  of anything, made it active again. React updates a text box's default when
+  its prop changes, so they never had this; controlled selects never did.
 - Controlled forms (a product's Price tab, a category's usual costs) never
   lost anything - React owns their values - and have tests saying so.
 

@@ -233,6 +233,23 @@ describe("ProductForm, when a save goes through", () => {
 
     expect(await screen.findByDisplayValue("hand-thrown-mug")).toBe(screen.getByLabelText(/web address/i));
   });
+
+  it.each(["DRAFT", "ARCHIVED"] as const)("shows an active piece saved as %s as just that, so the next save does not make it active again", async (status) => {
+    const action = jest.fn(async (_state: unknown, _data: FormData) => ({ errors: {} }));
+    const { rerender } = render(<ProductForm action={action} product={mug} categories={categories} />);
+    const user = userEvent.setup();
+
+    await user.selectOptions(screen.getByLabelText(/status/i), status);
+    await user.click(screen.getAllByRole("button", { name: /save/i })[0]);
+    rerender(<ProductForm action={action} product={{ ...mug, status }} categories={categories} />);
+    await act(async () => {});
+
+    expect(screen.getByLabelText(/status/i)).toHaveValue(status);
+
+    // Saved again - for anything else - it must still post what it shows.
+    await user.click(screen.getAllByRole("button", { name: /save/i })[0]);
+    expect(action.mock.calls[1][1].get("status")).toBe(status);
+  });
 });
 
 describe("ProductForm, saving from the top of the page", () => {

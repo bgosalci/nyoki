@@ -87,7 +87,10 @@ export function CategoryForm({
         hint="Leave at top level unless this belongs inside another category."
       >
         {(props) => (
-          <select {...props} defaultValue={category?.parentId ?? ""} className={inputClass}>
+          // A fresh select for each saved parent: React reads a select's
+          // defaultValue only on first drawing it, and resets the form after a
+          // save, which put a moved category back under its old parent.
+          <select {...props} key={category?.parentId ?? ""} defaultValue={category?.parentId ?? ""} className={inputClass}>
             <option value="">Top level</option>
             {parentOptions.map((option) => (
               <option key={option.id} value={option.id}>

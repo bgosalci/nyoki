@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { CategoryForm } from "@/components/admin/category-form";
@@ -92,5 +92,28 @@ describe("CategoryForm, when a save is rejected", () => {
     expect(screen.getByLabelText(/^name/i)).toHaveValue("Jugs");
     expect(screen.getByLabelText(/description/i)).toHaveValue("For milk and flowers.");
     expect(screen.getByLabelText(/parent/i)).toHaveValue("tableware");
+  });
+});
+
+describe("CategoryForm, when a save goes through", () => {
+  const mugs = { name: "Mugs", slug: "mugs", description: null, parentId: "tableware" };
+
+  it.each([
+    ["Vases", "vases"],
+    ["Top level", ""],
+  ])("shows a category moved under %s there, so the next save does not move it back", async (label, parentId) => {
+    const action = jest.fn(async (_state: unknown, _data: FormData) => ({ errors: {} }));
+    const { rerender } = render(<CategoryForm action={action} categories={categories} category={mugs} excludeId="mugs" />);
+    const user = userEvent.setup();
+
+    await user.selectOptions(screen.getByLabelText(/parent/i), label);
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    rerender(<CategoryForm action={action} categories={categories} category={{ ...mugs, parentId: parentId || null }} excludeId="mugs" />);
+    await act(async () => {});
+
+    expect(screen.getByLabelText(/parent/i)).toHaveValue(parentId);
+
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    expect(action.mock.calls[1][1].get("parentId")).toBe(parentId);
   });
 });
