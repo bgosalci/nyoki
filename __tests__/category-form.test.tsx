@@ -117,3 +117,13 @@ describe("CategoryForm, when a save goes through", () => {
     expect(action.mock.calls[1][1].get("parentId")).toBe(parentId);
   });
 });
+
+describe("CategoryForm, as React draws it", () => {
+  it("raises no warning about keys", () => {
+    const errors = jest.spyOn(console, "error").mockImplementation(() => {});
+    render(<CategoryForm action={noopAction} categories={categories} category={{ name: "Mugs", slug: "mugs", description: null, parentId: "tableware" }} excludeId="mugs" />);
+
+    expect(errors.mock.calls.filter(([message]) => String(message).includes('unique "key"'))).toEqual([]);
+    errors.mockRestore();
+  });
+});

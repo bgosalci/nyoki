@@ -198,12 +198,14 @@ export function ProductForm({
         <Field label="Status" name="status" error={errors.status}>
           {(props) => (
             <select
-              {...props}
               // A fresh select for each saved status. React reads a select's
               // defaultValue only when it first draws it, and resets the form
               // after a save - so an active piece saved as a draft went back
               // to showing Active, and the next save made it active again.
+              // The key goes before the spread: after it, React builds the
+              // element the old way and warns about the options' keys.
               key={product?.status ?? "DRAFT"}
+              {...props}
               defaultValue={product?.status ?? "DRAFT"}
               className={inputClass}
             >

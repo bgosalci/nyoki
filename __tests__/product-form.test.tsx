@@ -332,3 +332,13 @@ describe("ProductForm, You may also like", () => {
   });
 });
 
+
+describe("ProductForm, as React draws it", () => {
+  it("raises no warning about keys", () => {
+    const errors = jest.spyOn(console, "error").mockImplementation(() => {});
+    render(<ProductForm action={noopAction} product={mug} categories={categories} />);
+
+    expect(errors.mock.calls.filter(([message]) => String(message).includes('unique "key"'))).toEqual([]);
+    errors.mockRestore();
+  });
+});
