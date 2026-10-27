@@ -1,6 +1,7 @@
 "use client";
 
 import { Field, inputClass } from "@/components/admin/field";
+import { Select } from "@/components/admin/select";
 import type { PostageNames } from "@/lib/delivery/postage-input";
 import { PARCEL_SIZES, SIZE_NAMES } from "@/lib/delivery/royal-mail";
 
@@ -54,14 +55,14 @@ export function PostageFields({
 
       <Field label="Goes in the post as" name={names.size} error={errors[names.size]} hint="The smallest of Royal Mail's sizes it fits.">
         {(props) => (
-          <select {...props} value={value.size} onChange={(event) => onChange({ ...value, size: event.target.value })} className={inputClass}>
+          <Select {...props} value={value.size} onChange={(event) => onChange({ ...value, size: event.target.value })} className={inputClass}>
             <option value="">{blank.size}</option>
             {PARCEL_SIZES.map((size) => (
               <option key={size} value={size}>
                 {SIZE_NAMES[size]}
               </option>
             ))}
-          </select>
+          </Select>
         )}
       </Field>
 

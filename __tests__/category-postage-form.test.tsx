@@ -1,4 +1,5 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 import { CategoryPostageForm } from "@/components/admin/category-postage-form";
 
@@ -28,6 +29,21 @@ describe("CategoryPostageForm", () => {
     expect(screen.getByLabelText(/^weight/i)).toHaveValue("");
     expect(screen.getByLabelText(/goes in the post as/i)).toHaveValue("");
     expect(screen.queryByText(/used by/i)).not.toBeInTheDocument();
+  });
+
+  it("shows the size as it was saved, so the next save does not clear it", async () => {
+    const action = jest.fn(async (_state: unknown, _data: FormData) => ({ errors: {} }));
+    render(<CategoryPostageForm categoryName="Cards" usual={{ grams: 40, size: null, mm: 5 }} users={28} weighed={2} action={action} />);
+    const user = userEvent.setup();
+
+    await user.selectOptions(screen.getByLabelText(/goes in the post as/i), "LARGE_LETTER");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    await act(async () => {});
+
+    expect(screen.getByLabelText(/goes in the post as/i)).toHaveValue("LARGE_LETTER");
+
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    expect(action.mock.calls[1][1].get("usualParcelSize")).toBe("LARGE_LETTER");
   });
 
   it("shows what is wrong beside each box", () => {

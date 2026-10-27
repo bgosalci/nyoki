@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { WeighSheet, type WeighRow } from "@/components/admin/weigh-sheet";
@@ -118,6 +118,22 @@ describe("WeighSheet", () => {
     await user.click(screen.getByRole("button", { name: "Put back" }));
     expect(screen.getByLabelText("Weight of Snowman Christmas Card, in grams")).toHaveValue("");
     expect(screen.getByLabelText("Weight of Merino Unisex Hat, in grams")).toHaveValue("100");
+  });
+
+  it("shows each size as it was saved, so the next save does not clear it", async () => {
+    const action = jest.fn(async (_state: unknown, _data: FormData) => ({ errors: {}, saved: 1 }));
+    render(<WeighSheet rows={rows} context={context} action={action} />);
+    const user = userEvent.setup();
+
+    await user.selectOptions(screen.getByLabelText("How Bow Hairband - Pink goes in the post"), "LARGE_LETTER");
+    await user.click(screen.getByRole("button", { name: "Save weights" }));
+    await act(async () => {});
+
+    expect(screen.getByLabelText("How Bow Hairband - Pink goes in the post")).toHaveValue("LARGE_LETTER");
+    expect(screen.getByLabelText("How Merino Unisex Hat goes in the post")).toHaveValue("SMALL_PARCEL");
+
+    await user.click(screen.getByRole("button", { name: "Save weights" }));
+    expect(action.mock.calls[1][1].get("s.hairband")).toBe("LARGE_LETTER");
   });
 
   it("shows what is wrong on the row it belongs to", () => {

@@ -322,6 +322,21 @@ describe("ProductForm, when a save goes through", () => {
     await user.click(screen.getAllByRole("button", { name: /save/i })[0]);
     expect(action.mock.calls[1][1].get("status")).toBe(status);
   });
+
+  it("shows how a piece goes in the post as it was saved, so the next save does not clear it", async () => {
+    const action = jest.fn(async (_state: unknown, _data: FormData) => ({ errors: {} }));
+    render(<ProductForm action={action} product={mug} categories={categories} postage={postage} />);
+    const user = userEvent.setup();
+
+    await user.selectOptions(screen.getByLabelText(/goes in the post as/i), "LARGE_LETTER");
+    await user.click(screen.getAllByRole("button", { name: /save/i })[0]);
+    await act(async () => {});
+
+    expect(screen.getByLabelText(/goes in the post as/i)).toHaveValue("LARGE_LETTER");
+
+    await user.click(screen.getAllByRole("button", { name: /save/i })[0]);
+    expect(action.mock.calls[1][1].get("parcelSize")).toBe("LARGE_LETTER");
+  });
 });
 
 describe("ProductForm, saving from the top of the page", () => {

@@ -4,6 +4,7 @@ import { useActionState, useId, useRef, useState } from "react";
 
 import { Field, inputClass } from "@/components/admin/field";
 import { TopSaveButton } from "@/components/admin/save-slot";
+import { Select } from "@/components/admin/select";
 import { UnsavedChanges } from "@/components/admin/unsaved-changes";
 import { ui } from "@/lib/brand/ui";
 import type { ItemNoun } from "@/lib/customisation/group";
@@ -163,7 +164,7 @@ export function CustomiseForm({
                       onChange={(e) => setField(row.key, { label: e.target.value })}
                       className={rowInput}
                     />
-                    <select
+                    <Select
                       aria-label={`Kind (thing ${n})`}
                       name="fieldKind"
                       value={row.kind}
@@ -172,7 +173,7 @@ export function CustomiseForm({
                     >
                       <option value="TEXT">Typed</option>
                       <option value="CHOICE">Chosen from a list</option>
-                    </select>
+                    </Select>
                     {/* Every row posts all four lists, so they stay in step; the
                         one its kind does not use is posted empty. */}
                     {row.kind === "TEXT" ? (

@@ -6,6 +6,7 @@ import { postageText, type PostageText } from "@/components/admin/postage-fields
 import { factsOf, type PostageContext } from "@/components/admin/postage-summary";
 import { inputClass } from "@/components/admin/field";
 import { ProductThumbnail } from "@/components/admin/product-thumbnail";
+import { Select } from "@/components/admin/select";
 import { UnsavedChanges } from "@/components/admin/unsaved-changes";
 import { ui } from "@/lib/brand/ui";
 import { postageOf, withUsual, type PostageFacts } from "@/lib/delivery/parcel";
@@ -190,7 +191,7 @@ export function WeighSheet({
                   />
                 </td>
                 <td className="py-2.5 pr-3">
-                  <select
+                  <Select
                     name={names.size}
                     aria-label={`How ${row.name} goes in the post`}
                     value={value.size}
@@ -204,7 +205,7 @@ export function WeighSheet({
                         {SIZE_NAMES[size]}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </td>
                 <td className="py-2.5 pr-3">
                   {isLetterSize(postage.size) ? (

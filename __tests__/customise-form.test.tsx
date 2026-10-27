@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { CustomiseForm, type CustomiseState } from "@/components/admin/customise-form";
@@ -123,6 +123,20 @@ describe("CustomiseForm", () => {
 
       expect(screen.getByRole("textbox", { name: "Choices, one per line (thing 1)" })).toBeInTheDocument();
       expect(screen.queryByRole("spinbutton", { name: "Most characters (thing 1)" })).not.toBeInTheDocument();
+    });
+
+    it("shows a thing chosen from a list as just that once saved, so the next save does not make it typed", async () => {
+      const { user, action } = setup();
+      await user.click(screen.getByRole("checkbox", { name: "Offer personalisation" }));
+      await user.click(screen.getByRole("button", { name: "Add a thing to personalise" }));
+      await user.type(screen.getByRole("textbox", { name: "What is personalised (thing 1)" }), "Initial");
+      await user.selectOptions(screen.getByRole("combobox", { name: "Kind (thing 1)" }), "CHOICE");
+
+      await submitted(user, action);
+      await act(async () => {});
+
+      expect(screen.getByRole("combobox", { name: "Kind (thing 1)" })).toHaveValue("CHOICE");
+      expect((await submitted(user, action)).getAll("fieldKind")).toEqual(["CHOICE"]);
     });
 
     it("posts every thing as one row of each list, whatever its kind", async () => {

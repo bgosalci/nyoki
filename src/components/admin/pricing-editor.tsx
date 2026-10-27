@@ -7,6 +7,7 @@ import { Field, inputClass } from "@/components/admin/field";
 import { PhotoField } from "@/components/admin/photo-field";
 import { ProductThumbnail } from "@/components/admin/product-thumbnail";
 import { TopSaveButton } from "@/components/admin/save-slot";
+import { Select } from "@/components/admin/select";
 import { UnsavedChanges } from "@/components/admin/unsaved-changes";
 import { ui } from "@/lib/brand/ui";
 import {
@@ -290,26 +291,26 @@ export function PricingEditor({
             </Field>
             <Field label="Round up to" name="ending" hint="Up, never down, so rounding cannot cost margin.">
               {(props) => (
-                <select {...props} value={ending} onChange={(e) => setEnding(e.target.value as PriceEnding)} className={inputClass}>
+                <Select {...props} value={ending} onChange={(e) => setEnding(e.target.value as PriceEnding)} className={inputClass}>
                   {(Object.keys(ENDING_LABEL) as PriceEnding[]).map((key) => (
                     <option key={key} value={key}>
                       {ENDING_LABEL[key]}
                     </option>
                   ))}
-                </select>
+                </Select>
               )}
             </Field>
           </div>
 
           <Field label="VAT" name="vatRate" error={state.errors.vatRate} hint="Children's clothing is zero-rated.">
             {(props) => (
-              <select {...props} value={vatRate} onChange={(e) => setVatRate(e.target.value)} className={inputClass}>
+              <Select {...props} value={vatRate} onChange={(e) => setVatRate(e.target.value)} className={inputClass}>
                 {VAT_RATES.map((rate) => (
                   <option key={rate} value={rate}>
                     {VAT_LABEL[rate]}
                   </option>
                 ))}
-              </select>
+              </Select>
             )}
           </Field>
 

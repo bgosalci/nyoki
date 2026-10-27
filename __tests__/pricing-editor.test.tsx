@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import Link from "next/link";
 
@@ -482,6 +482,22 @@ describe("PricingEditor, when a save is rejected", () => {
 
     expect(screen.getByLabelText("Price")).toHaveValue("13.50");
     expect(screen.getAllByLabelText("What")[0]).toHaveValue("Card & envelope (large)");
+  });
+});
+
+describe("PricingEditor, when a save goes through", () => {
+  it("shows the VAT rate as it was saved, so the next save does not put it back to 20%", async () => {
+    const action = jest.fn(async (_state: unknown, _data: FormData) => ({ errors: {}, saved: true }));
+    const { user } = setup({ action });
+
+    await user.selectOptions(screen.getByLabelText("VAT"), "0");
+    await user.click(screen.getByRole("button", { name: /^save$/i }));
+    await act(async () => {});
+
+    expect(screen.getByLabelText("VAT")).toHaveValue("0");
+
+    await user.click(screen.getByRole("button", { name: /^save$/i }));
+    expect(action.mock.calls[1][1].get("vatRate")).toBe("0");
   });
 });
 

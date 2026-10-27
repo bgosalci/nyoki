@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useId, useState } from "react";
 
 import { Field, inputClass } from "@/components/admin/field";
+import { Select } from "@/components/admin/select";
 import { ui } from "@/lib/brand/ui";
 import { PARCEL_SIZES, ROYAL_MAIL_PRICES_FROM, ROYAL_MAIL_SERVICES, SIZE_NAMES, type Band } from "@/lib/delivery/royal-mail";
 import type { DeliveryRateErrors } from "@/lib/delivery/validate";
@@ -137,13 +138,13 @@ export function DeliveryRateForm({
               Price list
             </h2>
             <div className="flex flex-wrap items-center gap-2 text-sm">
-              <select aria-label="Royal Mail service" value={service} onChange={(event) => setService(event.target.value)} className={inputClass}>
+              <Select aria-label="Royal Mail service" value={service} onChange={(event) => setService(event.target.value)} className={inputClass}>
                 {ROYAL_MAIL_SERVICES.map((one) => (
                   <option key={one.key} value={one.key}>
                     {one.name.replace("Royal Mail ", "")}
                   </option>
                 ))}
-              </select>
+              </Select>
               <button type="button" onClick={fillIn} className={`rounded-md px-3 py-2 text-sm font-medium ${ui.buttonSecondary}`}>
                 Fill in Royal Mail&rsquo;s prices
               </button>
@@ -165,7 +166,7 @@ export function DeliveryRateForm({
               {rows.map((one, index) => (
                 <tr key={one.key} className={`border-b ${ui.tableRow}`}>
                   <td className="py-2 pr-3">
-                    <select
+                    <Select
                       name="bandSize"
                       aria-label={`Size, row ${index + 1}`}
                       value={one.size}
@@ -178,7 +179,7 @@ export function DeliveryRateForm({
                           {SIZE_NAMES[size]}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   </td>
                   <td className="py-2 pr-3">
                     <input

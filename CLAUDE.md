@@ -294,9 +294,18 @@ TypeScript, deployed to Vercel.
   when it first draws it, and resets the form after a save, so an active
   piece saved as a draft went back to showing Active - and the next save,
   of anything, made it active again. React updates a text box's default when
-  its prop changes, so they never had this; controlled selects never did.
-- Controlled forms (a product's Price tab, a category's usual costs) never
-  lost anything - React owns their values - and have tests saying so.
+  its prop changes, so they never had this.
+- **A controlled `<select>` is a `Select`** (`src/components/admin/select.tsx`)
+  in any form React resets. React keeps a controlled text box's default in
+  step with its value, so the reset puts back what it shows; it does not for
+  a select, which the reset drops to its first option while React still
+  holds the one chosen, and nothing re-renders to put it right. A piece saved
+  as a Large Letter showed "Not set", and the next save cleared it; a
+  zero-rated piece went back to 20% VAT. `Select` keeps the chosen option the
+  default. A form that leaves the page on success, or submits through
+  `onSubmit` (the bulk price dialog, the shop's customiser), is never reset.
+- Controlled text boxes (a product's Price tab, a category's usual costs)
+  never lose anything - React owns their values - and have tests saying so.
 
 ## A product's Price tab
 
