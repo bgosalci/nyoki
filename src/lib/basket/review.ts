@@ -1,6 +1,7 @@
 import { fitsOffer, lineDetails, toChoices, unitsPerItem, type StoredChoices, type VariantRow } from "@/lib/basket/lines";
 import { QUANTITY_MAX, unitPricePence, type SummaryRow } from "@/lib/customisation/choices";
 import type { Offer } from "@/lib/customisation/offer";
+import type { PostageFacts } from "@/lib/delivery/parcel";
 import { formatPence } from "@/lib/money";
 
 /**
@@ -30,6 +31,8 @@ export interface ReviewProduct {
   saleName: string | null;
   offer: Offer;
   variants: VariantRow[];
+  /** One of it in the post: its own postage, with what it leaves out from its category's usual. */
+  postage: PostageFacts;
 }
 
 export interface ReviewLine {
@@ -64,6 +67,9 @@ export interface PricedLine {
   details: SummaryRow[];
   madeToOrder: boolean;
   leadTimeDays: number | null;
+  postage: PostageFacts;
+  /** How many of the piece go in the post: a pack of three is three cards. */
+  units: number;
 }
 
 export interface LineUpdate {
@@ -209,6 +215,8 @@ export function reviewBasket(lines: readonly ReviewLine[]): BasketReview {
       details: lineDetails(product.offer, choices),
       madeToOrder: product.madeToOrder,
       leadTimeDays: product.leadTimeDays,
+      postage: product.postage,
+      units: quantity * unitsPerItem(product.offer, line.stored),
     });
   });
 

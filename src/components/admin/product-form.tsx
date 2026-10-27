@@ -10,6 +10,8 @@ import { CLOTHING_STOCK_ID, ClothingFields } from "@/components/admin/clothing-f
 import type { PickerProduct } from "@/components/admin/product-picker";
 import { RichTextField } from "@/components/admin/rich-text-field";
 import { Field, inputClass } from "@/components/admin/field";
+import { PostageFields, postageText } from "@/components/admin/postage-fields";
+import { PostageSummary, type PostageContext } from "@/components/admin/postage-summary";
 import { TopSaveButton } from "@/components/admin/save-slot";
 import { UnsavedChanges } from "@/components/admin/unsaved-changes";
 import { formatPence } from "@/lib/money";
@@ -18,6 +20,8 @@ import { useActionForm } from "@/lib/forms/action-form";
 import { isClothes } from "@/lib/clothes/group";
 import { editorFrom, totalStock } from "@/lib/clothes/editor";
 import type { StockRow } from "@/lib/clothes/stock";
+import { SIZE_NAMES } from "@/lib/delivery/royal-mail";
+import { usualFor, type UsualCategory } from "@/lib/delivery/usual";
 
 export interface ProductFormState {
   errors: ProductErrors;
@@ -43,6 +47,15 @@ export interface ProductFormClothing {
   variants: StockRow[];
 }
 
+/** What the Postage section prices a piece by: the delivery options, the packing, every category's usual postage, its packs. */
+export interface ProductPostage extends PostageContext {
+  categories: UsualCategory[];
+  /** How many cards each of the piece's packs holds. */
+  packs: number[];
+}
+
+const POSTAGE_NAMES = { grams: "weightGrams", size: "parcelSize", mm: "thicknessMm" };
+
 const EMPTY: ProductFormState = { errors: {} };
 const NO_CLOTHING: ProductFormClothing = { colours: [], sizes: [], variants: [] };
 
@@ -53,6 +66,7 @@ export function ProductForm({
   categories = [],
   alsoLike,
   clothing = NO_CLOTHING,
+  postage,
   initialState = EMPTY,
   submitLabel = "Save product",
 }: {
@@ -68,6 +82,8 @@ export function ProductForm({
   alsoLike?: { options: PickerProduct[]; automatic: PickerProduct[]; chosen: ChosenPiece[] };
   /** Kept whatever the piece is, and offered while it is in Clothes. */
   clothing?: ProductFormClothing;
+  /** Absent, the Postage section has no figures to work out. */
+  postage?: ProductPostage;
   initialState?: ProductFormState;
   submitLabel?: string;
 }) {
@@ -88,6 +104,13 @@ export function ProductForm({
     setEditor(editorFrom(clothing));
   }
   const stockPerVariant = clothes && (editor.colours.length > 0 || editor.sizes.length > 0);
+
+  // Postage, as typed; whatever is left empty comes from the usual of the
+  // categories as they are ticked.
+  const [postageValue, setPostageValue] = useState(() =>
+    postageText({ grams: product?.weightGrams ?? null, size: product?.parcelSize ?? null, mm: product?.thicknessMm ?? null }),
+  );
+  const usual = postage ? usualFor(categoryIds, postage.categories) : null;
 
   return (
     <form id="product-details" ref={formRef} action={formAction} onSubmit={onSubmit} className="flex max-w-2xl flex-col gap-8">
@@ -216,22 +239,29 @@ export function ProductForm({
           )}
         </Field>
 
-        <Field
-          label="Weight (grams)"
-          name="weightGrams"
-          error={errors.weightGrams}
-          hint="Used to work out postage."
-        >
-          {(props) => (
-            <input
-              {...props}
-              type="text"
-              inputMode="numeric"
-              defaultValue={product?.weightGrams ?? ""}
-              className={inputClass}
-            />
-          )}
-        </Field>
+      </section>
+
+      <section aria-labelledby="postage-heading" className="flex flex-col gap-4">
+        <div>
+          <h2 id="postage-heading" className="text-sm font-semibold">
+            Postage
+          </h2>
+          <p className={`mt-1 text-sm ${ui.mutedOnPage}`}>
+            What it costs to send, worked out at checkout. Shoppers see its weight under Need to know.
+          </p>
+        </div>
+        <PostageFields
+          names={POSTAGE_NAMES}
+          value={postageValue}
+          onChange={setPostageValue}
+          errors={errors}
+          blank={{
+            grams: usual?.grams != null ? `${usual.grams} · usual` : "",
+            size: usual?.size ? `Usual for ${usual.categoryName}: ${SIZE_NAMES[usual.size]}` : "Not set",
+            mm: usual?.mm != null ? `${usual.mm} · usual` : "",
+          }}
+        />
+        {postage ? <PostageSummary text={postageValue} usual={usual} context={postage} packs={postage.packs} /> : null}
       </section>
 
       <section className="flex flex-col gap-5">

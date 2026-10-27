@@ -52,6 +52,8 @@ export async function GET(request: NextRequest) {
       dimensions: product.dimensions,
       careInstructions: product.careInstructions,
       weightGrams: product.weightGrams,
+      parcelSize: product.parcelSize,
+      thicknessMm: product.thicknessMm,
       featured: product.featured,
       oneOfAKind: product.oneOfAKind,
       leadTimeDays: product.leadTimeDays,

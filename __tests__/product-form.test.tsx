@@ -1,9 +1,11 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import Link from "next/link";
 
 import { ProductForm } from "@/components/admin/product-form";
 import { SaveSlot, SaveSlotProvider } from "@/components/admin/save-slot";
+import { DELIVERY_DEFAULTS } from "@/lib/delivery/parcel";
+import { royalMailService } from "@/lib/delivery/royal-mail";
 
 const noopAction = async () => ({ errors: {} });
 
@@ -21,6 +23,8 @@ const mug = {
   sku: null,
   stock: 3,
   weightGrams: null,
+  parcelSize: null,
+  thicknessMm: null,
   featured: false,
   dimensions: null,
   materials: null,
@@ -30,6 +34,74 @@ const mug = {
   leadTimeDays: null,
   categoryIds: ["cat_mugs"],
 };
+
+// The postage the form works a piece's cost of sending from.
+const postage = {
+  settings: DELIVERY_DEFAULTS,
+  rates: [
+    { id: "t48", name: "Royal Mail Tracked 48", pricePence: 395, freeOverPence: 4000, minDays: 2, maxDays: 3, byWeight: true, bands: royalMailService("tracked-48")!.bands },
+  ],
+  categories: [
+    { id: "cat_tableware", slug: "tableware", name: "Tableware", parentId: null, usualGrams: 400, usualParcelSize: "SMALL_PARCEL" as const, usualThicknessMm: null },
+    { id: "cat_mugs", slug: "mugs", name: "Mugs", parentId: "cat_tableware", usualGrams: null, usualParcelSize: null, usualThicknessMm: null },
+    { id: "cat_vases", slug: "vases", name: "Vases", parentId: null, usualGrams: null, usualParcelSize: null, usualThicknessMm: null },
+  ],
+  packs: [],
+};
+
+describe("ProductForm, postage", () => {
+  it("asks for the weight, how it goes in the post and how thick it is, in a section of its own", () => {
+    render(<ProductForm action={noopAction} product={{ ...mug, weightGrams: 62, parcelSize: "LARGE_LETTER", thicknessMm: 8 }} categories={categories} postage={postage} />);
+
+    const section = screen.getByRole("region", { name: "Postage" });
+    expect(within(section).getByLabelText(/^weight/i)).toHaveValue("62");
+    expect(within(section).getByLabelText(/goes in the post as/i)).toHaveValue("LARGE_LETTER");
+    expect(within(section).getByLabelText(/^thickness/i)).toHaveValue("8");
+  });
+
+  it("shows what it would use from its category's usual where a box is left empty", () => {
+    render(<ProductForm action={noopAction} product={mug} categories={categories} postage={postage} />);
+
+    expect(screen.getByLabelText(/^weight/i)).toHaveAttribute("placeholder", "400 · usual");
+    expect(screen.getByRole("option", { name: "Usual for Tableware: Small Parcel" })).toHaveValue("");
+  });
+
+  it("works out what it costs to send on its own, and again as it is changed", async () => {
+    const user = userEvent.setup();
+    render(<ProductForm action={noopAction} product={mug} categories={categories} postage={postage} />);
+
+    expect(screen.getByText(/small parcel, 510 g packed/i)).toBeInTheDocument();
+    expect(screen.getByText(/£3.75 by royal mail tracked 48/i)).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText(/goes in the post as/i), "LARGE_LETTER");
+    await user.clear(screen.getByLabelText(/^weight/i));
+    await user.type(screen.getByLabelText(/^weight/i), "62");
+    await user.type(screen.getByLabelText(/^thickness/i), "8");
+
+    expect(screen.getByText(/large letter, 102 g and 10 mm packed/i)).toBeInTheDocument();
+    expect(screen.getByText(/£2.90 by royal mail tracked 48/i)).toBeInTheDocument();
+  });
+
+  it("says what each pack costs to send", () => {
+    render(
+      <ProductForm
+        action={noopAction}
+        product={{ ...mug, weightGrams: 62, parcelSize: "LARGE_LETTER", thicknessMm: 8 }}
+        categories={categories}
+        postage={{ ...postage, packs: [3] }}
+      />,
+    );
+
+    expect(screen.getByText(/a pack of 3/i)).toBeInTheDocument();
+    expect(screen.getByText(/small parcel, 296 g packed/i)).toBeInTheDocument();
+  });
+
+  it("says a piece with no weight anywhere counts as the set weight", () => {
+    render(<ProductForm action={noopAction} product={{ ...mug, categoryIds: ["cat_vases"] }} categories={categories} postage={postage} />);
+
+    expect(screen.getByText(/not weighed, so it counts as 500 g/i)).toBeInTheDocument();
+  });
+});
 
 describe("ProductForm", () => {
   it("renders the fields needed to create a product", () => {

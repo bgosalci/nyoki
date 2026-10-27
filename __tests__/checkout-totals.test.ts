@@ -1,4 +1,4 @@
-import { apportion, checkoutTotals, deliveryPence, freeDelivery, type DeliveryRate } from "@/lib/checkout/totals";
+import { apportion, cheapestDelivery, checkoutTotals, deliveryPence, freeDelivery, type DeliveryRate } from "@/lib/checkout/totals";
 
 const tracked48: DeliveryRate = { id: "t48", name: "Royal Mail Tracked 48", pricePence: 395, freeOverPence: 4000, minDays: 2, maxDays: 3 };
 const tracked24: DeliveryRate = { id: "t24", name: "Royal Mail Tracked 24", pricePence: 550, freeOverPence: null, minDays: 1, maxDays: 2 };
@@ -79,5 +79,24 @@ describe("checkoutTotals", () => {
     const totals = checkoutTotals({ lines: [{ totalPence: 333, vatRate: 20 }, { totalPence: 1, vatRate: 5 }], discountPence: 7, rate: tracked24 });
 
     for (const value of Object.values(totals)) expect(Number.isInteger(value)).toBe(true);
+  });
+});
+
+describe("cheapestDelivery", () => {
+  const rates = [
+    { id: "t24", name: "Tracked 24", pricePence: 390, freeOverPence: null, minDays: 1, maxDays: 2 },
+    { id: "t48", name: "Tracked 48", pricePence: 290, freeOverPence: 4000, minDays: 2, maxDays: 3 },
+  ];
+
+  it("is the least any option charges for these goods", () => {
+    expect(cheapestDelivery(rates, 1750)).toBe(290);
+  });
+
+  it("is nothing once an option is free", () => {
+    expect(cheapestDelivery(rates, 4000)).toBe(0);
+  });
+
+  it("is null with nothing to choose from", () => {
+    expect(cheapestDelivery([], 1750)).toBeNull();
   });
 });

@@ -6,7 +6,10 @@ import { db } from "@/lib/db";
 
 export default async function EditDeliveryRatePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const rate = await db.shippingRate.findUnique({ where: { id } });
+  const rate = await db.shippingRate.findUnique({
+    where: { id },
+    include: { bands: { select: { size: true, upToGrams: true, pricePence: true }, orderBy: [{ size: "asc" }, { upToGrams: "asc" }] } },
+  });
   if (!rate) notFound();
 
   return (
@@ -18,7 +21,16 @@ export default async function EditDeliveryRatePage({ params }: { params: Promise
       <div className="mt-6">
         <EditDeliveryRateForm
           id={rate.id}
-          rate={{ name: rate.name, pricePence: rate.pricePence, freeOverPence: rate.freeOverPence, minDays: rate.minDays, maxDays: rate.maxDays, active: rate.active }}
+          rate={{
+            name: rate.name,
+            pricePence: rate.pricePence,
+            byWeight: rate.byWeight,
+            bands: rate.bands,
+            freeOverPence: rate.freeOverPence,
+            minDays: rate.minDays,
+            maxDays: rate.maxDays,
+            active: rate.active,
+          }}
         />
       </div>
     </>

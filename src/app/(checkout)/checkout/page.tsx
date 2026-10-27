@@ -6,7 +6,7 @@ import { applyCode, continueToPayment } from "@/app/(checkout)/checkout/actions"
 import { BasketChanges } from "@/components/shop/basket-changes";
 import { CheckoutForm, type AppliedCode, type CheckoutPrefill } from "@/components/shop/checkout-form";
 import { currentCustomer } from "@/lib/account/dal";
-import { activeRates, findBasketId, reviewAndSave } from "@/lib/basket/store";
+import { findBasketId, ratesFor, reviewAndSave } from "@/lib/basket/store";
 import { madeToOrderNote, shortDetails } from "@/lib/basket/summary";
 import { ui } from "@/lib/brand/ui";
 import { db } from "@/lib/db";
@@ -33,8 +33,10 @@ export default async function CheckoutPage() {
   const basketId = await findBasketId();
   if (!basketId) redirect("/basket");
 
-  const [review, rates, shopper] = await Promise.all([reviewAndSave(basketId), activeRates(), currentCustomer()]);
+  const [review, shopper] = await Promise.all([reviewAndSave(basketId), currentCustomer()]);
   if (review.lines.length === 0) redirect("/basket");
+  // Each option priced for the parcel this basket makes.
+  const rates = (await ratesFor(review.lines)).map(({ parcel: _parcel, ...rate }) => rate);
 
   const [savedAddresses, waiting] = await Promise.all([
     shopper

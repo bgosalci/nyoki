@@ -29,6 +29,8 @@ const card: PricedLine = {
   ],
   madeToOrder: false,
   leadTimeDays: null,
+  postage: { grams: 62, size: "LARGE_LETTER", mm: 8 },
+  units: 3,
 };
 
 const reindeer: PricedLine = {

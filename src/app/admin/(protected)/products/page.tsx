@@ -9,6 +9,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { CategoryPills } from "@/components/admin/category-pills";
 import { ExportButton } from "@/components/admin/export-button";
+import { unweighedCount } from "@/lib/delivery/store";
 import { subtreeIds } from "@/lib/products/category-pills";
 import { PRODUCT_LIST_ORDER, parseProductFilter, productWhere } from "@/lib/products/filter";
 
@@ -34,13 +35,14 @@ export default async function ProductsPage({
   const selectedCategory = filter.category ? categories.find((c) => c.slug === filter.category) : undefined;
   const categoryIds = selectedCategory ? subtreeIds(categories, selectedCategory.id) : [];
 
-  const [products, total] = await Promise.all([
+  const [products, total, unweighed] = await Promise.all([
     db.product.findMany({
       where: productWhere(filter, categoryIds),
       orderBy: PRODUCT_LIST_ORDER,
       include: { images: { orderBy: { position: "asc" }, take: 1 } },
     }),
     db.product.count(),
+    unweighedCount(),
   ]);
 
   const HEADER = (
@@ -49,6 +51,9 @@ export default async function ProductsPage({
         <h1 className="text-xl font-semibold tracking-tight">Products</h1>
 
         <div className="flex flex-wrap items-center gap-2">
+          <Link href="/admin/products/weigh" className={`rounded-md px-3.5 py-2 text-sm font-medium ${ui.buttonSecondary}`}>
+            Weigh pieces{unweighed > 0 ? <span className={`font-normal ${ui.mutedOnPage}`}> · {unweighed} to do</span> : null}
+          </Link>
           <Link
             href="/admin/products/import"
             className={`rounded-md px-3.5 py-2 text-sm font-medium ${ui.buttonSecondary}`}

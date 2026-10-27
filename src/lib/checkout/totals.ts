@@ -29,6 +29,12 @@ export function deliveryPence(rate: Pick<DeliveryRate, "pricePence" | "freeOverP
   return rate.freeOverPence !== null && goodsPence >= rate.freeOverPence ? 0 : rate.pricePence;
 }
 
+/** The least any option charges for these goods - what the basket says delivery is "from" - or null with none to choose. */
+export function cheapestDelivery(rates: readonly Pick<DeliveryRate, "pricePence" | "freeOverPence">[], goodsPence: number): number | null {
+  if (rates.length === 0) return null;
+  return Math.min(...rates.map((rate) => deliveryPence(rate, goodsPence)));
+}
+
 export type FreeDelivery = { reached: true; rate: DeliveryRate } | { reached: false; morePence: number; rate: DeliveryRate };
 
 /** How close the goods are to free delivery, by the option free soonest; null when none ever is. */

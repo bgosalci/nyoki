@@ -335,8 +335,13 @@ export function CheckoutForm({
               </TileGroup>
             </div>
           ) : (
+            // No option set up, or none whose price list takes a parcel this size or weight.
             <p className={`mt-3 text-[0.93rem] ${ui.shopMuted}`}>
-              We can&apos;t send anything just now: there is no way of sending it set up yet. Please try again soon.
+              We can&apos;t send this order just now: none of our ways of sending it takes it.{" "}
+              <Link href="/contact" className="underline underline-offset-4">
+                Get in touch
+              </Link>{" "}
+              and we&apos;ll find a way.
             </p>
           )}
           {madeToOrderNote ? <p className={`mt-4 text-sm ${ui.shopMuted}`}>{madeToOrderNote}</p> : null}

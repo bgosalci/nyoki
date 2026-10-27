@@ -18,6 +18,8 @@ const piece = (categoryIds: string[]) => ({
   sku: null,
   stock: 0,
   weightGrams: null,
+  parcelSize: null,
+  thicknessMm: null,
   featured: false,
   dimensions: null,
   materials: null,

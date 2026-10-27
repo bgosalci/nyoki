@@ -1,3 +1,5 @@
+import { readPostage } from "@/lib/delivery/postage-input";
+import type { ParcelSize } from "@/lib/delivery/royal-mail";
 import { slugify } from "@/lib/slug";
 
 export type ProductStatus = "DRAFT" | "ACTIVE" | "ARCHIVED";
@@ -12,6 +14,9 @@ export interface ProductInput {
   sku: string | null;
   stock: number;
   weightGrams: number | null;
+  /** Null for its category's usual, as are the weight and thickness. */
+  parcelSize: ParcelSize | null;
+  thicknessMm: number | null;
   featured: boolean;
   dimensions: string | null;
   materials: string | null;
@@ -37,6 +42,8 @@ export type ProductField =
   | "sku"
   | "stock"
   | "weightGrams"
+  | "parcelSize"
+  | "thicknessMm"
   | "featured"
   | "dimensions"
   | "materials"
@@ -124,10 +131,8 @@ export function validateProductInput(form: FormData): ProductValidation {
     errors.stock = "Stock has to be a whole number, zero or more.";
   }
 
-  const weightParsed = count(text(form, "weightGrams"));
-  if (weightParsed === null) {
-    errors.weightGrams = "Weight has to be a whole number of grams.";
-  }
+  const postage = readPostage(form, { grams: "weightGrams", size: "parcelSize", mm: "thicknessMm" });
+  Object.assign(errors, postage.errors);
 
   const statusRaw = text(form, "status") || "DRAFT";
   if (!STATUSES.includes(statusRaw as ProductStatus)) {
@@ -160,7 +165,9 @@ export function validateProductInput(form: FormData): ProductValidation {
       sku: optionalText(form, "sku"),
       // There is exactly one of a one-of-a-kind piece, whatever was typed.
       stock: oneOfAKind ? 1 : (stockParsed ?? 0),
-      weightGrams: weightParsed ?? null,
+      weightGrams: postage.facts.grams,
+      parcelSize: postage.facts.size,
+      thicknessMm: postage.facts.mm,
       featured: checked(form, "featured"),
       dimensions: optionalText(form, "dimensions"),
       materials: optionalText(form, "materials"),

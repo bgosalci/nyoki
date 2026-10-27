@@ -15,6 +15,7 @@ const order: OrderView = {
   giftNote: "Happy Christmas, Mum! Love, Ella x",
   hidePrices: true,
   shippingMethod: "Royal Mail Tracked 48",
+  parcel: { size: "LARGE_LETTER", grams: 182, mm: 20 },
   address: { name: "Margaret Morgan", line1: "12 Orchard Lane", line2: null, city: "Ilkley", county: "West Yorkshire", postcode: "LS29 9AA" },
   items: [
     {
@@ -46,6 +47,23 @@ describe("printedWords", () => {
   it("is the words to print, from a line's message row", () => {
     expect(printedWords("Printed: “Merry Christmas”")).toBe("Merry Christmas");
     expect(printedWords("Blank inside")).toBeNull();
+  });
+});
+
+describe("OrderDetail, the parcel", () => {
+  it("says what the parcel was priced as, so the postage bought is the postage charged for", () => {
+    render(<OrderDetail order={order} />);
+
+    expect(screen.getByText("Large Letter, 182 g packed, 20 mm thick")).toBeInTheDocument();
+  });
+
+  it("leaves a parcel's thickness out, and says nothing of an order made before parcels were kept", () => {
+    const { unmount } = render(<OrderDetail order={{ ...order, parcel: { size: "SMALL_PARCEL", grams: 352, mm: null } }} />);
+    expect(screen.getByText("Small Parcel, 352 g packed")).toBeInTheDocument();
+    unmount();
+
+    render(<OrderDetail order={{ ...order, parcel: null }} />);
+    expect(screen.queryByText(/packed/)).not.toBeInTheDocument();
   });
 });
 

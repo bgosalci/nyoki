@@ -34,7 +34,7 @@ jest.mock("next/cache", () => ({ refresh: () => refresh() }));
 jest.mock("../src/lib/ordering", () => ({ orderingOpen: () => orderingOpen() }));
 jest.mock("../src/lib/basket/store", () => ({
   ...jest.requireActual("../src/lib/basket/store"),
-  categoryNodes: async () => [{ id: "cards", slug: "cards", parentId: null }],
+  categoryNodes: async () => [{ id: "cards", slug: "cards", name: "Cards", parentId: null, usualGrams: 40, usualParcelSize: "LARGE_LETTER", usualThicknessMm: 5 }],
   basketIdForWriting: () => basketIdForWriting(),
   findBasketId: () => findBasketId(),
   loadReviewLines: (...args: unknown[]) => loadReviewLines(...args),
@@ -64,6 +64,9 @@ function cardRow(overrides: Partial<BasketProductRow> = {}): BasketProductRow {
     colours: [],
     sizes: [],
     madeToOrder: false,
+    weightGrams: null,
+    parcelSize: null,
+    thicknessMm: null,
     images: [{ url: "/uploads/snowman.jpg" }],
     variants: [],
     categories: [{ categoryId: "cards" }],
@@ -168,7 +171,7 @@ describe("addToBasket", () => {
   });
 
   it("puts in nothing once the basket holds all there is", async () => {
-    const product = toReviewProduct(cardRow({ stock: 6 }), [{ id: "cards", slug: "cards", parentId: null }], new Date());
+    const product = toReviewProduct(cardRow({ stock: 6 }), [{ id: "cards", slug: "cards", name: "Cards", parentId: null, usualGrams: 40, usualParcelSize: "LARGE_LETTER", usualThicknessMm: 5 }], new Date());
     findFirst.mockResolvedValue(cardRow({ stock: 6 }));
     loadReviewLines.mockResolvedValue([{ id: "l1", quantity: 2, addedPricePence: 2190, stored, product } satisfies ReviewLine]);
 

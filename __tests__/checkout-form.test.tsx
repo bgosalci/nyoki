@@ -197,10 +197,11 @@ describe("checkout", () => {
     expect(summary()).toHaveTextContent("WINTER10");
   });
 
-  it("says plainly when there is no way to send anything yet", () => {
+  it("says plainly when no way of sending takes the order, and where to ask", () => {
     setup({ rates: [] });
 
-    expect(screen.getByText(/we can't send anything just now/i)).toBeInTheDocument();
+    expect(screen.getByText(/we can't send this order just now/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /get in touch/i })).toHaveAttribute("href", "/contact");
     expect(screen.getAllByRole("button", { name: /continue/i })[0]).toBeDisabled();
   });
 });

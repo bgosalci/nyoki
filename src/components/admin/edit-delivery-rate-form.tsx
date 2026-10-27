@@ -4,12 +4,11 @@ import { useRef, useState } from "react";
 
 import { deleteDeliveryRate, updateDeliveryRate } from "@/app/admin/(protected)/settings/delivery/actions";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
-import { DeliveryRateForm } from "@/components/admin/delivery-rate-form";
+import { DeliveryRateForm, type DeliveryRateValues } from "@/components/admin/delivery-rate-form";
 import { ui } from "@/lib/brand/ui";
-import type { DeliveryRateInput } from "@/lib/delivery/validate";
 
 /** Binds the option's id to its actions; see EditProductForm for why this is a client component. */
-export function EditDeliveryRateForm({ id, rate }: { id: string; rate: DeliveryRateInput }) {
+export function EditDeliveryRateForm({ id, rate }: { id: string; rate: DeliveryRateValues }) {
   const [confirming, setConfirming] = useState(false);
   const deleteForm = useRef<HTMLFormElement>(null);
 

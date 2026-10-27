@@ -11,10 +11,10 @@ export interface CategoryNode {
  * How the shop tells what a piece is: a card is anything filed under Cards,
  * however deep, and clothes anything under Clothes.
  */
-export function findInLineage<T>(
+export function findInLineage<T, N extends CategoryNode = CategoryNode>(
   categoryIds: readonly string[],
-  categories: readonly CategoryNode[],
-  pick: (category: CategoryNode) => T | null | undefined,
+  categories: readonly N[],
+  pick: (category: N) => T | null | undefined,
 ): T | null {
   const byId = new Map(categories.map((category) => [category.id, category]));
 

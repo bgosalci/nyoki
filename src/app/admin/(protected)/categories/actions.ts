@@ -5,10 +5,12 @@ import { redirect } from "next/navigation";
 
 import type { CategoryCostsState } from "@/components/admin/category-costs-form";
 import type { CategoryFormState } from "@/components/admin/category-form";
+import type { CategoryPostageState } from "@/components/admin/category-postage-form";
 import { requireAdmin } from "@/lib/auth/dal";
 import { validateCategoryInput, wouldCreateCycle } from "@/lib/categories/validate";
 import { parseCostLines } from "@/lib/costing/validate";
 import { db } from "@/lib/db";
+import { readPostage } from "@/lib/delivery/postage-input";
 import { uniqueSlug } from "@/lib/slug";
 
 async function takenSlugs(base: string, exceptId?: string): Promise<string[]> {
@@ -103,6 +105,23 @@ export async function saveCategoryCosts(
 
   revalidatePath(`/admin/categories/${id}`);
   return { saved: true };
+}
+
+/** A category's usual postage, read live by the pieces beneath it that have none of their own. */
+export async function saveCategoryPostage(id: string, _state: CategoryPostageState, formData: FormData): Promise<CategoryPostageState> {
+  await requireAdmin();
+
+  const { facts, errors } = readPostage(formData, { grams: "usualGrams", size: "usualParcelSize", mm: "usualThicknessMm" });
+  if (Object.keys(errors).length > 0) return { errors };
+
+  const updated = await db.category.updateMany({
+    where: { id },
+    data: { usualGrams: facts.grams, usualParcelSize: facts.size, usualThicknessMm: facts.mm },
+  });
+  if (updated.count === 0) return { errors: { usualGrams: "That category no longer exists." } };
+
+  revalidatePath(`/admin/categories/${id}`);
+  return { errors: {}, saved: true };
 }
 
 /**

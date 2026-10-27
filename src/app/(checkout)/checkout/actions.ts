@@ -4,7 +4,7 @@ import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { currentCustomer } from "@/lib/account/dal";
-import { findBasketId, reviewAndSave } from "@/lib/basket/store";
+import { findBasketId, ratesFor, reviewAndSave } from "@/lib/basket/store";
 import { orderItems } from "@/lib/checkout/order";
 import { checkoutTotals } from "@/lib/checkout/totals";
 import { parseCheckout, type CheckoutErrors } from "@/lib/checkout/validate";
@@ -83,7 +83,8 @@ export async function continueToPayment(_state: CheckoutState, formData: FormDat
   if (!parsed.ok) return { errors: parsed.errors };
   const input = parsed.data;
 
-  const rate = await db.shippingRate.findFirst({ where: { id: input.rateId, active: true } });
+  // Priced afresh for the basket's parcel, as checkout showed it.
+  const rate = (await ratesFor(review.lines)).find((option) => option.id === input.rateId);
   if (!rate) return { errors: { rate: "That way of sending it is no longer offered. Please choose another." } };
 
   let address;
@@ -141,6 +142,9 @@ export async function continueToPayment(_state: CheckoutState, formData: FormDat
       discountCodeId: discount.codeId,
       shippingAddressId: shipping.id,
       shippingMethod: rate.name,
+      parcelSize: rate.parcel?.size ?? null,
+      parcelGrams: rate.parcel?.grams ?? null,
+      parcelMm: rate.parcel?.mm ?? null,
       gift: input.gift,
       giftNote: input.giftNote,
       hidePrices: input.hidePrices,

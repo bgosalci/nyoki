@@ -158,11 +158,23 @@ describe("validateProductInput", () => {
 
   it("reports every problem at once rather than one at a time", () => {
     const result = validateProductInput(
-      form({ name: "", weightGrams: "heavy", stock: "-2" }),
+      form({ name: "", weightGrams: "heavy", stock: "-2", parcelSize: "BOX", thicknessMm: "thin" }),
     );
 
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(Object.keys(result.errors).sort()).toEqual(["name", "stock", "weightGrams"]);
+    expect(Object.keys(result.errors).sort()).toEqual(["name", "parcelSize", "stock", "thicknessMm", "weightGrams"]);
+  });
+
+  it("reads its postage: a weight, how it goes in the post and how thick it is", () => {
+    const result = validateProductInput(form({ weightGrams: "62", parcelSize: "LARGE_LETTER", thicknessMm: "8" }));
+
+    expect(result.ok && result.data).toMatchObject({ weightGrams: 62, parcelSize: "LARGE_LETTER", thicknessMm: 8 });
+  });
+
+  it("leaves postage blank to come from its category's usual", () => {
+    const result = validateProductInput(form());
+
+    expect(result.ok && result.data).toMatchObject({ weightGrams: null, parcelSize: null, thicknessMm: null });
   });
 });

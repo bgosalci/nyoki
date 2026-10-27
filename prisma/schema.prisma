@@ -64,8 +64,15 @@ model Product {
   // of the variants' stock, kept in step whenever the Details tab is saved,
   // so the products list and the export read one number.
   stock       Int     @default(0)
-  weightGrams Int?    @map("weight_grams")
   featured    Boolean @default(false)
+
+  // Postage. The weight is the piece in its own wrapping - shoppers see it
+  // under Need to know - and with the size it goes as and, for a letter, how
+  // thick it is, prices its parcel at checkout. Whatever is left empty comes
+  // from its category's usual postage.
+  weightGrams Int?        @map("weight_grams")
+  parcelSize  ParcelSize? @map("parcel_size")
+  thicknessMm Int?        @map("thickness_mm")
 
   // Where it sits in the shop and the admin list, highest first - set by
   // dragging it on the products list. A sequence, so a new product, however
@@ -279,6 +286,13 @@ model Category {
 
   /// Its usual costs, copied into a piece to start that piece's costing from.
   costLines CategoryCostLine[]
+
+  // Its usual postage: what a piece here, or in a type beneath it, goes by
+  // when it has none of its own. Read live, never copied, so changing it
+  // moves every piece using it.
+  usualGrams       Int?        @map("usual_grams")
+  usualParcelSize  ParcelSize? @map("usual_parcel_size")
+  usualThicknessMm Int?        @map("usual_thickness_mm")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -594,6 +608,12 @@ model Order {
   // deleting the option must not change what an old order says.
   shippingMethod String? @map("shipping_method")
 
+  // The parcel checkout priced, copied, so the postage bought is the postage
+  // charged for: its size, its weight packed, and a letter's thickness.
+  parcelSize  ParcelSize? @map("parcel_size")
+  parcelGrams Int?        @map("parcel_grams")
+  parcelMm    Int?        @map("parcel_mm")
+
   customerId String?   @map("customer_id")
   customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
   // Captured separately so guest checkout works without a Customer row.
@@ -736,7 +756,11 @@ model BasketLine {
 model ShippingRate {
   id            String  @id @default(cuid())
   name          String // "Royal Mail 2nd Class"
+  // The one price, for an option not priced by size and weight.
   pricePence    Int     @map("price_pence")
+  // Priced from its bands for the parcel in the basket, rather than at the
+  // one price. Either is kept while the other is in use.
+  byWeight      Boolean @default(false) @map("by_weight")
   // Order subtotal at or above which this rate becomes free. null = never free.
   freeOverPence Int?    @map("free_over_pence")
   minDays       Int?    @map("min_days")
@@ -744,10 +768,58 @@ model ShippingRate {
   active        Boolean @default(true)
   position      Int     @default(0)
 
+  bands ShippingBand[]
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("shipping_rates")
+}
+
+/// Royal Mail's sizes, smallest first: what a parcel goes as, and what a price is for.
+enum ParcelSize {
+  LETTER
+  LARGE_LETTER
+  SMALL_PARCEL
+  MEDIUM_PARCEL
+}
+
+/// A line of an option's price list: this size, up to and including this weight, costs this much.
+model ShippingBand {
+  id         String       @id @default(cuid())
+  rateId     String       @map("rate_id")
+  rate       ShippingRate @relation(fields: [rateId], references: [id], onDelete: Cascade)
+  size       ParcelSize
+  upToGrams  Int          @map("up_to_grams")
+  pricePence Int          @map("price_pence")
+
+  @@unique([rateId, size, upToGrams])
+  @@map("shipping_bands")
+}
+
+// How postage is worked out, beyond the price lists. One row, id "delivery",
+// made on the first save; until then the defaults in src/lib/delivery/parcel.ts.
+model DeliverySettings {
+  id String @id @default("delivery")
+
+  // What a piece not weighed yet counts as.
+  unweighedGrams Int        @default(500) @map("unweighed_grams")
+  unweighedSize  ParcelSize @default(SMALL_PARCEL) @map("unweighed_size")
+
+  // The envelope or box each size goes in, added once to a parcel.
+  letterPackGrams       Int @default(10) @map("letter_pack_grams")
+  letterPackMm          Int @default(1) @map("letter_pack_mm")
+  largeLetterPackGrams  Int @default(40) @map("large_letter_pack_grams")
+  largeLetterPackMm     Int @default(2) @map("large_letter_pack_mm")
+  smallParcelPackGrams  Int @default(110) @map("small_parcel_pack_grams")
+  mediumParcelPackGrams Int @default(300) @map("medium_parcel_pack_grams")
+
+  // When the price lists were last checked against Royal Mail's own.
+  pricesCheckedOn DateTime? @map("prices_checked_on")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("delivery_settings")
 }
 
 // Simple key/value store for things Njomza can edit without a deploy:

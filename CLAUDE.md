@@ -491,8 +491,8 @@ TypeScript, deployed to Vercel.
   account itself: a layout does not wrap a route handler).
 - One row per piece: price, VAT, costs, profit, margin, times cost, the NOTHS
   fee and profit, stock, the cost lines in one cell, then every detail -
-  web address, description, materials, dimensions, care, weight, lead time,
-  flags - and the photos as full links (stored paths are made absolute with
+  web address, description, materials, dimensions, care, weight, how it goes
+  in the post, thickness, lead time, flags - and the photos as full links (stored paths are made absolute with
   the request's origin). Every figure comes from `costing.ts`, so the file
   agrees with the Price tab.
 - A figure that needs a price, or a price and costs, is **blank** without
@@ -818,10 +818,62 @@ TypeScript, deployed to Vercel.
 ## Delivery options
 
 - Settings › Delivery (`/admin/settings/delivery`) sets the `ShippingRate`
-  rows checkout offers: name, price, free over (after any code), shortest and
-  longest working days, offered or not. With none offered, checkout says it
-  cannot send anything and Continue is switched off. Deleted outright: an
-  order copies the option's name and what it charged.
+  rows checkout offers: name, how it is priced, free over (after any code),
+  shortest and longest working days, offered or not. With none that takes
+  the basket's parcel, checkout says so, points to Contact, and Continue is
+  switched off. Deleted outright: an order copies the option's name, what it
+  charged and the parcel.
+
+## Postage
+
+- **Priced from Royal Mail's own price list, by the parcel in the basket.**
+  Royal Mail has no price API open to shops (its rates API is closed to
+  third-party apps), so each option keeps its own list (`ShippingBand`: a
+  size, up to a weight, a price) and checkout never waits on anyone else's
+  website. An option can still be priced at one price (`byWeight` off);
+  whichever is not in use is kept, as a customisation section's settings are.
+- **Fill in Royal Mail's prices** fills a list from
+  `src/lib/delivery/royal-mail.ts`: the online (Click & Drop) prices for
+  Tracked 48, Tracked 24, 1st and 2nd Class, checked against royalmail.com's
+  own pages on 27 October 2026, in force from 5 October 2026, and pinned by
+  a test. Online, not counter, prices were chosen. When Royal Mail changes its
+  prices (usually April) she changes each list and marks them checked
+  (`DeliverySettings.pricesCheckedOn`); the module is updated too.
+- **The parcel** (`src/lib/delivery/parcel.ts`, pure): the largest of Royal
+  Mail's four sizes any piece needs (`ParcelSize`: Letter, Large Letter,
+  Small Parcel, Medium Parcel), the weight of every piece, and how thick
+  they stack while every piece is letter-shaped - a Letter to 5 mm, a Large
+  Letter to 25 mm. Each size's envelope or box is added once
+  (`DeliverySettings` packing). An option's price is the cheapest band its
+  packed weight is **up to and including**, at that size or any larger one:
+  Tracked has no Letter price, so a letter goes at the Large Letter price;
+  Tracked takes a Large Letter to 1 kg, 2nd Class only to 750 g, and the
+  lists say so themselves. No band fits (over 20 kg): the option is left out.
+- **A piece's postage**: its own weight, size and thickness, each falling
+  back to its category's **usual postage** (`usualFor`: its nearest category
+  with any set, up the tree, taken whole). Usual postage is **read live, not
+  copied** - unlike usual costs - so changing Cards' usual moves every card
+  using it. A piece with no weight anywhere counts as the set weight and size
+  (500 g, Small Parcel), so it can be sold before it is weighed; a letter with
+  no thickness counts as thick as its size allows. Neither can undercharge.
+- A pack counts every card in it (`PricedLine.units`, the stock it takes);
+  extras add nothing. One weight per clothing piece: the largest size's.
+- **Small Parcels are judged by weight, not by what fits.** A bulky piece is
+  marked Medium Parcel, which makes its whole parcel one.
+- Weights are entered three ways: **Weigh pieces** (`/admin/products/weigh`),
+  a sheet of every live piece where Enter moves down a row and the last
+  column says what each costs to send alone; a category's usual postage; and
+  the Postage section of a piece's Details tab, which says what it costs to
+  send alone and in each pack. The products list links to the sheet with how
+  many are not weighed. "Goes as" and "Thickness (mm)" go through the
+  export and import beside Weight.
+- Shoppers see only a piece's **own** weight, under Need to know; a usual
+  weight is for postage alone.
+- Checkout and the basket price every option with `ratesFor(lines)`
+  (`src/lib/basket/store.ts`); Continue to payment prices it again and copies
+  the parcel onto the order (`parcelSize`, `parcelGrams`, `parcelMm`), and the
+  order page says it, so the postage bought is the postage charged for. The
+  basket says delivery is "from" the cheapest option for its parcel.
 
 ## Shoppers' questions
 

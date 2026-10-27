@@ -41,6 +41,8 @@ async function planFor(csv: string): Promise<ImportPlan> {
     dimensions: product.dimensions,
     careInstructions: product.careInstructions,
     weightGrams: product.weightGrams,
+    parcelSize: product.parcelSize,
+    thicknessMm: product.thicknessMm,
     featured: product.featured,
     oneOfAKind: product.oneOfAKind,
     leadTimeDays: product.leadTimeDays,

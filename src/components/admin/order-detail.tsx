@@ -3,6 +3,7 @@ import { ProductThumbnail } from "@/components/admin/product-thumbnail";
 import { ui } from "@/lib/brand/ui";
 import { printedWords } from "@/lib/checkout/order";
 import type { SummaryRow } from "@/lib/customisation/choices";
+import { SIZE_NAMES, type ParcelSize } from "@/lib/delivery/royal-mail";
 import { formatPence } from "@/lib/money";
 import { formatDateTime, orderStatusBadge, orderStatusLabel, type OrderStatus } from "@/lib/orders/status";
 
@@ -18,6 +19,8 @@ export interface OrderView {
   giftNote: string | null;
   hidePrices: boolean;
   shippingMethod: string | null;
+  /** The parcel checkout priced: its size, its weight packed, and a letter's thickness. */
+  parcel: { size: ParcelSize; grams: number; mm: number | null } | null;
   address: { name: string; line1: string; line2: string | null; city: string; county: string | null; postcode: string } | null;
   items: {
     id: string;
@@ -136,6 +139,11 @@ export function OrderDetail({ order }: { order: OrderView }) {
               <span className="font-medium">{order.shippingMethod ?? "No delivery chosen"}</span>
               {order.shippingMethod ? ` · ${order.shippingPence === 0 ? "free" : formatPence(order.shippingPence)}` : null}
             </p>
+            {order.parcel ? (
+              <p className={`text-sm ${ui.mutedOnPanel}`}>
+                {`${SIZE_NAMES[order.parcel.size]}, ${order.parcel.grams} g packed${order.parcel.mm !== null ? `, ${order.parcel.mm} mm thick` : ""}`}
+              </p>
+            ) : null}
             {order.gift && order.hidePrices ? <p className={`text-sm ${ui.mutedOnPanel}`}>Leave the prices off the delivery note</p> : null}
             {order.gift && order.giftNote ? (
               <div className={`${QUOTE} mt-3 ${ui.panel} ${ui.rule}`}>

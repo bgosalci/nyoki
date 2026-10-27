@@ -66,6 +66,7 @@ function product(overrides: Partial<ReviewProduct> = {}): ReviewProduct {
     saleName: "Winter sale",
     offer: plain,
     variants: [],
+    postage: { grams: 40, size: "LARGE_LETTER", mm: 5 },
     ...overrides,
   };
 }
@@ -177,6 +178,13 @@ describe("reviewBasket", () => {
     expect(review.pieces).toBe(2);
     expect(review.changes).toEqual([]);
     expect(review.updates).toEqual([]);
+  });
+
+  it("carries each line's postage, and how many pieces go: a pack of three is three", () => {
+    const stored: StoredChoices = { ...PLAIN, packId: "p3", message: "Blank inside" };
+    const review = reviewBasket([line({ quantity: 2, addedPricePence: 1950, stored, product: product({ offer: card, saleName: null }) })]);
+
+    expect(review.lines[0]).toMatchObject({ postage: { grams: 40, size: "LARGE_LETTER", mm: 5 }, units: 6 });
   });
 
   it("shows what a piece in a sale was, and the sale's name", () => {

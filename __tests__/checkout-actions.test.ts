@@ -7,7 +7,7 @@ const orderingOpen = jest.fn();
 const findBasketId = jest.fn();
 const reviewAndSave = jest.fn();
 const currentCustomer = jest.fn();
-const rateFindFirst = jest.fn();
+const ratesFor = jest.fn();
 const addressFindFirst = jest.fn();
 const addressCreate = jest.fn();
 const addressDeleteMany = jest.fn();
@@ -35,7 +35,6 @@ jest.mock("../src/lib/db", () => {
   return {
     db: {
       ...tx,
-      shippingRate: { findFirst: (a: unknown) => rateFindFirst(a) },
       discountCode: { findUnique: (a: unknown) => codeFindUnique(a) },
       $transaction: (work: (client: typeof tx) => Promise<unknown>) => work(tx),
     },
@@ -48,6 +47,7 @@ jest.mock("../src/lib/account/dal", () => ({ currentCustomer: () => currentCusto
 jest.mock("../src/lib/basket/store", () => ({
   findBasketId: () => findBasketId(),
   reviewAndSave: (...args: unknown[]) => reviewAndSave(...args),
+  ratesFor: (...args: unknown[]) => ratesFor(...args),
 }));
 
 import { applyCode, continueToPayment } from "@/app/(checkout)/checkout/actions";
@@ -72,13 +72,16 @@ const line = (overrides: Partial<PricedLine>): PricedLine => ({
   details: [{ label: "Single or pack", value: "Pack of 3" }],
   madeToOrder: false,
   leadTimeDays: null,
+  postage: { grams: 40, size: "LARGE_LETTER", mm: 5 },
+  units: 1,
   ...overrides,
 });
 
 const lines = [line({}), line({ id: "l2", productId: "hat", name: "Merino Hat", variantId: "v1", variantName: "Seascape / 2-3 years", unitPence: 4500, totalPence: 4500, vatRate: 0, details: [] }), line({ id: "l3", productId: "reindeer", name: "Reindeer Card", unitPence: 400, quantity: 2, totalPence: 800, details: [] })];
 const review = { lines, changes: [], updates: [], pieces: 4, subtotalPence: 7490 };
 
-const tracked48 = { id: "t48", name: "Royal Mail Tracked 48", pricePence: 395, freeOverPence: 4000, minDays: 2, maxDays: 3, active: true };
+// Tracked 48 as checkout prices it for this basket's parcel.
+const tracked48 = { id: "t48", name: "Royal Mail Tracked 48", pricePence: 375, freeOverPence: 4000, minDays: 2, maxDays: 3, parcel: { size: "SMALL_PARCEL", grams: 352, mm: null } };
 const winter10 = { id: "code1", code: "WINTER10", type: "PERCENTAGE", value: 10, minSpendPence: null, usageLimit: null, usedCount: 0, startsAt: new Date("2026-10-01"), endsAt: null, active: true };
 
 function form(entries: Record<string, string>): FormData {
@@ -110,7 +113,7 @@ beforeEach(() => {
   findBasketId.mockResolvedValue("b1");
   reviewAndSave.mockResolvedValue(review);
   currentCustomer.mockResolvedValue(null);
-  rateFindFirst.mockResolvedValue(tracked48);
+  ratesFor.mockResolvedValue([tracked48]);
   codeFindUnique.mockResolvedValue(winter10);
   customerUpsert.mockResolvedValue({ id: "guest1" });
   addressCreate.mockResolvedValue({ id: "addr-new" });
@@ -142,6 +145,9 @@ describe("continueToPayment", () => {
         discountCodeId: "code1",
         shippingAddressId: "addr-new",
         shippingMethod: "Royal Mail Tracked 48",
+        parcelSize: "SMALL_PARCEL",
+        parcelGrams: 352,
+        parcelMm: null,
         gift: true,
         giftNote: "Happy Christmas, Mum!",
         hidePrices: true,
@@ -205,13 +211,23 @@ describe("continueToPayment", () => {
     expect(orderCreate).not.toHaveBeenCalled();
   });
 
-  it("refuses a delivery option no longer offered", async () => {
-    rateFindFirst.mockResolvedValue(null);
+  it("refuses a delivery option no longer offered, or not offered for this parcel", async () => {
+    ratesFor.mockResolvedValue([{ ...tracked48, id: "t24" }]);
 
     const result = await continueToPayment({ errors: {} }, form(gift));
 
-    expect(rateFindFirst).toHaveBeenCalledWith(expect.objectContaining({ where: { id: "t48", active: true } }));
+    expect(ratesFor).toHaveBeenCalledWith(lines);
     expect(result).toEqual({ errors: { rate: "That way of sending it is no longer offered. Please choose another." } });
+    expect(orderCreate).not.toHaveBeenCalled();
+  });
+
+  it("charges delivery at the price worked out for the basket's parcel", async () => {
+    ratesFor.mockResolvedValue([{ ...tracked48, freeOverPence: null }]);
+
+    await expect(continueToPayment({ errors: {} }, form(gift))).rejects.toThrow("NEXT_REDIRECT");
+
+    // £74.90 less 10% is £67.41, and the Small Parcel's £3.75 on top.
+    expect(orderCreate).toHaveBeenCalledWith({ data: expect.objectContaining({ shippingPence: 375, totalPence: 7116 }) });
   });
 
   it("refuses a code that cannot be used, in the same words for every reason", async () => {

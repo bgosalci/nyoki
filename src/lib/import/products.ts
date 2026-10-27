@@ -1,3 +1,4 @@
+import { PARCEL_SIZES, SIZE_NAMES, type ParcelSize } from "@/lib/delivery/royal-mail";
 import { productionCostPence } from "@/lib/costing/costing";
 import type { EntryLine } from "@/lib/costing/import";
 import { parseQuantityToHundredths, VAT_RATES } from "@/lib/costing/validate";
@@ -43,6 +44,8 @@ export interface ExistingProduct {
   dimensions: string | null;
   careInstructions: string | null;
   weightGrams: number | null;
+  parcelSize: ParcelSize | null;
+  thicknessMm: number | null;
   featured: boolean;
   oneOfAKind: boolean;
   leadTimeDays: number | null;
@@ -114,6 +117,8 @@ const IMPORTED: [names: string[], field: Field][] = [
   [["Dimensions"], "dimensions"],
   [["Care instructions"], "careInstructions"],
   [["Weight (g)", "weightGrams"], "weightGrams"],
+  [["Goes as"], "parcelSize"],
+  [["Thickness (mm)"], "thicknessMm"],
   [["Lead time (days)"], "leadTimeDays"],
   [["One of a kind"], "oneOfAKind"],
   [["Featured"], "featured"],
@@ -139,6 +144,8 @@ const LABEL: Partial<Record<Field, string>> = {
   dimensions: "Dimensions",
   careInstructions: "Care instructions",
   weightGrams: "Weight (g)",
+  parcelSize: "Goes as",
+  thicknessMm: "Thickness (mm)",
   leadTimeDays: "Lead time (days)",
   oneOfAKind: "One of a kind",
   featured: "Featured",
@@ -159,6 +166,8 @@ const NEW_PRODUCT: ImportValues = {
   dimensions: null,
   careInstructions: null,
   weightGrams: null,
+  parcelSize: null,
+  thicknessMm: null,
   featured: false,
   oneOfAKind: false,
   leadTimeDays: null,
@@ -168,6 +177,9 @@ const NEW_PRODUCT: ImportValues = {
 
 /** A name as it matches: "Product code", "productCode" and "product_code" are one. "%" counts: "VAT %" is not "VAT". */
 const key = (name: string) => name.toLowerCase().replace(/[^a-z0-9%]/g, "");
+
+/** Each size by its name as a file may write it: "Large Letter", "large letter", "LARGE_LETTER". */
+const SIZE_BY_NAME = new Map(PARCEL_SIZES.map((size) => [key(SIZE_NAMES[size]), size]));
 
 const optionalText = (cell: string) => {
   const text = cell.replace(/\r\n?/g, "\n").trim();
@@ -224,6 +236,8 @@ function shown(field: Field, values: ImportValues, categoryName: (id: string) =>
     case "oneOfAKind":
     case "featured":
       return values[field] ? "Yes" : "No";
+    case "parcelSize":
+      return values.parcelSize ? SIZE_NAMES[values.parcelSize] : none;
     default: {
       const value = values[field];
       if (value === null || value === "") return none;
@@ -415,6 +429,17 @@ export function planImport(
 
     const weight = read("weightGrams", optionalWhole, "Weight (g): write a whole number of grams.");
     if (weight !== undefined) values.weightGrams = weight.n;
+
+    // Royal Mail's name for the size, in any case; blank goes by its category's usual.
+    const size = read(
+      "parcelSize",
+      (value) => (value === "" ? { size: null } : SIZE_BY_NAME.has(key(value)) ? { size: SIZE_BY_NAME.get(key(value))! } : null),
+      "Goes as: say Letter, Large Letter, Small Parcel or Medium Parcel, or leave it blank.",
+    );
+    if (size !== undefined) values.parcelSize = size.size;
+
+    const thickness = read("thicknessMm", optionalWhole, "Thickness (mm): write a whole number of millimetres.");
+    if (thickness !== undefined) values.thicknessMm = thickness.n;
 
     const lead = read("leadTimeDays", optionalWhole, "Lead time (days): write a whole number of days.");
     if (lead !== undefined) values.leadTimeDays = lead.n;

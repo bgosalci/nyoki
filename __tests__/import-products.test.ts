@@ -23,6 +23,8 @@ const snowflake: ExistingProduct = {
   dimensions: "15cm square",
   careInstructions: null,
   weightGrams: 40,
+  parcelSize: "LARGE_LETTER",
+  thicknessMm: 5,
   featured: true,
   oneOfAKind: false,
   leadTimeDays: null,
@@ -104,6 +106,20 @@ describe("planImport, changing products", () => {
     expect(row).toMatchObject({ kind: "update", productId: "p1", name: "Snowflake Card", row: 2 });
     expect(row.changes).toEqual([{ label: "Price", from: "£6.00", to: "£6.50" }]);
     expect(row.values).toMatchObject({ pricePence: 650, description: snowflake.description, stock: 3 });
+  });
+
+  it("reads how a piece goes in the post by Royal Mail's name for it, and its thickness", () => {
+    const row = only([["Web address", "Goes as", "Thickness (mm)"], ["snowflake-card", "small parcel", ""]]);
+
+    expect(row.changes).toEqual([
+      { label: "Goes as", from: "Large Letter", to: "Small Parcel" },
+      { label: "Thickness (mm)", from: "5", to: "(none)" },
+    ]);
+    expect(row.values).toMatchObject({ parcelSize: "SMALL_PARCEL", thicknessMm: null });
+  });
+
+  it("leaves how a piece goes in the post to its category when the cell is blank", () => {
+    expect(only([["Web address", "Goes as"], ["snowflake-card", ""]]).values).toMatchObject({ parcelSize: null });
   });
 
   it("matches a web address exactly as stored, even one the shop would not build today", () => {
@@ -197,6 +213,8 @@ describe("planImport, problems", () => {
     expect(problem("VAT %", "17.5")).toEqual(["VAT %: use 20, 5 or 0."]);
     expect(problem("Stock", "3.5")).toEqual(["Stock: write a whole number, zero or more."]);
     expect(problem("Featured", "maybe")).toEqual(["Featured: say Yes or No."]);
+    expect(problem("Goes as", "Box")).toEqual(["Goes as: say Letter, Large Letter, Small Parcel or Medium Parcel, or leave it blank."]);
+    expect(problem("Thickness (mm)", "thin")).toEqual(["Thickness (mm): write a whole number of millimetres."]);
     expect(problem("Categories", "Cards; Mugs")).toEqual(['Categories: there is no category called "Mugs".']);
     expect(problem("Cost lines", "Card and envelope")).toEqual([
       'Cost lines: write each as what, cost and how many - like "Bag 0.05 × 1" - separated by semicolons.',

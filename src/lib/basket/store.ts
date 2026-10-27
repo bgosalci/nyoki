@@ -5,10 +5,14 @@ import { cookies } from "next/headers";
 import { currentCustomer } from "@/lib/account/dal";
 import type { StoredChoices, VariantRow } from "@/lib/basket/lines";
 import { reviewBasket, type BasketReview, type ReviewLine, type ReviewProduct } from "@/lib/basket/review";
-import type { CategoryNode } from "@/lib/categories/lineage";
 import type { MessageChoice } from "@/lib/customisation/choices";
 import type { DeliveryRate } from "@/lib/checkout/totals";
 import { db } from "@/lib/db";
+import { parcelOf, postageOf, priceRates, withUsual, type PricedRate } from "@/lib/delivery/parcel";
+import type { ParcelSize } from "@/lib/delivery/royal-mail";
+import { deliverySettings, postageCategories, rateSources } from "@/lib/delivery/store";
+import { usualFor, type UsualCategory } from "@/lib/delivery/usual";
+import type { PricedLine } from "@/lib/basket/review";
 import { effectivePricePence, type PricingSale } from "@/lib/pricing";
 import { productOffer, type OfferSource } from "@/lib/storefront/offer";
 
@@ -48,15 +52,22 @@ export interface BasketProductRow extends Omit<OfferSource, "sales" | "categoryI
   oneOfAKind: boolean;
   leadTimeDays: number | null;
   vatRate: number;
+  weightGrams: number | null;
+  parcelSize: ParcelSize | null;
+  thicknessMm: number | null;
   images: { url: string }[];
   variants: VariantRow[];
   categories: { categoryId: string }[];
   sales: { sale: PricingSale & { name: string } }[];
 }
 
-export function toReviewProduct(row: BasketProductRow, categories: readonly CategoryNode[], now: Date): ReviewProduct {
+/** The categories, with what each says about a piece: what kind it is, and its usual postage. */
+export type BasketCategory = UsualCategory;
+
+export function toReviewProduct(row: BasketProductRow, categories: readonly BasketCategory[], now: Date): ReviewProduct {
   const sales = row.sales.map((link) => link.sale);
-  const { offer } = productOffer({ ...row, sales, categoryIds: row.categories.map((link) => link.categoryId) }, categories, now);
+  const categoryIds = row.categories.map((link) => link.categoryId);
+  const { offer } = productOffer({ ...row, sales, categoryIds }, categories, now);
 
   return {
     id: row.id,
@@ -73,11 +84,12 @@ export function toReviewProduct(row: BasketProductRow, categories: readonly Cate
     saleName: effectivePricePence(row.pricePence, sales, now).sale?.name ?? null,
     offer,
     variants: row.variants,
+    postage: withUsual({ grams: row.weightGrams, size: row.parcelSize, mm: row.thicknessMm }, usualFor(categoryIds, categories)),
   };
 }
 
-export function categoryNodes(): Promise<CategoryNode[]> {
-  return db.category.findMany({ select: { id: true, slug: true, parentId: true } });
+export function categoryNodes(): Promise<BasketCategory[]> {
+  return postageCategories();
 }
 
 async function readBasketCookie(): Promise<string | null> {
@@ -222,7 +234,18 @@ export async function basketPieces(): Promise<number> {
   return sum._sum.quantity ?? 0;
 }
 
-/** The delivery options a shopper can choose, in the order set in the admin. */
+/**
+ * The delivery options a shopper can choose for these lines, each priced for
+ * the parcel they make - an option whose price list has no band for it left
+ * out - in the order set in the admin.
+ */
+export async function ratesFor(lines: readonly Pick<PricedLine, "postage" | "units">[]): Promise<PricedRate[]> {
+  const [sources, settings] = await Promise.all([rateSources({ activeOnly: true }), deliverySettings()]);
+  const parcel = parcelOf(lines.map((line) => ({ postage: postageOf(line.postage, settings), units: line.units })));
+  return priceRates(sources, parcel, settings.packing);
+}
+
+/** The delivery options a shopper can choose, at their one prices: for what free delivery needs, which is the same whatever the parcel. */
 export function activeRates(): Promise<DeliveryRate[]> {
   return db.shippingRate.findMany({
     where: { active: true },

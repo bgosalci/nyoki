@@ -4,6 +4,7 @@ import { EditProductForm } from "@/components/admin/edit-product-form";
 import { EditProductImages } from "@/components/admin/edit-product-images";
 import { categoryPaths, pathsOf } from "@/lib/categories/path";
 import { db } from "@/lib/db";
+import { deliverySettings, postageCategories, rateSources } from "@/lib/delivery/store";
 import { closestFirst } from "@/lib/products/also-like";
 import { automaticAlsoLike } from "@/lib/storefront/queries";
 import type { ProductInput } from "@/lib/products/validate";
@@ -16,13 +17,14 @@ export default async function EditProductPage({
   const { id } = await params;
 
   const photo = { orderBy: { position: "asc" as const }, take: 1, select: { url: true, alt: true } };
-  const [product, categories, chosen, options] = await Promise.all([
+  const [product, categories, chosen, options, settings, rates, usualCategories] = await Promise.all([
     db.product.findUnique({
       where: { id },
       include: {
         images: { orderBy: { position: "asc" } },
         categories: { select: { categoryId: true } },
         variants: { orderBy: { position: "asc" }, select: { colour: true, size: true, stock: true } },
+        packs: { orderBy: { cards: "asc" }, select: { cards: true } },
       },
     }),
     db.category.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, slug: true, parentId: true } }),
@@ -38,6 +40,9 @@ export default async function EditProductPage({
       orderBy: { name: "asc" },
       select: { id: true, name: true, images: photo, categories: { select: { categoryId: true } } },
     }),
+    deliverySettings(),
+    rateSources({ activeOnly: true }),
+    postageCategories(),
   ]);
   if (!product) notFound();
 
@@ -66,6 +71,8 @@ export default async function EditProductPage({
     sku: product.sku,
     stock: product.stock,
     weightGrams: product.weightGrams,
+    parcelSize: product.parcelSize,
+    thicknessMm: product.thicknessMm,
     featured: product.featured,
     dimensions: product.dimensions,
     materials: product.materials,
@@ -86,6 +93,7 @@ export default async function EditProductPage({
           pricing={{ productId: product.id, pricePence: product.pricePence, compareAtPence: product.compareAtPence }}
           categories={categories}
           clothing={{ colours: product.colours, sizes: product.sizes, variants: product.variants }}
+          postage={{ settings, rates, categories: usualCategories, packs: product.packs.map((pack) => pack.cards) }}
           alsoLike={{
             options: ranked.map(({ id, name, images, categoryIds: filed }) => ({
               id,

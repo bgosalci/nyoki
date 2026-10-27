@@ -7,10 +7,10 @@ import { BasketChanges } from "@/components/shop/basket-changes";
 import { BasketLines } from "@/components/shop/basket-lines";
 import { FreeDeliveryNote } from "@/components/shop/free-delivery-note";
 import { currentCustomer } from "@/lib/account/dal";
-import { EMPTY_REVIEW, activeRates, findBasketId, reviewAndSave } from "@/lib/basket/store";
+import { EMPTY_REVIEW, findBasketId, ratesFor, reviewAndSave } from "@/lib/basket/store";
 import { madeToOrderNote, piecesLabel } from "@/lib/basket/summary";
 import { ui } from "@/lib/brand/ui";
-import { freeDelivery } from "@/lib/checkout/totals";
+import { cheapestDelivery, freeDelivery } from "@/lib/checkout/totals";
 import { db } from "@/lib/db";
 import { formatPence } from "@/lib/money";
 import { orderingOpen } from "@/lib/ordering";
@@ -35,8 +35,10 @@ export default async function BasketPage() {
   if (!orderingOpen()) notFound();
 
   const basketId = await findBasketId();
-  const [review, rates, shopper] = await Promise.all([basketId ? reviewAndSave(basketId) : EMPTY_REVIEW, activeRates(), currentCustomer()]);
+  const [review, shopper] = await Promise.all([basketId ? reviewAndSave(basketId) : EMPTY_REVIEW, currentCustomer()]);
   const { lines, changes, pieces, subtotalPence } = review;
+  // Each option priced for the parcel this basket makes.
+  const rates = lines.length > 0 ? await ratesFor(lines) : [];
 
   const changed = <BasketChanges changes={changes} />;
 
@@ -72,6 +74,7 @@ export default async function BasketPage() {
   }
 
   const free = freeDelivery(rates, subtotalPence);
+  const cheapest = cheapestDelivery(rates, subtotalPence);
   const sending = madeToOrderNote(lines);
 
   return (
@@ -101,7 +104,11 @@ export default async function BasketPage() {
             </div>
             <div className="flex justify-between gap-4">
               <dt className={ui.shopMuted}>Delivery</dt>
-              <dd className={ui.shopMuted}>Chosen at checkout</dd>
+              {cheapest === null ? (
+                <dd className={ui.shopMuted}>Chosen at checkout</dd>
+              ) : (
+                <dd>{cheapest === 0 ? "Free" : `from ${formatPence(cheapest)}`}</dd>
+              )}
             </div>
           </dl>
           {free ? <FreeDeliveryNote free={free} subtotalPence={subtotalPence} /> : null}

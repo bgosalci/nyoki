@@ -37,6 +37,7 @@ export default async function OrderPage({ params }: { params: Promise<{ number: 
             giftNote: order.giftNote,
             hidePrices: order.hidePrices,
             shippingMethod: order.shippingMethod,
+            parcel: order.parcelSize && order.parcelGrams !== null ? { size: order.parcelSize, grams: order.parcelGrams, mm: order.parcelMm } : null,
             address: address
               ? { name: address.name, line1: address.line1, line2: address.line2, city: address.city, county: address.county, postcode: address.postcode }
               : null,

@@ -1,3 +1,4 @@
+import { SIZE_NAMES, type ParcelSize } from "@/lib/delivery/royal-mail";
 import { marginPercent, nothsBreakdown, priceBreakdown, productionCostPence } from "@/lib/costing/costing";
 import type { EntryLine } from "@/lib/costing/import";
 import { hundredthsText } from "@/lib/costing/rows";
@@ -20,6 +21,9 @@ export interface ExportProduct {
   dimensions: string | null;
   careInstructions: string | null;
   weightGrams: number | null;
+  /** Null where it goes by its category's usual. */
+  parcelSize: ParcelSize | null;
+  thicknessMm: number | null;
   featured: boolean;
   oneOfAKind: boolean;
   leadTimeDays: number | null;
@@ -55,6 +59,8 @@ const HEADER = [
   "Dimensions",
   "Care instructions",
   "Weight (g)",
+  "Goes as",
+  "Thickness (mm)",
   "Lead time (days)",
   "One of a kind",
   "Featured",
@@ -86,6 +92,9 @@ export interface ExportRecord {
   dimensions: string | null;
   careInstructions: string | null;
   weightGrams: number | null;
+  /** Royal Mail's name for the size: "Large Letter". */
+  goesAs: string | null;
+  thicknessMm: number | null;
   leadTimeDays: number | null;
   oneOfAKind: boolean;
   featured: boolean;
@@ -138,6 +147,8 @@ function toRecord(product: ExportProduct, origin: string): ExportRecord {
     dimensions: product.dimensions,
     careInstructions: product.careInstructions,
     weightGrams: product.weightGrams,
+    goesAs: product.parcelSize ? SIZE_NAMES[product.parcelSize] : null,
+    thicknessMm: product.thicknessMm,
     leadTimeDays: product.leadTimeDays,
     oneOfAKind: product.oneOfAKind,
     featured: product.featured,
@@ -188,6 +199,8 @@ function row(product: ExportProduct, origin: string): Cell[] {
     record.dimensions,
     record.careInstructions,
     number(record.weightGrams),
+    record.goesAs,
+    number(record.thicknessMm),
     number(record.leadTimeDays),
     yesNo(record.oneOfAKind),
     yesNo(record.featured),

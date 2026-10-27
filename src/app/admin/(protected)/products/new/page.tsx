@@ -2,9 +2,10 @@ import { ProductForm } from "@/components/admin/product-form";
 import { SaveSlot, SaveSlotProvider } from "@/components/admin/save-slot";
 import { createProduct } from "@/app/admin/(protected)/products/actions";
 import { db } from "@/lib/db";
+import { deliverySettings, postageCategories, rateSources } from "@/lib/delivery/store";
 
 export default async function NewProductPage() {
-  const [categories, options] = await Promise.all([
+  const [categories, options, settings, rates, usualCategories] = await Promise.all([
     db.category.findMany({
       orderBy: { name: "asc" },
       select: { id: true, name: true, slug: true, parentId: true },
@@ -15,6 +16,9 @@ export default async function NewProductPage() {
       orderBy: { name: "asc" },
       select: { id: true, name: true, images: { orderBy: { position: "asc" }, take: 1, select: { url: true, alt: true } } },
     }),
+    deliverySettings(),
+    rateSources({ activeOnly: true }),
+    postageCategories(),
   ]);
 
   return (
@@ -28,6 +32,7 @@ export default async function NewProductPage() {
           action={createProduct}
           categories={categories}
           alsoLike={{ options: options.map(({ images, ...piece }) => ({ ...piece, image: images[0] ?? null })), automatic: [], chosen: [] }}
+          postage={{ settings, rates, categories: usualCategories, packs: [] }}
           submitLabel="Create product"
         />
       </div>

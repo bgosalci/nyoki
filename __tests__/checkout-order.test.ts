@@ -24,6 +24,8 @@ const line: PricedLine = {
   ],
   madeToOrder: true,
   leadTimeDays: 14,
+  postage: { grams: 100, size: "SMALL_PARCEL", mm: null },
+  units: 2,
 };
 
 describe("orderItems", () => {

@@ -17,6 +17,8 @@ const christening: ExportProduct = {
   dimensions: "15cm square",
   careInstructions: null,
   weightGrams: 40,
+  parcelSize: "LARGE_LETTER",
+  thicknessMm: 5,
   featured: true,
   oneOfAKind: false,
   leadTimeDays: null,
@@ -53,6 +55,8 @@ describe("exportProducts, JSON", () => {
       description: "A card for a christening.\nHand made.",
       materials: null,
       weightGrams: 40,
+      goesAs: "Large Letter",
+      thicknessMm: 5,
       featured: true,
       photos: ["http://localhost:3000/uploads/christening-1.jpg"],
     });
