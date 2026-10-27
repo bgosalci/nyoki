@@ -1,7 +1,10 @@
 "use client";
 
-import { createContext, useContext, useEffect, useId, useState } from "react";
+import Link from "next/link";
+import { createContext, useContext, useEffect, useId, useRef, useState } from "react";
 
+import type { AddResult } from "@/app/(shop)/basket/actions";
+import { useBasketAdded } from "@/components/shop/basket-added";
 import { ShopField } from "@/components/shop/field";
 import { ui } from "@/lib/brand/ui";
 import { inStock, soldOut } from "@/lib/clothes/stock";
@@ -15,6 +18,7 @@ import {
   initialChoices,
   missingChoices,
   packSavingPence,
+  readyHint,
   summarise,
   totalPence,
   type ChoiceKey,
@@ -26,20 +30,33 @@ import { formatPence } from "@/lib/money";
 
 // Soft 20px panels, slim tiles and pill controls, in the shop's own colours:
 // white panels on the beige page, navy for what is chosen, accent beige for
-// tags and notices.
-const PANEL_SURFACE =
+// tags and notices. Checkout is drawn from the same pieces.
+export const PANEL_SURFACE =
   "rounded-[20px] border-[1.5px] border-nyoki-light-slate bg-nyoki-white shadow-[0_1px_2px_rgb(0_0_0/0.03),0_10px_30px_-18px_rgb(0_0_0/0.18)]";
-const PANEL = `${PANEL_SURFACE} p-7`;
+export const PANEL = `${PANEL_SURFACE} p-7`;
 
 // Filled boxes with a 2px outline that turns navy in use and red when wrong.
 // 16px text, or a phone zooms in on the box. The scroll margins keep a box
 // clear of the shop's sticky header and the sticky bar when the browser
 // scrolls to it.
-const INPUT =
+export const INPUT =
   "w-full scroll-mt-60 scroll-mb-48 rounded-[14px] border-2 border-transparent bg-nyoki-beige px-4 py-3 text-base text-nyoki-navy outline-none transition-colors duration-150 placeholder:text-nyoki-text-dark/60 focus:border-nyoki-navy focus:bg-nyoki-white aria-[invalid=true]:border-red-700 motion-reduce:transition-none";
 
 const NOT_YET = "Online ordering opens soon. Until then, send us a question to order this one.";
 const SOLD_OUT = "Out of stock for now";
+
+/** Puts the piece in the basket: the server action, passed in so the customiser can be tested without one. */
+export type AddToBasket = (productId: string, choices: Choices) => Promise<AddResult>;
+
+/**
+ * Said above the bar a while. That a piece went in is said on a phone only:
+ * on a computer the panel from the header's basket says it.
+ */
+export interface BarNotice {
+  text: string;
+  /** With the way to the basket. */
+  added: boolean;
+}
 
 interface Customiser {
   offer: Offer;
@@ -53,7 +70,13 @@ interface Customiser {
   /** The line beneath the total: what is still to choose. */
   hint: string;
   /** Shown above the bar a while, once Add to basket is pressed with everything chosen. */
-  notice: string | null;
+  notice: BarNotice | null;
+  /** Ordering is open: Add to basket works. */
+  open: boolean;
+  /** Waiting on the basket. */
+  adding: boolean;
+  /** Only ever one: no quantity is asked. */
+  oneOfAKind: boolean;
   change: (patch: Partial<Choices>) => void;
   changeField: (id: string, value: string) => void;
   changeQuantity: (text: string) => void;
@@ -77,32 +100,53 @@ function useCustomiser(): Customiser {
  * over all of it.
  *
  * Nothing starts chosen, so every shopper decides for themselves - except a
- * colour or size that is the only one. There is no basket yet: Add to basket
- * is marked unavailable but never faded, pressing it too soon shows what is
- * missing and moves to the first of it, and once everything is chosen it says
- * ordering opens soon.
+ * colour or size that is the only one. Pressing Add to basket too soon shows
+ * what is missing and moves to the first of it. Once everything is chosen it
+ * puts the piece in, while ordering is open (`add` is given); while it is
+ * closed the button is marked unavailable but never faded, and says ordering
+ * opens soon.
  */
-export function CustomiserProvider({ offer, children }: { offer: Offer; children: React.ReactNode }) {
+export function CustomiserProvider({
+  offer,
+  productId = "",
+  add,
+  soldOut: noneLeft = false,
+  oneOfAKind = false,
+  children,
+}: {
+  offer: Offer;
+  productId?: string;
+  /** Absent while ordering is closed. */
+  add?: AddToBasket;
+  /** None left of a piece that is not clothing - clothing's stock is in the offer. */
+  soldOut?: boolean;
+  oneOfAKind?: boolean;
+  children: React.ReactNode;
+}) {
   const formId = useId();
+  const basketAdded = useBasketAdded();
   const [answers, setAnswers] = useState<Choices>(() => initialChoices(offer));
   // As typed, so the box can be blank mid-edit; tidied when it is left.
   const [quantityText, setQuantityText] = useState(String(answers.quantity));
   const [attempted, setAttempted] = useState(false);
-  const [pressedWhenDone, setPressedWhenDone] = useState(false);
+  const [notice, setNotice] = useState<BarNotice | null>(null);
+  const [adding, setAdding] = useState(false);
+  // A second press while the first is on its way sends nothing.
+  const sending = useRef(false);
 
-  const choices: Choices = { ...answers, quantity: clampQuantity(quantityText) };
+  const choices: Choices = { ...answers, quantity: oneOfAKind ? 1 : clampQuantity(quantityText) };
   const missing = missingChoices(offer, choices);
   // Nothing left in any colour or size: nothing to choose, nothing to say is missing.
-  const outOfStock = offer.clothing !== null && soldOut(offer.clothing);
+  const outOfStock = offer.clothing !== null ? soldOut(offer.clothing) : noneLeft;
 
-  const touched = () => setPressedWhenDone(false);
+  const touched = () => setNotice(null);
 
   // Said a while, then gone: it covers the page above the bar.
   useEffect(() => {
-    if (!pressedWhenDone) return;
-    const timer = setTimeout(() => setPressedWhenDone(false), 6000);
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(null), 6000);
     return () => clearTimeout(timer);
-  }, [pressedWhenDone]);
+  }, [notice]);
 
   const customiser: Customiser = {
     offer,
@@ -112,8 +156,11 @@ export function CustomiserProvider({ offer, children }: { offer: Offer; children
     missing,
     errors: new Map(attempted ? missing.map((entry) => [entry.key, entry.message]) : []),
     totalPence: totalPence(offer, choices),
-    hint: outOfStock ? SOLD_OUT : barHint(missing),
-    notice: !outOfStock && missing.length === 0 && pressedWhenDone ? NOT_YET : null,
+    hint: outOfStock ? SOLD_OUT : add && missing.length === 0 ? readyHint(offer, choices) : barHint(missing),
+    notice,
+    open: add !== undefined,
+    adding,
+    oneOfAKind,
     change: (patch) => {
       setAnswers((previous) => ({ ...previous, ...patch }));
       touched();
@@ -131,7 +178,27 @@ export function CustomiserProvider({ offer, children }: { offer: Offer; children
       event.preventDefault();
       if (outOfStock) return;
       if (missing.length === 0) {
-        setPressedWhenDone(true);
+        if (!add) {
+          setNotice({ text: NOT_YET, added: false });
+          return;
+        }
+        if (sending.current) return;
+        sending.current = true;
+        setAdding(true);
+        add(productId, choices)
+          .then((result) => {
+            if (result.ok) {
+              basketAdded?.show(result);
+              setNotice({ text: result.note ?? "Added to your basket.", added: true });
+            } else {
+              setNotice({ text: result.message, added: false });
+            }
+          })
+          .catch(() => setNotice({ text: "Sorry, that did not go in. Please try again.", added: false }))
+          .finally(() => {
+            sending.current = false;
+            setAdding(false);
+          });
         return;
       }
 
@@ -152,7 +219,7 @@ export function CustomiserProvider({ offer, children }: { offer: Offer; children
 
 /** The choices, and what has been chosen so far. */
 export function CustomiserPanels() {
-  const { offer, formId, submit } = useCustomiser();
+  const { offer, choices, formId, submit, oneOfAKind } = useCustomiser();
 
   return (
     // POST, though nothing is sent: pressed before the page has loaded its
@@ -163,8 +230,9 @@ export function CustomiserPanels() {
       {offer.packs.length > 0 ? <UnitPanel /> : null}
       {offer.message ? <MessagePanel /> : null}
       {offer.personalisation ? <PersonalisationPanel /> : null}
-      <QuantityPanel />
-      <SummaryPanel />
+      {oneOfAKind ? null : <QuantityPanel />}
+      {/* A piece with nothing to choose has nothing to sum up. */}
+      {summarise(offer, choices).length > 0 ? <SummaryPanel /> : null}
     </form>
   );
 }
@@ -496,22 +564,14 @@ function SummaryPanel() {
  * and took a fifth of a phone's screen.
  */
 export function CustomiserBar() {
-  const { formId, totalPence: total, hint, notice } = useCustomiser();
+  const { formId, totalPence: total, hint, notice, open, adding } = useCustomiser();
 
   return (
     <div
       data-testid="customiser-bar"
       className={`sticky bottom-0 z-20 -mx-4 mt-10 border-t px-4 pb-[env(safe-area-inset-bottom)] sm:-mx-6 sm:px-6 md:bottom-3 md:mx-0 md:rounded-2xl md:border-[1.5px] md:bg-nyoki-white md:px-5 md:shadow-[0_8px_30px_-12px_rgb(0_0_0/0.25)] ${ui.shopRule} ${ui.shopPage}`}
     >
-      {notice ? (
-        <p
-          data-testid="customiser-notice"
-          role="status"
-          className="absolute inset-x-4 bottom-full mb-3 rounded-2xl bg-nyoki-ink px-4 py-2.5 text-center text-sm leading-snug text-nyoki-beige shadow-[0_8px_24px_-10px_rgb(0_0_0/0.4)] sm:inset-x-6 md:inset-x-auto md:right-0 md:max-w-sm"
-        >
-          {notice}
-        </p>
-      ) : null}
+      {notice ? <InkNotice notice={notice} testId="customiser-notice" /> : null}
 
       <div className="flex h-16 items-center gap-3">
         <div className="flex min-w-0 flex-1 flex-col">
@@ -525,17 +585,41 @@ export function CustomiserBar() {
         </div>
 
         {/* Never faded out or switched off: pressed too soon, it shows what is
-            missing. Unavailable until there is a basket to add to. */}
+            missing. Unavailable while ordering is closed. */}
         <button
           type="submit"
           form={formId}
-          aria-disabled="true"
+          aria-disabled={open ? undefined : "true"}
           className="h-11 shrink-0 rounded-full bg-nyoki-navy px-6 text-sm font-medium tracking-[0.12em] text-nyoki-beige uppercase transition-colors duration-150 hover:bg-nyoki-ink focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-nyoki-navy motion-reduce:transition-none"
         >
-          Add to basket
+          {adding ? "Adding…" : "Add to basket"}
         </button>
       </div>
     </div>
+  );
+}
+
+/**
+ * A notice above the page's bar, in ink. That a piece went in comes with the
+ * way to the basket, and is drawn on a phone only: on a computer the panel
+ * from the header's basket says it.
+ */
+export function InkNotice({ notice, testId }: { notice: BarNotice; testId?: string }) {
+  return (
+    <p
+      data-testid={testId}
+      role="status"
+      className={`absolute inset-x-4 bottom-full mb-3 flex items-center justify-center gap-3 rounded-2xl bg-nyoki-ink px-4 py-2.5 text-center text-sm leading-snug text-nyoki-beige shadow-[0_8px_24px_-10px_rgb(0_0_0/0.4)] sm:inset-x-6 md:inset-x-auto md:right-0 md:max-w-sm ${
+        notice.added ? "justify-between text-left md:hidden" : ""
+      }`}
+    >
+      <span>{notice.text}</span>
+      {notice.added ? (
+        <Link href="/basket" className="shrink-0 font-medium whitespace-nowrap underline underline-offset-4">
+          View basket
+        </Link>
+      ) : null}
+    </p>
   );
 }
 
@@ -573,7 +657,7 @@ function Panel({
 }
 
 /** A set of tiles that choose one thing, and the error beneath them. */
-function TileGroup({
+export function TileGroup({
   labelledBy,
   describedBy,
   error,
@@ -616,8 +700,9 @@ function TileGroup({
  * arrow keys work as they do on any set of radios. 44px at the least, for a
  * thumb.
  */
-function Tile({
+export function Tile({
   name,
+  value,
   checked,
   onSelect,
   answer,
@@ -625,6 +710,8 @@ function Tile({
   children,
 }: {
   name: string;
+  /** Posted with the form, where a form posts the choice. */
+  value?: string;
   checked: boolean;
   onSelect: () => void;
   /** Marks the tile Add to basket moves to when this choice is missing. */
@@ -646,6 +733,7 @@ function Tile({
       <input
         type="radio"
         name={name}
+        value={value}
         checked={checked}
         disabled={disabled}
         onChange={onSelect}

@@ -7,6 +7,7 @@ import {
   isAwaitingFulfilment,
   orderStatusBadge,
   orderStatusLabel,
+  seenByShopper,
 } from "@/lib/orders/status";
 
 describe("order statuses", () => {
@@ -76,5 +77,12 @@ describe("formatDateTime", () => {
 
   it("puts a time late at night on London's day, not the server's", () => {
     expect(formatDateTime(new Date("2026-06-30T23:30:00Z"))).toBe("1 Jul 2026, 00:30");
+  });
+});
+
+describe("seenByShopper", () => {
+  it("leaves out an order never paid for, which a shopper did not finish", () => {
+    expect(seenByShopper("PENDING")).toBe(false);
+    for (const status of ["PAID", "FULFILLED", "CANCELLED", "REFUNDED"] as const) expect(seenByShopper(status)).toBe(true);
   });
 });

@@ -97,3 +97,11 @@ describe("RegisterForm", () => {
     expect(data.get("email")).toBe("ada@example.com");
   });
 });
+
+describe("SignInForm, asked for from checkout", () => {
+  it("sends where to go on to, so signing in comes back to checkout", () => {
+    const { container } = render(<SignInForm action={async () => ({ error: null })} next="/checkout" />);
+
+    expect(container.querySelector('input[type="hidden"][name="next"]')).toHaveValue("/checkout");
+  });
+});

@@ -23,14 +23,18 @@ const EMPTY: SignInState = { error: null };
 export function SignInForm({
   action,
   initialState = EMPTY,
+  next,
 }: {
   action: SignInAction;
   initialState?: SignInState;
+  /** Where to go on to once signed in: checkout or the basket, which asked. */
+  next?: string;
 }) {
   const [state, formAction, isPending] = useActionState(action, initialState);
 
   return (
     <form action={formAction} className="flex flex-col gap-5">
+      {next ? <input type="hidden" name="next" value={next} /> : null}
       {state.error ? (
         <p role="alert" className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
           {state.error}

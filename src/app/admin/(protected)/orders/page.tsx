@@ -51,8 +51,8 @@ export default async function OrdersPage() {
       {rows.length === 0 ? (
         <div className={`mt-8 rounded-lg border border-dashed p-10 text-center ${ui.ruleOnPage}`}>
           <p className={`text-sm ${ui.mutedOnPage}`}>
-            No orders yet. They will appear here the moment the shop can take one - checkout is the last piece still
-            to build.
+            No orders yet. One appears here as Not paid when a shopper continues to payment, and becomes To send once
+            payment is built and they have paid.
           </p>
         </div>
       ) : (

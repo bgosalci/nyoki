@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { ui } from "@/lib/brand/ui";
 import { ChangePasswordForm } from "@/components/admin/change-password-form";
 import { NewAdminForm } from "@/components/admin/new-admin-form";
@@ -10,6 +12,8 @@ const when = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: 
 
 export default async function SettingsPage() {
   const session = await requireAdmin();
+
+  const offered = await db.shippingRate.count({ where: { active: true } });
 
   const members =
     session.role === "OWNER"
@@ -31,6 +35,18 @@ export default async function SettingsPage() {
           </p>
         </div>
         <ChangePasswordForm action={changePassword} />
+      </section>
+
+      <section className={`mt-12 flex flex-col gap-2 border-t pt-8 ${ui.ruleOnPage}`}>
+        <h2 className="text-base font-semibold">Delivery</h2>
+        <p className={`text-sm ${ui.mutedOnPage}`}>
+          {offered === 0
+            ? "No delivery options are offered yet, so checkout has nothing to offer."
+            : `${offered} ${offered === 1 ? "option is" : "options are"} offered at checkout.`}
+        </p>
+        <Link href="/admin/settings/delivery" className={`self-start text-sm ${ui.link}`}>
+          Delivery options
+        </Link>
       </section>
 
       {session.role === "OWNER" ? (

@@ -7,7 +7,7 @@ import { formatPence } from "@/lib/money";
  * A shopper's choices - on a card or bookmark, or a piece of clothing - and
  * what they come to.
  *
- * Pure, so the page works from the same rules the basket will check by. Each
+ * Pure, so the page works from the same rules the basket checks by. Each
  * extra is charged per card: a pack of three with an 80p message pays £2.40
  * for it. A pack carries one message and one personalisation, printed in
  * every card. Every colour and size of a piece sells at its own price.
@@ -173,7 +173,8 @@ export function missingChoices(offer: Offer, choices: Choices): MissingChoice[] 
 /**
  * The line beneath the total in the bar: what is still to choose, in a few
  * words - a colour and size together, one thing by name, more by count - and
- * once nothing is, that ordering opens soon. There is no basket yet.
+ * once nothing is, that ordering opens soon, while ordering is closed.
+ * Once it is open, `readyHint` says what was chosen instead.
  */
 export function barHint(missing: MissingChoice[]): string {
   if (missing.length === 0) return "Online ordering opens soon";
@@ -181,6 +182,26 @@ export function barHint(missing: MissingChoice[]): string {
   // Out of stock is only ever said alone, so a colour and a size together are both still to choose.
   if (missing.length === 2 && first.key === "colour" && second.key === "size") return "Choose a colour and size";
   return missing.length === 1 ? first.short : `${missing.length} choices still needed`;
+}
+
+/**
+ * The line beneath the total once nothing is missing and ordering is open:
+ * what was chosen, in a few words - "Seascape · 2-3 years", "Pack of 3 ·
+ * Printed message".
+ */
+export function readyHint(offer: Offer, choices: Choices): string {
+  const words: string[] = [];
+  if (offer.clothing) {
+    if (choices.colour) words.push(choices.colour);
+    if (choices.size) words.push(choices.size);
+  }
+  if (offer.packs.length > 0) {
+    const pack = offer.packs.find((p) => p.id === choices.unit);
+    words.push(pack ? `Pack of ${pack.cards}` : `Single ${offer.noun.one}`);
+  }
+  if (offer.message && choices.message) words.push(choices.message);
+  if (isPersonalising(offer, choices)) words.push("Personalised");
+  return words.length > 0 ? words.join(" · ") : "Ready to add";
 }
 
 export interface SummaryRow {

@@ -55,3 +55,11 @@ describe("OrderTable", () => {
     expect(screen.getByText("Sent")).not.toHaveClass("bg-nyoki-sage");
   });
 });
+
+describe("OrderTable, opening an order", () => {
+  it("opens each order from its number", () => {
+    render(<OrderTable rows={rows} />);
+
+    expect(screen.getByRole("link", { name: "NYK-1042" })).toHaveAttribute("href", "/admin/orders/NYK-1042");
+  });
+});

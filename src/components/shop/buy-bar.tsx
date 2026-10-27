@@ -7,8 +7,10 @@ import { formatPence } from "@/lib/money";
  * fixed, so it comes to rest at the end of the page instead of covering the
  * footer. Phones only: from md up the price sits beside the photos, in view.
  *
- * There is no basket yet, so the button cannot be used; like the basket in
- * the header, it says it is coming.
+ * Only while ordering is closed, when the button cannot be used and, like
+ * the basket in the header, says it is coming. Once ordering is open every
+ * piece is bought from the customiser's bar, whether or not it has anything
+ * to choose.
  */
 export function BuyBar({ pricePence, wasPence }: { pricePence: number; wasPence: number | null }) {
   return (

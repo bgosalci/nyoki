@@ -4,6 +4,7 @@ import Link from "next/link";
 import { requireCustomer } from "@/lib/account/dal";
 import { ui } from "@/lib/brand/ui";
 import { db } from "@/lib/db";
+import { ORDER_STATUSES, seenByShopper } from "@/lib/orders/status";
 
 export const metadata: Metadata = {
   title: "Your account",
@@ -14,7 +15,7 @@ export default async function AccountPage() {
   const shopper = await requireCustomer();
 
   const [orders, saved] = await Promise.all([
-    db.order.count({ where: { customerId: shopper.id } }),
+    db.order.count({ where: { customerId: shopper.id, status: { in: ORDER_STATUSES.filter(seenByShopper) } } }),
     db.favourite.count({ where: { customerId: shopper.id } }),
   ]);
 

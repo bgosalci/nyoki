@@ -1,21 +1,26 @@
 import Link from "next/link";
 
+import { BasketIcon } from "@/components/shop/basket-added";
+
 // A size smaller and closer together on a phone, leaving the logo room.
 const ICON = "size-5 stroke-nyoki-navy sm:size-6";
 
 /**
- * Search, account and basket.
+ * Search, account, saved pieces and basket.
  *
- * All three hold their place in the design; they become real one at a time,
- * and until one does it is rendered disabled rather than as a control that
- * would silently do nothing. Accounts are the first to arrive.
+ * Each holds its place in the design and becomes real in its turn; until one
+ * does it is rendered disabled rather than as a control that would silently
+ * do nothing. Search is still to come, and the basket is only real while
+ * ordering is open: `basket` is null while it is closed.
  */
 export function HeaderIcons({
   signedIn = false,
   savedCount = 0,
+  basket = null,
 }: {
   signedIn?: boolean;
   savedCount?: number;
+  basket?: { pieces: number } | null;
 }) {
   return (
     <ul className="flex items-center justify-end gap-3 sm:gap-5">
@@ -56,12 +61,16 @@ export function HeaderIcons({
         </Link>
       </li>
       <li>
-        <button type="button" disabled aria-label="Basket" title="Basket coming soon" className="block opacity-40">
-          <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.5" aria-hidden="true" className={ICON}>
-            <path d="M5 8h14l-1 12H6L5 8Z" strokeLinejoin="round" />
-            <path d="M9 8V6a3 3 0 0 1 6 0v2" strokeLinecap="round" />
-          </svg>
-        </button>
+        {basket ? (
+          <BasketIcon pieces={basket.pieces} />
+        ) : (
+          <button type="button" disabled aria-label="Basket" title="Basket coming soon" className="block opacity-40">
+            <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.5" aria-hidden="true" className={ICON}>
+              <path d="M5 8h14l-1 12H6L5 8Z" strokeLinejoin="round" />
+              <path d="M9 8V6a3 3 0 0 1 6 0v2" strokeLinecap="round" />
+            </svg>
+          </button>
+        )}
       </li>
     </ul>
   );

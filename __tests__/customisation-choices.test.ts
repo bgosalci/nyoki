@@ -8,6 +8,7 @@ import {
   missingChoices,
   packSavingPence,
   barHint,
+  readyHint,
   summarise,
   totalPence,
   unitPricePence,
@@ -368,5 +369,20 @@ describe("initialChoices", () => {
 
     const soldOut: Offer = { ...tuberose, clothing: { ...tuberose.clothing!, stock: [] } };
     expect(initialChoices(soldOut)).toEqual(EMPTY_CHOICES);
+  });
+});
+
+describe("readyHint", () => {
+  it("says in a few words what was chosen, for the bar once nothing is missing", () => {
+    expect(readyHint(offer, complete)).toBe("Pack of 3 · Printed message · Personalised");
+    expect(readyHint(offer, { ...complete, unit: SINGLE, message: "Blank inside", personalise: false })).toBe("Single card · Blank inside");
+  });
+
+  it("names clothing's colour and size", () => {
+    expect(readyHint(dress, { ...EMPTY_CHOICES, colour: "Lupin", size: "S" })).toBe("Lupin · S");
+  });
+
+  it("says it is ready when there was nothing to choose", () => {
+    expect(readyHint(plain, EMPTY_CHOICES)).toBe("Ready to add");
   });
 });

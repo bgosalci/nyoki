@@ -114,7 +114,9 @@ TypeScript, deployed to Vercel.
   exists. A minimum spend is the exception, since the shopper can act on it.
 - Codes are deleted outright: an order records the discount it was given in
   pence, so nothing about it depends on the code surviving.
-- Redemption itself waits on checkout.
+- A code is applied at checkout, in the order's summary: off the goods at
+  the prices they sell at (a sale's included), never off delivery. Its
+  `usedCount` goes up when payment is confirmed, which is not built yet.
 
 ## Products list
 
@@ -378,22 +380,25 @@ TypeScript, deployed to Vercel.
   wide, so a phone takes one to a row rather than break it.
 - The rules - price, what is missing, the summary's words - are
   `src/lib/customisation/choices.ts`, pure, for the basket to check by too.
-- **No basket yet**: Add to basket is `aria-disabled` but never faded; pressed
-  too soon it shows what is missing and moves to the first of it, and once
-  everything is chosen it says ordering opens soon.
+- Pressed too soon, Add to basket shows what is missing and moves to the
+  first of it. With everything chosen it puts the piece in (see Basket);
+  while ordering is closed it is `aria-disabled` but never faded, and says
+  ordering opens soon.
 - **The bar is one slim row** (`CustomiserBar`): the total, a short line of
-  what is still to choose (`barHint`, from each missing choice's `short`), and
-  Add to basket. Edge to edge on a phone in the page's own colour, as
+  what is still to choose (`barHint`, from each missing choice's `short`) or,
+  once nothing is, what was chosen (`readyHint`), and Add to basket. Edge to edge on a phone in the page's own colour, as
   `BuyBar` is; a floating card from `md` up. It was a card of three rows -
   total and quantity, the button, a sentence - and took a fifth of a phone's
   screen; quantity has its own panel now, above Your choices. A floating
   pill, a bar that shrinks on scroll and a floating button were drawn as
   well: each would sit right on Safari's own floating bar, where a full-width
   band reads as the page.
-- Pressed with everything chosen, it says how to order meanwhile in a notice
-  above the bar, gone after six seconds or the next change.
-- **Delivery straight to the recipient belongs in checkout**, for every
-  product, not here - and so does an emailed receipt. Neither exists yet.
+- Its notice above the bar, gone after six seconds or the next change, says
+  the piece went in (with View basket, on a phone only: a computer has the
+  panel from the header's basket), or why not - or, while ordering is
+  closed, how to order meanwhile.
+- **Delivery straight to the recipient is in checkout**, for every product,
+  not here. An emailed receipt waits on an email service.
 - Not in the CSV/JSON/XML export or import yet.
 
 ## Clothes: colours, sizes and stock
@@ -586,10 +591,16 @@ TypeScript, deployed to Vercel.
 
 ## Orders
 
-- `/admin/orders` lists orders; an order has no page of its own yet, because
-  there is nothing to do on one until checkout exists. The list is capped at
-  the most recent 200 and says so - orders grow without limit where the
-  catalogue does not.
+- `/admin/orders` lists orders, capped at the most recent 200 and saying so -
+  orders grow without limit where the catalogue does not. Each opens by its
+  number (`/admin/orders/NYK-1001`, `OrderDetail`), leading with what to
+  make: printed words in full with Copy (never retyped), the personalised
+  names, colour and size; then where it goes, the gift note (with Copy) and
+  whether the prices are left off; then who ordered it. Read only: marking
+  it sent comes with payment.
+- **Order numbers come from the database**: `NYK-` and a Postgres sequence
+  from 1001 (`order_number_seq`, the column's default), so two checkouts at
+  once cannot share one.
 - Statuses are named for what is left to do (`To send`), not for what the
   payment did (`PAID`), and only a paid order counts as waiting on us.
 - Order dates spell their month names out in `src/lib/orders/status.ts`
@@ -687,7 +698,9 @@ TypeScript, deployed to Vercel.
 ## Storefront
 
 - Public pages live in the `(shop)` route group: `/`, `/shop`,
-  `/shop/[category]`, `/product/[slug]`. Only ACTIVE products are visible.
+  `/shop/[category]`, `/product/[slug]`, `/basket`. Only ACTIVE products are
+  visible. Checkout has a group of its own, `(checkout)`, for its quieter
+  header (see Checkout).
 - The header is two tiers split by a sage rule: utility links (Shop, About us)
   and the logo above it, product departments below. The top row is a three
   column grid whose empty right column is reserved for search, account and
@@ -709,8 +722,106 @@ TypeScript, deployed to Vercel.
   would actually be charged.
 - The "Need to know" panel is built by `productFacts` and hides itself when
   nothing is filled in - most imported cards have no dimensions or care notes.
-- No cart yet: product pages say ordering is coming soon rather than showing a
-  button that does nothing.
+- While ordering is closed, product pages say ordering is coming soon rather
+  than showing a button that does nothing.
+
+## Ordering is switched off on the live site
+
+- `orderingOpen()` (`src/lib/ordering.ts`): **open in development, closed in
+  production**, until payment is built - a shopper would otherwise reach
+  Ready to pay with no way to pay. `ORDERING=open` or `ORDERING=closed`
+  says otherwise; anything else set closes it, since taking orders by
+  mistake is worse. Payment switches it on.
+- Closed, the shop reads as it always has: the header's basket is a disabled
+  icon, Add to basket says ordering opens soon, a piece with nothing to
+  choose keeps the phone's `BuyBar`, and `/basket`, `/checkout` and their
+  actions answer not found or refuse.
+
+## Basket
+
+- **Every piece is bought the same way** once ordering is open: its choices,
+  if any, a Quantity panel, and the customiser's slim bar with Add to
+  basket. A piece with nothing to choose has just the quantity, and no Your
+  choices panel; a one-of-a-kind piece no quantity. A separate row of
+  stepper and button beneath the price was built for those, and two ways of
+  showing one button was not wanted.
+- Kept on the server (`Basket`, `BasketLine`; `src/lib/basket/store.ts`). A
+  guest's is named by the httpOnly `nyoki_basket` cookie, which only a
+  server action can set; a signed-in shopper's is joined to the account, and
+  a guest basket is folded into it the next time the basket is looked at -
+  covering sign-in and registering alike. A guest basket already joined to
+  an account is not shown to a signed-out visitor.
+- **A line keeps the choices, never a price** (`StoredChoices`: variant,
+  pack, message, printed words, personalisation, quantity), and only what
+  the choices made count - no words for a card left blank. Same piece, same
+  choices is one line (`lineKey`, a hash, uniquely indexed); different words
+  inside make a second.
+- `reviewBasket` (`src/lib/basket/review.ts`, pure) prices every line afresh
+  from the piece as it stands, by the page's own `productOffer` and
+  `unitPricePence`, and says what changed since it went in: a price, stock
+  run short, a piece off the shop, choices that no longer fit
+  (`fitsOffer`). `reviewAndSave` writes the corrections back so each is said
+  once, at the top of the basket or checkout (`BasketChanges`).
+  `addedPricePence` exists only to tell the shopper a price moved.
+- **Stock is checked, not held**: on adding, on the basket and on Continue to
+  payment. Lines of one piece share its stock in the order they went in; a
+  pack of three takes three cards of it; clothing counts by variant; made
+  to order never runs out; one of a kind is one in all. Taking stock off
+  waits for payment, so an unpaid order cannot empty the shelf. 10 active
+  pieces had stock 0 when this landed, and read as out of stock.
+- Adding says so in a panel dropping from the header's basket on a computer
+  (`BasketAddedProvider` in the shop layout joins the page to the header),
+  with how far the basket is from free delivery, and in the bar's notice on
+  a phone. The header counts pieces, not lines.
+- Remove takes a line out without asking; the notice offers Put it back for
+  ten seconds, checked again like any piece going in.
+
+## Checkout
+
+- One page, `/checkout`, in its own `(checkout)` group: the way back to the
+  basket, the logo, and nothing else to wander off into. Your details, who
+  it is for, where it goes, delivery; the order beside it on a computer,
+  folded to a line at the top on a phone, with the total and Continue in the
+  slim bar. Built from the customiser's panels, tiles and filled boxes.
+- **No account needed.** A guest is a `Customer` with no password, found by
+  email; one already there is never changed from checkout. Signed in, the
+  email is the account's (the form's is ignored) and saved addresses are
+  tiles. Sign in from checkout comes back to it (`afterSignIn`, which only
+  ever returns to `/checkout` or `/basket`).
+- **A gift goes straight to the recipient**: their address, an optional note
+  for the parcel (300 characters), and prices left off the delivery note,
+  ticked to begin with.
+- UK only for now: the country is not asked and the postcode is checked and
+  written as Royal Mail writes it (`normalisePostcode`).
+- The total follows every choice live, by `checkoutTotals`
+  (`src/lib/checkout/totals.ts`, pure), which the server uses again. Free
+  delivery is per option and judged after the code. **VAT is shown, not
+  added**: prices include it, and the summary says how much, each line at its
+  own product's rate, the code's discount and the delivery charge shared
+  between rates by the goods' value, each rate's VAT taken out once and
+  rounded.
+- **Continue to payment makes the order** (`continueToPayment`): checked
+  again, then saved as PENDING ("Not paid") with every line's name, code,
+  photo, price, VAT rate and choices in words (`OrderItem.details`), in one
+  transaction. A basket that changed on the way stops it and says what.
+  Coming back to change something updates the order already waiting for that
+  basket (`Order.basketId`), and the form starts from it.
+- **An order's address is its own row**, joined to no account, so editing a
+  saved address cannot move an old order; "Save it to your account" makes a
+  second, saved copy.
+- `/checkout/pay` (Ready to pay) shows the waiting order, found by the
+  basket, never by anything in the address; once the basket has moved on it
+  sends the shopper back through checkout (`basketMatchesOrder`). The card
+  box is where payment goes. A shopper's own order list leaves out orders
+  never paid for (`seenByShopper`).
+
+## Delivery options
+
+- Settings › Delivery (`/admin/settings/delivery`) sets the `ShippingRate`
+  rows checkout offers: name, price, free over (after any code), shortest and
+  longest working days, offered or not. With none offered, checkout says it
+  cannot send anything and Continue is switched off. Deleted outright: an
+  order copies the option's name and what it charged.
 
 ## Shoppers' questions
 

@@ -51,6 +51,14 @@ export function customerOrderStatusLabel(status: OrderStatus): string {
   return CUSTOMER_LABELS[status];
 }
 
+/**
+ * Whether a shopper sees the order among their own. Not one never paid for:
+ * that is a checkout they did not finish, not something they bought.
+ */
+export function seenByShopper(status: OrderStatus): boolean {
+  return status !== "PENDING";
+}
+
 /** Sage draws the eye, and exactly one status has earned it. */
 export function orderStatusBadge(status: OrderStatus): string {
   return isAwaitingFulfilment(status) ? ui.badgeSale : ui.badgeQuiet;

@@ -78,15 +78,15 @@ model Product {
   // Free text rather than structured numbers: a non-technical editor can write
   // "20cm x 15cm, 8cm deep" or "fits a 30cm cushion" without being forced into
   // fields that do not suit every piece.
-  dimensions       String?
-  materials        String?
+  dimensions String?
+  materials  String?
 
   // Clothes only: the colours and the sizes a shopper chooses from, in the
   // order they are shown. Each colour in each size is a variant, with stock of
   // its own. Kept when a piece leaves Clothes, but offered only within it.
-  colours String[] @default([])
-  sizes   String[] @default([])
-  careInstructions String? @map("care_instructions")
+  colours          String[] @default([])
+  sizes            String[] @default([])
+  careInstructions String?  @map("care_instructions")
 
   // A one-of-a-kind piece. Shown as such on the storefront, and it is a
   // deliberate flag rather than inferring it from stock == 1, which is also
@@ -112,6 +112,7 @@ model Product {
   sales          SaleProduct[]
   orderItems     OrderItem[]
   questions      Question[]
+  basketLines    BasketLine[]
 
   // "You may also like": the pieces Njomza chose for this one, and the
   // products that chose this one.
@@ -207,7 +208,8 @@ model ProductPack {
   pricePence Int    @map("price_pence")
   position   Int    @default(0)
 
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product     Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  basketLines BasketLine[]
 
   @@unique([productId, cards])
   @@map("product_packs")
@@ -253,8 +255,9 @@ model ProductVariant {
   stock      Int     @default(0)
   position   Int     @default(0)
 
-  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
-  orderItems OrderItem[]
+  product     Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderItems  OrderItem[]
+  basketLines BasketLine[]
 
   @@index([productId])
   @@map("product_variants")
@@ -530,6 +533,7 @@ model Customer {
   orders     Order[]
   addresses  Address[]
   favourites Favourite[]
+  basket     Basket?
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -570,8 +574,25 @@ enum OrderStatus {
 model Order {
   id          String      @id @default(cuid())
   // Short human-readable reference shown to the customer, e.g. NYK-1042.
-  orderNumber String      @unique @map("order_number")
+  // Numbered by the database from a sequence starting at 1001, so two
+  // checkouts at once can never be given the same number.
+  orderNumber String      @unique @default(dbgenerated("('NYK-'::text || nextval('order_number_seq'::regclass))")) @map("order_number")
   status      OrderStatus @default(PENDING)
+
+  // The basket that made it, while it waits to be paid: going back to change
+  // something updates this order rather than making a second.
+  basketId String? @map("basket_id")
+  basket   Basket? @relation(fields: [basketId], references: [id], onDelete: SetNull)
+
+  // Sent straight to somebody else: the shipping address is theirs, the
+  // note goes in the parcel, and the delivery note can leave out the prices.
+  gift       Boolean @default(false)
+  giftNote   String? @map("gift_note")
+  hidePrices Boolean @default(false) @map("hide_prices")
+
+  // The delivery option's name as it was chosen, copied: renaming or
+  // deleting the option must not change what an old order says.
+  shippingMethod String? @map("shipping_method")
 
   customerId String?   @map("customer_id")
   customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
@@ -609,6 +630,7 @@ model Order {
 
   @@index([status])
   @@index([createdAt])
+  @@index([basketId])
   @@map("orders")
 }
 
@@ -632,10 +654,79 @@ model OrderItem {
   quantity       Int
   totalPence     Int @map("total_pence")
 
+  // What was chosen, in words, as the shopper saw it: [{ label, value }] -
+  // "Size: 2-3 years", "Inside the card: Printed: ...". Labels, not ids, so
+  // a personalisation field renamed later cannot change what was ordered.
+  details Json @default("[]")
+  // Copied, so the VAT on an old order never moves with the product's.
+  vatRate Int  @map("vat_rate")
+
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
   @@map("order_items")
+}
+
+// ---------------------------------------------------------------------------
+// Basket (see src/lib/basket)
+// ---------------------------------------------------------------------------
+
+// A shopper's basket. A cookie names a guest's; a signed-in shopper's is
+// joined to their account, and what a guest added is folded into it.
+model Basket {
+  id         String    @id @default(cuid())
+  customerId String?   @unique @map("customer_id")
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  lines  BasketLine[]
+  orders Order[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("baskets")
+}
+
+// One piece as chosen. It keeps the choices, never a price: the price is
+// worked out afresh from the product whenever the basket is shown, so a sale
+// starting or ending shows at once.
+model BasketLine {
+  id        String  @id @default(cuid())
+  basketId  String  @map("basket_id")
+  productId String  @map("product_id")
+  // A piece of clothing's colour and size.
+  variantId String? @map("variant_id")
+  // A pack of cards; null is the single card.
+  packId    String? @map("pack_id")
+
+  // "Blank inside" or "Printed message"; null where no message is offered.
+  message         String?
+  messageText     String  @default("") @map("message_text")
+  personalise     Boolean @default(false)
+  // Personalisation field id to what was typed or chosen.
+  personalisation Json    @default("{}")
+
+  quantity Int
+
+  // The choices as one value, so the same piece with the same choices is
+  // one line, its quantity added to.
+  key String
+
+  // What one cost when it went in. Only to tell the shopper a price has
+  // changed since; never what they are charged.
+  addedPricePence Int @map("added_price_pence")
+
+  basket  Basket          @relation(fields: [basketId], references: [id], onDelete: Cascade)
+  product Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  pack    ProductPack?    @relation(fields: [packId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([basketId, key])
+  @@index([productId])
+  @@map("basket_lines")
 }
 
 // ---------------------------------------------------------------------------

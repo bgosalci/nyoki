@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { signIn } from "@/app/(shop)/account/actions";
 import { SignInForm } from "@/components/shop/sign-in-form";
 import { currentCustomer } from "@/lib/account/dal";
+import { afterSignIn } from "@/lib/account/next";
 import { ui } from "@/lib/brand/ui";
 
 export const metadata: Metadata = {
@@ -11,10 +12,12 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function SignInPage() {
+export default async function SignInPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
+  const next = afterSignIn((await searchParams).next);
+
   // Nobody signed in needs this page, and landing on it reads as being
   // signed out.
-  if (await currentCustomer()) redirect("/account");
+  if (await currentCustomer()) redirect(next);
 
   return (
     <div className="mx-auto w-full max-w-sm px-4 py-16 sm:px-6">
@@ -23,7 +26,7 @@ export default async function SignInPage() {
         For your orders and the pieces you have saved.
       </p>
 
-      <SignInForm action={signIn} />
+      <SignInForm action={signIn} next={next === "/account" ? undefined : next} />
     </div>
   );
 }

@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { Th } from "@/components/admin/th";
 import { ui } from "@/lib/brand/ui";
 import { formatPence } from "@/lib/money";
@@ -14,12 +16,9 @@ export interface OrderRow {
 }
 
 /**
- * The orders list.
- *
- * Nothing here links anywhere yet: an order has no page of its own until
- * there is something to do on it, which arrives with checkout. The columns
- * are the ones needed to pack and post - what was bought, by whom, and
- * whether it has gone.
+ * The orders list. Each opens from its number, onto what to make and where
+ * it goes. The columns are the ones needed to pack and post - what was
+ * bought, by whom, and whether it has gone.
  */
 export function OrderTable({ rows }: { rows: OrderRow[] }) {
   return (
@@ -38,7 +37,11 @@ export function OrderTable({ rows }: { rows: OrderRow[] }) {
         <tbody>
           {rows.map((row) => (
             <tr key={row.id} className={`border-b ${ui.tableRow}`}>
-              <td className="py-3 pr-4 font-medium tabular-nums">{row.orderNumber}</td>
+              <td className="py-3 pr-4 font-medium tabular-nums">
+                <Link href={`/admin/orders/${row.orderNumber}`} className="underline-offset-4 hover:underline">
+                  {row.orderNumber}
+                </Link>
+              </td>
               <td className={`py-3 pr-4 ${ui.mutedOnPage}`}>{formatOrderDate(row.placedAt)}</td>
               <td className="py-3 pr-4">{row.email}</td>
               <td className="py-3 pr-4">

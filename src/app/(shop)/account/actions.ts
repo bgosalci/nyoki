@@ -9,6 +9,7 @@ import type { RegisterState } from "@/components/shop/register-form";
 import type { SignInState } from "@/components/shop/sign-in-form";
 import { authenticateCustomer } from "@/lib/account/authenticate";
 import { requireCustomer } from "@/lib/account/dal";
+import { afterSignIn } from "@/lib/account/next";
 import { startCustomerSession } from "@/lib/account/session-cookie";
 import {
   validateCustomerDetails,
@@ -98,7 +99,9 @@ export async function signIn(_state: SignInState, formData: FormData): Promise<S
 
   await startCustomerSession(session);
 
-  redirect("/account");
+  // Back to checkout or the basket, when signing in was asked for there.
+  const next = formData.get("next");
+  redirect(afterSignIn(typeof next === "string" ? next : null));
 }
 
 /** Change the name the shop uses and the address it signs you in with. */

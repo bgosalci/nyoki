@@ -456,3 +456,161 @@ describe("colour and size", () => {
     expect(screen.queryByText("Please choose a colour.")).not.toBeInTheDocument();
   });
 });
+
+describe("Add to basket, once ordering is open", () => {
+  const added = {
+    ok: true as const,
+    added: { name: "Snowman Card", image: null, quantity: 1, unitPence: 2190, details: [] },
+    basket: { pieces: 1, subtotalPence: 2190, freeDelivery: null },
+    note: null,
+  };
+
+  function setupOpen(offer: Offer = everything, add = jest.fn().mockResolvedValue(added), extra: { soldOut?: boolean } = {}) {
+    const user = userEvent.setup();
+    render(
+      <CustomiserProvider offer={offer} productId="card-1" add={add} {...extra}>
+        <CustomiserPanels />
+        <CustomiserBar />
+      </CustomiserProvider>,
+    );
+    return { user, add };
+  }
+
+  it("is a working button, no longer marked unavailable", () => {
+    setupOpen();
+
+    expect(addButton()).not.toHaveAttribute("aria-disabled");
+  });
+
+  it("says what was chosen in the bar, rather than that ordering opens soon", async () => {
+    const { user } = setupOpen();
+    await chooseEverything(user);
+
+    expect(status()).toHaveTextContent("Pack of 3 · Printed message · Personalised");
+  });
+
+  it("puts the piece in with everything chosen, and says so with the way to the basket", async () => {
+    const { user, add } = setupOpen();
+    await chooseEverything(user);
+
+    await user.click(addButton());
+
+    expect(add).toHaveBeenCalledWith(
+      "card-1",
+      expect.objectContaining({ unit: "p3", message: "Printed message", messageText: "Happy birthday", personalisation: { f1: "Ada", f2: "♌ Leo" }, quantity: 1 }),
+    );
+    const notice = screen.getByTestId("customiser-notice");
+    expect(notice).toHaveTextContent("Added to your basket.");
+    expect(within(notice).getByRole("link", { name: "View basket" })).toHaveAttribute("href", "/basket");
+  });
+
+  it("still shows what is missing when pressed too soon, and sends nothing", async () => {
+    const { user, add } = setupOpen();
+
+    await user.click(addButton());
+
+    expect(screen.getByText("Please choose a single card or a pack.")).toBeInTheDocument();
+    expect(add).not.toHaveBeenCalled();
+  });
+
+  it("says why, when the piece could not go in", async () => {
+    const { user } = setupOpen(everything, jest.fn().mockResolvedValue({ ok: false, message: "Sorry, this is out of stock." }));
+    await chooseEverything(user);
+
+    await user.click(addButton());
+
+    expect(screen.getByTestId("customiser-notice")).toHaveTextContent("Sorry, this is out of stock.");
+    expect(within(screen.getByTestId("customiser-notice")).queryByRole("link")).not.toBeInTheDocument();
+  });
+
+  it("says when only some could go in", async () => {
+    const { user } = setupOpen(everything, jest.fn().mockResolvedValue({ ...added, note: "There were only enough for 2, so we've added 2." }));
+    await chooseEverything(user);
+
+    await user.click(addButton());
+
+    expect(screen.getByTestId("customiser-notice")).toHaveTextContent("There were only enough for 2, so we've added 2.");
+  });
+
+  it("sends it once, however quickly it is pressed again", async () => {
+    let finish: (value: typeof added) => void = () => {};
+    const add = jest.fn(() => new Promise<typeof added>((resolve) => (finish = resolve)));
+    const { user } = setupOpen(everything, add);
+    await chooseEverything(user);
+
+    const button = addButton();
+    await user.click(button);
+    await user.click(button);
+    expect(button).toHaveTextContent("Adding…");
+    finish(added);
+
+    expect(add).toHaveBeenCalledTimes(1);
+    expect(await screen.findByTestId("customiser-notice")).toHaveTextContent("Added to your basket.");
+  });
+
+  it("says a card with none left is out of stock, and sends nothing", async () => {
+    const { user, add } = setupOpen(everything, undefined, { soldOut: true });
+
+    expect(status()).toHaveTextContent("Out of stock for now");
+    await user.click(addButton());
+    expect(add).not.toHaveBeenCalled();
+  });
+});
+
+describe("a piece with nothing to choose, once ordering is open", () => {
+  const plainOffer: Offer = { ...everything, noun: { one: "piece", many: "pieces" }, packs: [], message: null, personalisation: null };
+  const added = {
+    ok: true as const,
+    added: { name: "Tree Card", image: null, quantity: 2, unitPence: 550, details: [] },
+    basket: { pieces: 2, subtotalPence: 1100, freeDelivery: null },
+    note: null,
+  };
+
+  function setupPlain(extra: { oneOfAKind?: boolean; soldOut?: boolean } = {}) {
+    const user = userEvent.setup();
+    const add = jest.fn().mockResolvedValue(added);
+    render(
+      <CustomiserProvider offer={plainOffer} productId="tree" add={add} {...extra}>
+        <CustomiserPanels />
+        <CustomiserBar />
+      </CustomiserProvider>,
+    );
+    return { user, add };
+  }
+
+  it("is bought the same way as any other: a quantity with the details, and Add to basket in the bar", async () => {
+    const { user, add } = setupPlain();
+
+    expect(screen.getByLabelText("Quantity")).toBeInTheDocument();
+    expect(within(bar()).getByRole("button", { name: "Add to basket" })).toBeInTheDocument();
+    expect(status()).toHaveTextContent("Ready to add");
+
+    await user.click(screen.getByRole("button", { name: "One more" }));
+    await user.click(addButton());
+
+    expect(add).toHaveBeenCalledWith("tree", expect.objectContaining({ quantity: 2 }));
+    expect(total()).toHaveTextContent("£11.00");
+  });
+
+  it("has no summary of choices, since there were none", () => {
+    setupPlain();
+
+    expect(screen.queryByRole("region", { name: "Your choices" })).not.toBeInTheDocument();
+  });
+
+  it("asks no quantity of a one-of-a-kind piece, and puts in just the one", async () => {
+    const { user, add } = setupPlain({ oneOfAKind: true });
+
+    expect(screen.queryByLabelText("Quantity")).not.toBeInTheDocument();
+    await user.click(addButton());
+    expect(add).toHaveBeenCalledWith("tree", expect.objectContaining({ quantity: 1 }));
+  });
+
+  it("says when none are left, and sends nothing", async () => {
+    const { user, add } = setupPlain({ soldOut: true });
+
+    expect(status()).toHaveTextContent("Out of stock for now");
+    await user.click(addButton());
+    expect(add).not.toHaveBeenCalled();
+  });
+});

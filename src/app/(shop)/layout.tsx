@@ -1,10 +1,13 @@
 import Link from "next/link";
 
+import { BasketAddedProvider } from "@/components/shop/basket-added";
 import { DepartmentNav } from "@/components/shop/department-nav";
 import { HeaderIcons } from "@/components/shop/header-icons";
 import { ShopLogo } from "@/components/shop/shop-logo";
 import { TopNav } from "@/components/shop/top-nav";
 import { currentCustomer } from "@/lib/account/dal";
+import { basketPieces } from "@/lib/basket/store";
+import { orderingOpen } from "@/lib/ordering";
 import { db } from "@/lib/db";
 import { ui } from "@/lib/brand/ui";
 
@@ -21,6 +24,9 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
   // checking; this is decoration.
   const shopper = await currentCustomer();
   const savedCount = shopper ? await db.favourite.count({ where: { customerId: shopper.id } }) : 0;
+  // The basket is real only while ordering is open; closed, its icon says it is coming.
+  const ordering = orderingOpen();
+  const pieces = ordering ? await basketPieces() : 0;
 
   const groups = await db.category.findMany({
     where: { parentId: null },
@@ -33,66 +39,68 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
   });
 
   return (
-    <div className={`flex min-h-dvh flex-col ${ui.shopPage}`}>
-      <header className={`sticky top-0 z-30 border-b ${ui.shopRule} ${ui.shopPage}`}>
-        <div className="mx-auto max-w-shop px-4 sm:px-6">
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 py-4 sm:gap-4">
-            <TopNav />
+    <BasketAddedProvider>
+      <div className={`flex min-h-dvh flex-col ${ui.shopPage}`}>
+        <header className={`sticky top-0 z-30 border-b ${ui.shopRule} ${ui.shopPage}`}>
+          <div className="mx-auto max-w-shop px-4 sm:px-6">
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 py-4 sm:gap-4">
+              <TopNav />
 
-            <ShopLogo />
+              <ShopLogo />
 
-            <HeaderIcons signedIn={shopper !== null} savedCount={savedCount} />
+              <HeaderIcons signedIn={shopper !== null} savedCount={savedCount} basket={ordering ? { pieces } : null} />
+            </div>
           </div>
-        </div>
 
-        <div className="mx-auto max-w-shop px-4 sm:px-6">
-          <div className="border-t border-nyoki-sage" />
-          <DepartmentNav groups={groups} />
-        </div>
-      </header>
+          <div className="mx-auto max-w-shop px-4 sm:px-6">
+            <div className="border-t border-nyoki-sage" />
+            <DepartmentNav groups={groups} />
+          </div>
+        </header>
 
-      <main className="flex-1">{children}</main>
+        <main className="flex-1">{children}</main>
 
-      <footer className={`mt-20 border-t ${ui.shopRule} ${ui.shopSurface}`}>
-        <div className="mx-auto grid max-w-shop gap-10 px-4 py-14 sm:px-6 md:grid-cols-3">
-          <div className="flex flex-col gap-3">
-            <p className={`text-sm font-medium tracking-[0.12em] uppercase ${ui.shopHeading}`}>Nyoki Handmade</p>
-            <p className={`max-w-prose text-sm leading-relaxed ${ui.shopMuted}`}>
-              Where tradition meets modern, the kind way. Handmade in the UK from UK-sourced materials,
-              with biodegradable packaging and water-based, solvent-free adhesives.
-            </p>
-            <Link href="/about" className={`text-sm hover:underline hover:underline-offset-4 ${ui.shopMuted}`}>
-              More about us
-            </Link>
-            <Link href="/contact" className={`text-sm hover:underline hover:underline-offset-4 ${ui.shopMuted}`}>
-              Contact us
-            </Link>
+        <footer className={`mt-20 border-t ${ui.shopRule} ${ui.shopSurface}`}>
+          <div className="mx-auto grid max-w-shop gap-10 px-4 py-14 sm:px-6 md:grid-cols-3">
+            <div className="flex flex-col gap-3">
+              <p className={`text-sm font-medium tracking-[0.12em] uppercase ${ui.shopHeading}`}>Nyoki Handmade</p>
+              <p className={`max-w-prose text-sm leading-relaxed ${ui.shopMuted}`}>
+                Where tradition meets modern, the kind way. Handmade in the UK from UK-sourced materials,
+                with biodegradable packaging and water-based, solvent-free adhesives.
+              </p>
+              <Link href="/about" className={`text-sm hover:underline hover:underline-offset-4 ${ui.shopMuted}`}>
+                More about us
+              </Link>
+              <Link href="/contact" className={`text-sm hover:underline hover:underline-offset-4 ${ui.shopMuted}`}>
+                Contact us
+              </Link>
+            </div>
+            <div className="flex flex-col gap-3">
+              <p className={`text-sm font-medium tracking-[0.12em] uppercase ${ui.shopHeading}`}>Shop</p>
+              <ul className="flex flex-col gap-2">
+                {groups.map((group) => (
+                  <li key={group.slug}>
+                    <Link href={`/shop/${group.slug}`} className={`text-sm hover:underline hover:underline-offset-4 ${ui.shopMuted}`}>
+                      {group.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="flex flex-col gap-3">
+              <p className={`text-sm font-medium tracking-[0.12em] uppercase ${ui.shopHeading}`}>Our promise</p>
+              <ul className={`flex flex-col gap-2 text-sm ${ui.shopMuted}`}>
+                <li>Every piece touched by human hands</li>
+                <li>Eco-friendly, organic and recyclable materials</li>
+                <li>Materials sourced in the UK</li>
+              </ul>
+            </div>
           </div>
-          <div className="flex flex-col gap-3">
-            <p className={`text-sm font-medium tracking-[0.12em] uppercase ${ui.shopHeading}`}>Shop</p>
-            <ul className="flex flex-col gap-2">
-              {groups.map((group) => (
-                <li key={group.slug}>
-                  <Link href={`/shop/${group.slug}`} className={`text-sm hover:underline hover:underline-offset-4 ${ui.shopMuted}`}>
-                    {group.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="flex flex-col gap-3">
-            <p className={`text-sm font-medium tracking-[0.12em] uppercase ${ui.shopHeading}`}>Our promise</p>
-            <ul className={`flex flex-col gap-2 text-sm ${ui.shopMuted}`}>
-              <li>Every piece touched by human hands</li>
-              <li>Eco-friendly, organic and recyclable materials</li>
-              <li>Materials sourced in the UK</li>
-            </ul>
-          </div>
-        </div>
-        <p className={`border-t px-4 py-5 text-center text-xs sm:px-6 ${ui.shopRule} ${ui.shopMuted}`}>
-          © {new Date().getFullYear()} Nyoki Handmade
-        </p>
-      </footer>
-    </div>
+          <p className={`border-t px-4 py-5 text-center text-xs sm:px-6 ${ui.shopRule} ${ui.shopMuted}`}>
+            © {new Date().getFullYear()} Nyoki Handmade
+          </p>
+        </footer>
+      </div>
+    </BasketAddedProvider>
   );
 }

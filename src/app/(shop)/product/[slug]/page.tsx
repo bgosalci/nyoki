@@ -12,6 +12,7 @@ import { currentCustomer } from "@/lib/account/dal";
 import { formatPence } from "@/lib/money";
 import { effectivePricePence } from "@/lib/pricing";
 import { chainTo } from "@/lib/products/category-pills";
+import { addToBasket } from "@/app/(shop)/basket/actions";
 import { BuyBar } from "@/components/shop/buy-bar";
 import { CustomiserBar, CustomiserPanels, CustomiserProvider } from "@/components/shop/customiser";
 import { Disclosure } from "@/components/shop/disclosure";
@@ -21,10 +22,9 @@ import { PlainText } from "@/components/shop/plain-text";
 import { ProductLayout } from "@/components/shop/product-layout";
 import { RichText } from "@/components/shop/rich-text";
 import { productFacts } from "@/lib/storefront/facts";
-import { customisationGroup } from "@/lib/customisation/group";
-import { offersAnything, toOffer } from "@/lib/customisation/offer";
-import { isClothes } from "@/lib/clothes/group";
-import { toClothingOffer } from "@/lib/clothes/stock";
+import { offersAnything } from "@/lib/customisation/offer";
+import { orderingOpen } from "@/lib/ordering";
+import { productOffer } from "@/lib/storefront/offer";
 import { summaryOf } from "@/lib/rich-text/parse";
 import { alsoLike } from "@/lib/products/also-like";
 import { automaticAlsoLike, CARD_SELECT, toCards } from "@/lib/storefront/queries";
@@ -82,25 +82,18 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const related = alsoLike({ chosen: chosen.map((link) => link.piece), automatic });
 
   // A card or bookmark with something to choose, or clothing in colours or
-  // sizes, shows its choices, and the bar with the total takes the place of
-  // the phone's buy bar.
-  const noun = customisationGroup(categoryIds, categories);
-  const clothes = isClothes(categoryIds, categories);
-  const clothing = clothes ? toClothingOffer(product) : null;
-  const offer =
-    noun || clothing
-      ? toOffer({
-          product,
-          customisation: noun ? product.customisation : null,
-          fields: noun ? product.personalisationFields : [],
-          packs: noun ? product.packs : [],
-          sales,
-          noun: noun ?? { one: "piece", many: "pieces" },
-          now: new Date(),
-          clothing,
-        })
-      : null;
-  const customising = offer !== null && offersAnything(offer);
+  // sizes, shows its choices. The basket prices a line by this same offer.
+  const { offer, clothes } = productOffer({ ...product, sales, categoryIds }, categories, new Date());
+  const customising = offersAnything(offer);
+
+  // While ordering is open every piece is bought the same way - its choices,
+  // if any, how many, and the bar with the total and Add to basket - so a
+  // piece with nothing to choose has just the quantity. Closed, such a piece
+  // keeps the phone's buy bar, saying ordering opens soon.
+  const ordering = orderingOpen();
+  const withBar = customising || ordering;
+  // None left of anything that is not clothing; clothing's stock is in its offer.
+  const soldOut = !product.madeToOrder && product.stock < 1;
 
   // Clothing is told by its colours and sizes; any dimensions it kept from
   // before are out of sight in the admin, so they stay off the page too.
@@ -179,7 +172,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           </ul>
 
           {/* What can be chosen, once the piece has been described. */}
-          {customising ? <CustomiserPanels /> : null}
+          {withBar ? <CustomiserPanels /> : null}
 
           {facts.length > 0 ? (
             <Disclosure title="Need to know" className={`border-t pt-4 ${ui.shopRule}`}>
@@ -226,9 +219,11 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             </span>
           </div>
 
-          <p className={`text-sm ${ui.shopMuted}`}>
-            Online ordering is coming soon. In the meantime, <AskLink>send us a question</AskLink> to buy this piece.
-          </p>
+          {ordering ? null : (
+            <p className={`text-sm ${ui.shopMuted}`}>
+              Online ordering is coming soon. In the meantime, <AskLink>send us a question</AskLink> to buy this piece.
+            </p>
+          )}
         </div>
       </ProductLayout>
 
@@ -242,9 +237,21 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       ) : null}
 
       {/* Last, so it holds to the bottom of the screen over the whole page. */}
-      {customising ? <CustomiserBar /> : <BuyBar pricePence={price.pricePence} wasPence={wasPence} />}
+      {withBar ? <CustomiserBar /> : <BuyBar pricePence={price.pricePence} wasPence={wasPence} />}
     </div>
   );
 
-  return customising ? <CustomiserProvider offer={offer}>{page}</CustomiserProvider> : page;
+  return withBar ? (
+    <CustomiserProvider
+      offer={offer}
+      productId={product.id}
+      add={ordering ? addToBasket : undefined}
+      soldOut={soldOut}
+      oneOfAKind={product.oneOfAKind}
+    >
+      {page}
+    </CustomiserProvider>
+  ) : (
+    page
+  );
 }

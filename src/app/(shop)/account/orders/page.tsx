@@ -5,7 +5,7 @@ import { requireCustomer } from "@/lib/account/dal";
 import { ui } from "@/lib/brand/ui";
 import { db } from "@/lib/db";
 import { formatPence } from "@/lib/money";
-import { customerOrderStatusLabel, formatOrderDate } from "@/lib/orders/status";
+import { ORDER_STATUSES, customerOrderStatusLabel, formatOrderDate, seenByShopper } from "@/lib/orders/status";
 
 export const metadata: Metadata = {
   title: "Your orders",
@@ -16,7 +16,7 @@ export default async function AccountOrdersPage() {
   const shopper = await requireCustomer();
 
   const orders = await db.order.findMany({
-    where: { customerId: shopper.id },
+    where: { customerId: shopper.id, status: { in: ORDER_STATUSES.filter(seenByShopper) } },
     orderBy: { createdAt: "desc" },
     include: { items: { select: { id: true, productName: true, quantity: true, totalPence: true } } },
   });
@@ -32,8 +32,7 @@ export default async function AccountOrdersPage() {
       {orders.length === 0 ? (
         <div className={`mt-8 rounded-lg border border-dashed p-10 text-center ${ui.shopRule}`}>
           <p className={`text-sm ${ui.shopMuted}`}>
-            Nothing here yet. Ordering is the last piece still being built - when it opens, everything you buy will
-            be listed here.
+            Nothing here yet. Everything you buy will be listed here.
           </p>
           <Link href="/shop" className="mt-3 inline-block text-sm underline underline-offset-4">
             Have a look around
