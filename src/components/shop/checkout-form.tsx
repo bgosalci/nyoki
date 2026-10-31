@@ -62,6 +62,7 @@ export interface AppliedCode {
 export interface CheckoutPrefill {
   email: string;
   phone: string | null;
+  /** Not where the form starts, which is always For me. */
   gift: boolean;
   giftNote: string | null;
   hidePrices: boolean;
@@ -105,7 +106,9 @@ export function CheckoutForm({
   );
   const errors = state.errors;
 
-  const [gift, setGift] = useState(prefill?.gift ?? false);
+  // For me, always - coming back to an order waiting as a gift included. Its
+  // note and prices setting wait behind the gift tile, should it be one again.
+  const [gift, setGift] = useState(false);
   const [giftNote, setGiftNote] = useState(prefill?.giftNote ?? "");
   const [addressChoice, setAddressChoice] = useState(() => {
     if (prefill?.address) return savedAddresses.find((saved) => sameAddress(saved, prefill.address!))?.id ?? "new";

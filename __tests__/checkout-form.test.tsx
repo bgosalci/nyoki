@@ -211,11 +211,27 @@ describe("checkout", () => {
       setup({ prefill: waiting });
 
       expect(screen.getByLabelText("Email")).toHaveValue("ella@example.com");
-      expect(screen.getByRole("radio", { name: /a gift/i })).toBeChecked();
+      expect(screen.getByLabelText("Full name")).toHaveValue("Margaret Morgan");
+      expect(screen.getByLabelText("Postcode")).toHaveValue("LS29 9AA");
+      expect(summary()).toHaveTextContent("WINTER10");
+    });
+
+    it("starts on For me all the same, though it was a gift before", () => {
+      setup({ prefill: waiting });
+
+      expect(screen.getByRole("radio", { name: /for me/i })).toBeChecked();
+      expect(screen.getByRole("radio", { name: /a gift/i })).not.toBeChecked();
+      expect(screen.queryByLabelText(/a note for the parcel/i)).not.toBeInTheDocument();
+    });
+
+    it("keeps the gift note and the prices as they were, should it be a gift again", async () => {
+      const { user } = setup({ prefill: waiting });
+
+      await user.click(screen.getByRole("radio", { name: /a gift/i }));
+
       expect(screen.getByLabelText(/a note for the parcel/i)).toHaveValue("Love, Ella");
       expect(screen.getByLabelText(/leave the prices off/i)).not.toBeChecked();
       expect(screen.getByLabelText("Their full name")).toHaveValue("Margaret Morgan");
-      expect(summary()).toHaveTextContent("WINTER10");
     });
 
     it("starts on free delivery all the same, though faster was chosen before", () => {

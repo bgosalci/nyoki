@@ -852,6 +852,11 @@ TypeScript, deployed to Vercel.
 - **A gift goes straight to the recipient**: their address, an optional note
   for the parcel (300 characters), and prices left off the delivery note,
   ticked to begin with.
+- **Checkout starts on For me**, always - coming back to an order waiting as
+  a gift included, as delivery starts on the free way: it first brought the
+  gift back, and For me was wanted as the default. The order's note and
+  prices setting wait behind the gift tile, so choosing it again finds them.
+  Left on For me, the order is saved as no gift - no note, prices shown.
 - UK only for now: the country is not asked and the postcode is checked and
   written as Royal Mail writes it (`normalisePostcode`).
 - The total follows every choice live, by `checkoutTotals`
@@ -866,8 +871,9 @@ TypeScript, deployed to Vercel.
   photo, price, VAT rate and choices in words (`OrderItem.details`), in one
   transaction. A basket that changed on the way stops it and says what.
   Coming back to change something updates the order already waiting for that
-  basket (`Order.basketId`), and the form starts from it - all but
-  delivery, which starts on the free way (see Delivery options).
+  basket (`Order.basketId`), and the form starts from it - all but who it
+  is for, which starts on For me, and delivery, which starts on the free way
+  (see Delivery options).
 - **An order's address is its own row**, joined to no account, so editing a
   saved address cannot move an old order; "Save it to your account" makes a
   second, saved copy.
