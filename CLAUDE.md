@@ -648,6 +648,9 @@ TypeScript, deployed to Vercel.
   than write to Vercel's ephemeral disk.
 - Image positions are renumbered 0..n-1 after every delete or move, in one
   transaction. Moving swaps the two `position` values, not the array slots.
+- A photo moves with **← and →** ("Move left", "Move right"), since the
+  photos run across, at least two to a row at every width; ↑ and ↓ read as
+  the wrong way. The action still says `up` (earlier) and `down` (later).
 - **Photos go up one per request.** Server Actions take 1MB by default, and
   three phone photos in one request failed with "Body exceeded 1 MB limit".
   `experimental.serverActions.bodySizeLimit` is `11mb`: one photo of the

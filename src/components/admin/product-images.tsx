@@ -128,25 +128,27 @@ export function ProductImages({
               </div>
 
               <div className="flex items-center justify-between gap-1">
+                {/* Left and right, as the photos run: at least two to a row at
+                    every width. Up and down read as the wrong way to go. */}
                 <div className="flex gap-1">
                   <form action={actions.move.bind(null, image.id, "up")}>
                     <button
                       type="submit"
                       disabled={index === 0}
-                      aria-label={`Move up: ${image.alt ?? `photo ${index + 1}`}`}
+                      aria-label={`Move left: ${image.alt ?? `photo ${index + 1}`}`}
                       className={buttonClass}
                     >
-                      ↑
+                      ←
                     </button>
                   </form>
                   <form action={actions.move.bind(null, image.id, "down")}>
                     <button
                       type="submit"
                       disabled={index === ordered.length - 1}
-                      aria-label={`Move down: ${image.alt ?? `photo ${index + 1}`}`}
+                      aria-label={`Move right: ${image.alt ?? `photo ${index + 1}`}`}
                       className={buttonClass}
                     >
-                      ↓
+                      →
                     </button>
                   </form>
                 </div>

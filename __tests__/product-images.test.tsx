@@ -45,16 +45,41 @@ describe("ProductImages", () => {
     expect(screen.getByText(/main photo/i)).toBeInTheDocument();
   });
 
-  it("cannot move the first image up or the last image down", () => {
+  it("moves a photo left or right, as the photos are laid out - never up or down", () => {
+    // At least two to a row at every width, so the order runs across.
     render(<ProductImages productId="p1" images={images} actions={actions} />);
 
-    const ups = screen.getAllByRole("button", { name: /move up/i });
-    const downs = screen.getAllByRole("button", { name: /move down/i });
+    const lefts = screen.getAllByRole("button", { name: /^move left/i });
+    const rights = screen.getAllByRole("button", { name: /^move right/i });
+    expect(lefts.map((button) => button.textContent)).toEqual(["←", "←", "←"]);
+    expect(rights.map((button) => button.textContent)).toEqual(["→", "→", "→"]);
+    expect(screen.queryByRole("button", { name: /move (up|down)/i })).not.toBeInTheDocument();
+  });
 
-    expect(ups[0]).toBeDisabled();
-    expect(ups[2]).toBeEnabled();
-    expect(downs[2]).toBeDisabled();
-    expect(downs[0]).toBeEnabled();
+  it("cannot move the first photo left or the last photo right", () => {
+    render(<ProductImages productId="p1" images={images} actions={actions} />);
+
+    const lefts = screen.getAllByRole("button", { name: /^move left/i });
+    const rights = screen.getAllByRole("button", { name: /^move right/i });
+
+    expect(lefts[0]).toBeDisabled();
+    expect(lefts[2]).toBeEnabled();
+    expect(rights[2]).toBeDisabled();
+    expect(rights[0]).toBeEnabled();
+  });
+
+  it("moves a photo left to come earlier, and right to come later", async () => {
+    const move = jest.fn(async (_imageId: string, _direction: "up" | "down") => {});
+    render(<ProductImages productId="p1" images={images} actions={{ ...actions, move }} />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "Move left: Base stamp" }));
+    await user.click(screen.getByRole("button", { name: "Move right: Front of the mug" }));
+
+    expect(move.mock.calls.map(([id, direction]) => [id, direction])).toEqual([
+      ["img_3", "up"],
+      ["img_1", "down"],
+    ]);
   });
 
   it("accepts several image files at once", () => {
