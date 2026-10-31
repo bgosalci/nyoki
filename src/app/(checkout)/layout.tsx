@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { LOGO } from "@/lib/brand/logo";
 import { ui } from "@/lib/brand/ui";
 
 /**
@@ -20,7 +21,7 @@ export default function CheckoutLayout({ children }: { children: React.ReactNode
             Basket
           </Link>
           <Link href="/" aria-label="Nyoki Handmade, home">
-            <Image src="/brand/nyoki-logo.png" alt="Nyoki Handmade" width={959} height={600} priority className="h-12 w-auto object-contain sm:h-[84px]" />
+            <Image src={LOGO.src} alt="Nyoki Handmade" width={LOGO.width} height={LOGO.height} priority className="h-12 w-auto object-contain sm:h-[84px]" />
           </Link>
           <p className="inline-flex items-center gap-2 justify-self-end text-xs font-semibold tracking-[0.12em] uppercase sm:text-[13px]">
             <svg viewBox="0 0 16 16" fill="none" strokeWidth="1.6" aria-hidden="true" className="size-4 stroke-nyoki-navy">

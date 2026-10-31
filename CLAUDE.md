@@ -104,6 +104,15 @@ TypeScript, deployed to Vercel.
   hydration error on every page. Each covers only its own attributes.
 - `pnpm brand:board` regenerates docs/brand/theme-board.html from the module.
   Never edit the board by hand.
+- **The logo's files are named only in `src/lib/brand/logo.ts`** (`LOGO`,
+  `LOGO_SMALL`, `LOGO_ON_SAGE`), which every page and the board draw from; a
+  test fails on any other `/brand/...logo` path. The 2026 wordmark came on
+  white and was cut out onto a clear ground, each pixel its own ink exactly,
+  and set in the first logo's frames, so the headers kept their layout. A new
+  logo gets new file names: the image optimiser and browsers cache by
+  address. The first logo is in `docs/brand/old-logo/`, still the source of
+  sage, sage-light and navy - the 2026 inks are a little bluer, and the
+  palette has not followed them.
 
 ## Promo codes
 

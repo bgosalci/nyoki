@@ -1,7 +1,9 @@
 /**
  * The Nyoki palette. Every value is traceable to a file in the brand folder:
- * the four brand colours were read from the logo files, the neutrals are the
- * existing colour-palette.css unchanged.
+ * the four brand colours were read from the first logo's files (in
+ * docs/brand/old-logo/) and the moth, the neutrals are the existing
+ * colour-palette.css unchanged. The 2026 logo's inks are a little bluer;
+ * the palette has not followed them.
  *
  * The approved pairings below are the only text/surface combinations the site
  * uses. The palette tests check each one against WCAG AA, and check that the
@@ -10,11 +12,11 @@
  */
 
 export const brand = {
-  /** Background of Nyoki-logo.svg: the one vector colour in the file. */
+  /** Background of the first logo's SVG: the one vector colour in the file. */
   sage: "#889c9d",
-  /** The "Nyoki" script: dominant opaque pixel of the transparent logo. */
+  /** The first logo's "Nyoki" script: its dominant opaque pixel. */
   sageLight: "#acbcbc",
-  /** The "HANDMADE" caps. */
+  /** The first logo's "HANDMADE" caps. */
   navy: "#4a5667",
   /** Fill of moth.svg, the secondary mark. */
   ink: "#0b063c",
@@ -62,7 +64,7 @@ export interface PaletteEntry {
 
 export const palette: readonly PaletteEntry[] = [
   { name: "Sage", token: "nyoki-sage", hex: brand.sage, role: "brand", source: "logo-svg", note: "The brand colour. A surface for ink text or the white logo, never for small text of its own." },
-  { name: "Sage light", token: "nyoki-sage-light", hex: brand.sageLight, role: "decorative", source: "logo-pixels", note: "The script in the wordmark. Decorative only - never copy." },
+  { name: "Sage light", token: "nyoki-sage-light", hex: brand.sageLight, role: "decorative", source: "logo-pixels", note: "The script in the first wordmark. Decorative only - never copy." },
   { name: "Navy", token: "nyoki-navy", hex: brand.navy, role: "text", source: "logo-pixels", note: "HANDMADE. The working text and button colour on every light surface." },
   { name: "Ink", token: "nyoki-ink", hex: brand.ink, role: "text", source: "moth-svg", note: "The moth. The one text colour that reads on sage." },
   { name: "Sage deep", token: "nyoki-sage-deep", hex: brand.sageDeep, role: "text", source: "derived", note: "Sage, deepened just enough to read. Small accent headings on the page, such as Need to know." },

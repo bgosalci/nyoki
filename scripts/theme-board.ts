@@ -12,6 +12,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { AA_LARGE_TEXT, AA_TEXT, contrastRatio } from "../src/lib/brand/contrast";
+import { LOGO_ON_SAGE, LOGO_SMALL } from "../src/lib/brand/logo";
 import {
   APPROVED_LARGE_TEXT_PAIRINGS,
   APPROVED_TEXT_PAIRINGS,
@@ -24,8 +25,8 @@ import {
 const root = process.cwd();
 const read = (p: string) => readFileSync(join(root, p));
 
-const logoPng = read("public/brand/nyoki-logo-small.png").toString("base64");
-const logoOnSagePng = read("public/brand/nyoki-logo-on-sage.png").toString("base64");
+const logoPng = read(`public${LOGO_SMALL.src}`).toString("base64");
+const logoOnSagePng = read(`public${LOGO_ON_SAGE.src}`).toString("base64");
 const moth = read("public/brand/moth.svg").toString("utf8").replace(/<\?xml[^>]*>\s*/, "").replace(/<title>.*?<\/title>\s*/, "");
 const about = read("docs/brand/about.md").toString("utf8").trim().split(/\n\s*\n/);
 
@@ -192,13 +193,13 @@ const html = `<title>Nyoki Theme Board</title>
     <div class="section-head">
       <p class="eyebrow">Nyoki Handmade</p>
       <h1>Theme board</h1>
-      <p class="lede">Every colour here was read out of the logo files — the sage from the SVG, the script and the HANDMADE caps from the pixels, the ink from the moth — and the neutrals are the palette that already existed. The pairings show what passes for text and what doesn't.</p>
+      <p class="lede">Every colour here was read out of the brand files — the sage from the first logo's SVG, the script and the HANDMADE caps from its pixels, the ink from the moth — and the neutrals are the palette that already existed. The pairings show what passes for text and what doesn't.</p>
     </div>
     <div class="marks">
-      <div class="mark mark--white"><img src="data:image/png;base64,${logoPng}" alt="Nyoki Handmade wordmark: sage script with navy caps, on white" width="227" height="142"></div>
-      <div class="mark mark--sage"><img src="data:image/png;base64,${logoOnSagePng}" alt="Nyoki Handmade wordmark in white on sage" width="207" height="140"></div>
+      <div class="mark mark--white"><img src="data:image/png;base64,${logoPng}" alt="Nyoki Handmade wordmark: blue-grey script with navy caps, on white" width="${LOGO_SMALL.width}" height="${LOGO_SMALL.height}"></div>
+      <div class="mark mark--sage"><img src="data:image/png;base64,${logoOnSagePng}" alt="Nyoki Handmade wordmark in white on sage" width="${LOGO_ON_SAGE.width}" height="${LOGO_ON_SAGE.height}"></div>
       <div class="mark mark--moth" aria-label="The moth mark in ink">${moth}</div>
-      <p class="mark__caption">Left to right: the wordmark on white (sage light + navy), the wordmark on sage (white), and the moth in ink. The moth is the only mark that is a true vector; the wordmark files are pixels, so keep them at or below their native size.</p>
+      <p class="mark__caption">Left to right: the wordmark on white, the wordmark on sage (white), and the moth in ink. The moth is the only mark that is a true vector; the wordmark files are pixels, so keep them at or below their native size.</p>
     </div>
   </section>
 

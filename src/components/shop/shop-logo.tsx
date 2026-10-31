@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { LOGO } from "@/lib/brand/logo";
+
 /**
  * The Nyoki wordmark in the middle of the shop header, linking home.
  *
@@ -15,10 +17,10 @@ export function ShopLogo() {
   return (
     <Link href="/" aria-label="Nyoki Handmade, home" className="justify-self-center">
       <Image
-        src="/brand/nyoki-logo.png"
+        src={LOGO.src}
         alt="Nyoki Handmade"
-        width={959}
-        height={600}
+        width={LOGO.width}
+        height={LOGO.height}
         priority
         className="h-14 w-auto object-contain sm:h-24 md:h-30"
       />
