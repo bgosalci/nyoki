@@ -112,13 +112,14 @@ export function CheckoutForm({
     return savedAddresses[0]?.id ?? "new";
   });
   const [code, setCode] = useState<AppliedCode | null>(prefill?.code ?? null);
-  // The way chosen before, coming back to change something; else the free
-  // way, since nobody need choose what costs nothing. A paid way is the
-  // shopper's to choose.
+  // The free way, whenever there is one - coming back to change something
+  // included, though faster was chosen before. Else the way chosen before;
+  // else none, since a paid way is the shopper's to choose.
   const [rateId, setRateId] = useState<string | null>(() => {
-    if (prefill?.rateId && rates.some((rate) => rate.id === prefill.rateId)) return prefill.rateId;
     const start = checkoutTotals({ lines, discountPence: prefill?.code?.discountPence ?? 0, rate: null });
-    return freeOption(rates, start.subtotalPence - start.discountPence)?.id ?? null;
+    const free = freeOption(rates, start.subtotalPence - start.discountPence);
+    if (free) return free.id;
+    return prefill?.rateId && rates.some((rate) => rate.id === prefill.rateId) ? prefill.rateId : null;
   });
 
   const rate = rates.find((option) => option.id === rateId) ?? null;

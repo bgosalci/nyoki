@@ -195,27 +195,41 @@ describe("checkout", () => {
     });
   });
 
-  it("starts from the order already waiting, when the shopper comes back to change something", () => {
-    setup({
-      prefill: {
-        email: "ella@example.com",
-        phone: null,
-        gift: true,
-        giftNote: "Love, Ella",
-        hidePrices: false,
-        address: { name: "Margaret Morgan", line1: "12 Orchard Lane", line2: null, city: "Ilkley", county: null, postcode: "LS29 9AA" },
-        rateId: "t24",
-        code: { code: "WINTER10", discountPence: 749, label: "10% off" },
-      },
+  describe("coming back to change something", () => {
+    const waiting = {
+      email: "ella@example.com",
+      phone: null,
+      gift: true,
+      giftNote: "Love, Ella",
+      hidePrices: false,
+      address: { name: "Margaret Morgan", line1: "12 Orchard Lane", line2: null, city: "Ilkley", county: null, postcode: "LS29 9AA" },
+      rateId: "t24",
+      code: { code: "WINTER10", discountPence: 749, label: "10% off" },
+    };
+
+    it("starts from the order already waiting", () => {
+      setup({ prefill: waiting });
+
+      expect(screen.getByLabelText("Email")).toHaveValue("ella@example.com");
+      expect(screen.getByRole("radio", { name: /a gift/i })).toBeChecked();
+      expect(screen.getByLabelText(/a note for the parcel/i)).toHaveValue("Love, Ella");
+      expect(screen.getByLabelText(/leave the prices off/i)).not.toBeChecked();
+      expect(screen.getByLabelText("Their full name")).toHaveValue("Margaret Morgan");
+      expect(summary()).toHaveTextContent("WINTER10");
     });
 
-    expect(screen.getByLabelText("Email")).toHaveValue("ella@example.com");
-    expect(screen.getByRole("radio", { name: /a gift/i })).toBeChecked();
-    expect(screen.getByLabelText(/a note for the parcel/i)).toHaveValue("Love, Ella");
-    expect(screen.getByLabelText(/leave the prices off/i)).not.toBeChecked();
-    expect(screen.getByLabelText("Their full name")).toHaveValue("Margaret Morgan");
-    expect(screen.getByRole("radio", { name: /tracked 24/i })).toBeChecked();
-    expect(summary()).toHaveTextContent("WINTER10");
+    it("starts on free delivery all the same, though faster was chosen before", () => {
+      setup({ prefill: waiting, rates: [{ ...tracked48, freeOverPence: 0 }, tracked24] });
+
+      expect(screen.getByRole("radio", { name: /tracked 48/i })).toBeChecked();
+      expect(screen.getByRole("radio", { name: /tracked 24/i })).not.toBeChecked();
+    });
+
+    it("keeps the way chosen before when none is free", () => {
+      setup({ prefill: waiting, rates: [{ ...tracked48, freeOverPence: null }, tracked24] });
+
+      expect(screen.getByRole("radio", { name: /tracked 24/i })).toBeChecked();
+    });
   });
 
   it("says plainly when no way of sending takes the order, and where to ask", () => {

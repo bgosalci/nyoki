@@ -834,7 +834,8 @@ TypeScript, deployed to Vercel.
   photo, price, VAT rate and choices in words (`OrderItem.details`), in one
   transaction. A basket that changed on the way stops it and says what.
   Coming back to change something updates the order already waiting for that
-  basket (`Order.basketId`), and the form starts from it.
+  basket (`Order.basketId`), and the form starts from it - all but
+  delivery, which starts on the free way (see Delivery options).
 - **An order's address is its own row**, joined to no account, so editing a
   saved address cannot move an old order; "Save it to your account" makes a
   second, saved copy.
@@ -858,10 +859,11 @@ TypeScript, deployed to Vercel.
   the parcel (not the difference between the two). Both stay priced by
   size and weight, so a free option still drops out for a parcel its list
   cannot take, and checkout strikes through what it would have cost.
-- **Checkout starts on the free way** (`freeOption`): nobody need choose
-  what costs nothing. A paid way is the shopper's to choose, so with none
-  free nothing starts chosen; coming back to change something keeps the way
-  chosen before.
+- **Checkout starts on the free way** (`freeOption`), always - coming back
+  to change an order waiting with Tracked 24 on it included: it first kept
+  the way chosen before, and free delivery was wanted as the default. A
+  paid way is the shopper's to choose; only with none free does coming back
+  keep the one chosen before, and with none chosen nothing starts chosen.
 
 ## Postage
 
