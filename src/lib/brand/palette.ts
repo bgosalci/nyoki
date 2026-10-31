@@ -25,6 +25,12 @@ export const brand = {
    * that meets AA on the page: the logo's colour, readable as small text.
    */
   sageDeep: "#637273",
+  /**
+   * The logo's sage turned to the far side of the colour wheel, half
+   * saturated, at navy's lightness: a red that sits with the palette, and
+   * weighs the same as a navy name beside it.
+   */
+  red: "#85302c",
 } as const;
 
 export const neutral = {
@@ -68,6 +74,7 @@ export const palette: readonly PaletteEntry[] = [
   { name: "Navy", token: "nyoki-navy", hex: brand.navy, role: "text", source: "logo-pixels", note: "HANDMADE. The working text and button colour on every light surface." },
   { name: "Ink", token: "nyoki-ink", hex: brand.ink, role: "text", source: "moth-svg", note: "The moth. The one text colour that reads on sage." },
   { name: "Sage deep", token: "nyoki-sage-deep", hex: brand.sageDeep, role: "text", source: "derived", note: "Sage, deepened just enough to read. Small accent headings on the page, such as Need to know." },
+  { name: "Red", token: "nyoki-red", hex: brand.red, role: "text", source: "derived", note: "Sage's complement, half saturated, as dark as navy. A department's name in the header, where one should stand out." },
   { name: "Beige", token: "nyoki-beige", hex: neutral.beige, role: "surface", source: "colour-palette.css", note: "Page background." },
   { name: "Accent beige", token: "nyoki-accent-beige", hex: neutral.accentBeige, role: "surface", source: "colour-palette.css", note: "Cards and panels on the beige page." },
   { name: "Soft ash", token: "nyoki-soft-ash", hex: neutral.softAsh, role: "surface", source: "colour-palette.css", note: "Image placeholders, quiet fills." },
@@ -109,6 +116,7 @@ export const APPROVED_TEXT_PAIRINGS: readonly Pairing[] = [
   { text: brand.ink, surface: neutral.accentBeige, use: "Headlines on a quiet band" },
   { text: brand.sageDeep, surface: neutral.beige, use: "Accent headings in the logo's colour" },
   { text: brand.sageDeep, surface: neutral.white, use: "A pack's saving on a chosen tile, in the logo's colour" },
+  { text: brand.red, surface: neutral.beige, use: "A department's name in the header, in red" },
   { text: neutral.white, surface: brand.navy, use: "Primary button" },
   { text: neutral.white, surface: brand.ink, use: "Footer, dark bands" },
   { text: neutral.beige, surface: brand.navy, use: "Primary button, warmer" },

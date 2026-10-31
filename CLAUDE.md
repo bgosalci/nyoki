@@ -83,6 +83,12 @@ TypeScript, deployed to Vercel.
   tokens (`--color-nyoki-*` in globals.css) are pinned to it by a test, so
   change the module first. Every value traces to a file in `public/brand/` or
   `docs/brand/`.
+- **The red** (`nyoki-red`, #85302c) is derived, not read from a file: the
+  logo's sage turned to the far side of the colour wheel, half saturated, at
+  navy's lightness, so it sits with the palette and a name in red weighs the
+  same as the navy names beside it. A test works it out from sage and navy.
+  Approved on the page's beige (7.7:1), for a department's name in the
+  header; added 31 October 2026 for CHRISTMAS.
 - Text goes only in an approved pairing (`APPROVED_TEXT_PAIRINGS`). **White on
   sage and navy on sage both fail WCAG AA**; on sage the text colour is ink.
   Sage-light is the wordmark script and is decorative only.
@@ -202,7 +208,7 @@ TypeScript, deployed to Vercel.
   by swatch (`SwatchField`), with the name previewed on the page's beige.
 - Both the row and its menus sit on the page's beige, so the colours offered
   are those approved as text on it (`src/lib/categories/label-colour.ts`):
-  navy, then ink, text dark and sage deep, the clearest first. Sage and white
+  navy, then ink, text dark, red and sage deep, the clearest first. Sage and white
   barely show on beige and are not offered. A colour no longer offered draws
   in navy.
 - Saving a category redraws the shop's layout, since the header shows its

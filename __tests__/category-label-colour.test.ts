@@ -23,6 +23,10 @@ describe("a category's colour in the shop's header", () => {
     for (const faint of ["nyoki-sage", "nyoki-sage-light", "nyoki-white", "nyoki-beige"]) expect(offered).not.toContain(faint);
   });
 
+  it("offers the brand's red, for a department to stand out in", () => {
+    expect(LABEL_COLOURS.find((colour) => colour.token === "nyoki-red")).toEqual({ token: "nyoki-red", name: "Red", hex: hexOf.get("nyoki-red") });
+  });
+
   it("knows what it offers", () => {
     expect(isLabelColour("nyoki-ink")).toBe(true);
     expect(isLabelColour("#ff0000")).toBe(false);

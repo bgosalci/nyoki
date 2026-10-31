@@ -64,6 +64,33 @@ describe("brand colours come from the logo files, not a guess", () => {
     expect(brand.sageDeep).toBe("#637273");
   });
 
+  it("turns the logo's sage to the far side of the wheel for its red: half saturated, and as dark as navy", () => {
+    // A red to sit with the palette rather than shout over it: sage's
+    // complement, muted to half saturation, at navy's lightness so a name in
+    // red weighs the same as the navy names beside it.
+    const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+    const hueAndLightness = (hex: string) => {
+      const [r, g, b] = rgb(hex);
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      const d = max - min;
+      const hue = d === 0 ? 0 : max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+      return { hue: (hue * 60 + 360) % 360, lightness: (max + min) / 2 };
+    };
+    const fromHsl = (hue: number, saturation: number, lightness: number) => {
+      const c = (1 - Math.abs(2 * lightness - 1)) * saturation;
+      const x = c * (1 - Math.abs(((hue / 60) % 2) - 1));
+      const m = lightness - c / 2;
+      const [r, g, b] = hue < 60 ? [c, x, 0] : hue < 120 ? [x, c, 0] : hue < 180 ? [0, c, x] : hue < 240 ? [0, x, c] : hue < 300 ? [x, 0, c] : [c, 0, x];
+      return `#${[r, g, b].map((v) => Math.round((v + m) * 255).toString(16).padStart(2, "0")).join("")}`;
+    };
+
+    const red = fromHsl((hueAndLightness(brand.sage).hue + 180) % 360, 0.5, hueAndLightness(brand.navy).lightness);
+
+    expect(brand.red).toBe(red);
+    expect(brand.red).toBe("#85302c");
+  });
+
   it("records where every colour came from", () => {
     for (const entry of palette) {
       expect(entry.source).toMatch(/^(logo-svg|logo-pixels|moth-svg|colour-palette\.css|theme-board|derived)$/);
@@ -73,6 +100,12 @@ describe("brand colours come from the logo files, not a guess", () => {
 });
 
 describe("approved pairings", () => {
+  it("reads the red on the page, for a department's name in the header", () => {
+    const pairs = APPROVED_TEXT_PAIRINGS.map((p) => `${p.text} on ${p.surface}`);
+
+    expect(pairs).toContain(`${brand.red} on ${neutral.beige}`);
+  });
+
   it("reads deep sage on white as well as on the page, for a pack's saving on a chosen tile", () => {
     const pairs = APPROVED_TEXT_PAIRINGS.map((p) => `${p.text} on ${p.surface}`);
 
