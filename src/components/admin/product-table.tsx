@@ -36,6 +36,8 @@ export interface ProductRow {
   madeToOrder: boolean;
   oneOfAKind: boolean;
   image: { url: string; alt: string | null } | null;
+  /** Its categories by their places in the tree - "Cards › Christmas Cards" - as its Details tab shows them. */
+  categories: string[];
 }
 
 const STATUS_LABEL: Record<ProductStatus, string> = {
@@ -395,6 +397,18 @@ export function ProductTable({
                         {row.name}
                       </Link>
                       {row.oneOfAKind ? <span className={`ml-2 text-xs ${ui.mutedOnPage}`}>one of a kind</span> : null}
+                      {/* Filled, not outlined like the filter's pills above, which are links: these only say. */}
+                      {row.categories.length > 0 ? (
+                        <ul aria-label={`Categories of ${row.name}`} className="mt-1.5 flex flex-wrap gap-1.5">
+                          {row.categories.map((path) => (
+                            <li key={path} className={`rounded-full px-2.5 py-0.5 text-xs ${ui.badgeQuiet}`}>
+                              {path}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className={`mt-1.5 text-xs ${ui.mutedOnPage}`}>In no category</p>
+                      )}
                     </td>
                     <td className={`py-3 pr-4 ${ui.mutedOnPage}`}>{STATUS_LABEL[row.status]}</td>
                     <td className="py-3 pr-4 text-right tabular-nums">{formatPence(row.pricePence)}</td>
