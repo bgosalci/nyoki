@@ -1,8 +1,14 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { BasketLines } from "@/components/shop/basket-lines";
 import type { PricedLine } from "@/lib/basket/review";
+
+// jsdom does not implement the dialog element's modal methods.
+beforeAll(() => {
+  HTMLDialogElement.prototype.showModal = function () { this.setAttribute("open", ""); };
+  HTMLDialogElement.prototype.close = function () { this.removeAttribute("open"); this.dispatchEvent(new Event("close")); };
+});
 
 const stored = { variantId: null, packId: "p3", message: "Printed message" as const, messageText: "Merry Christmas", personalise: false, personalisation: {} };
 
@@ -62,6 +68,11 @@ function setup(lines: PricedLine[] = [card, reindeer]) {
 
 const lineFor = (name: string) => screen.getByRole("listitem", { name });
 
+async function removeConfirmed(user: ReturnType<typeof userEvent.setup>, name: string) {
+  await user.click(within(lineFor(name)).getByRole("button", { name: "Remove" }));
+  await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Remove" }));
+}
+
 describe("the basket's lines", () => {
   it("names each piece's choices in words, with what one costs and what the line comes to", () => {
     setup();
@@ -93,11 +104,33 @@ describe("the basket's lines", () => {
     expect(reindeerLine).toHaveTextContent("That's all we have");
   });
 
-  it("takes a line out at once, and offers to put it back", async () => {
-    const { user, removeLine, putBack } = setup();
+  it("asks before taking a line out", async () => {
+    const { user, removeLine } = setup();
 
     await user.click(within(lineFor("Silver Snowflake Card")).getByRole("button", { name: "Remove" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Remove Silver Snowflake Card?" });
+    expect(dialog).toHaveAccessibleDescription("It comes out of your basket.");
+    expect(removeLine).not.toHaveBeenCalled();
+  });
+
+  it("keeps the line when the shopper changes their mind", async () => {
+    const { user, removeLine } = setup();
+
+    await user.click(within(lineFor("Silver Snowflake Card")).getByRole("button", { name: "Remove" }));
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Keep it" }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(removeLine).not.toHaveBeenCalled();
+    expect(lineFor("Silver Snowflake Card")).toBeInTheDocument();
+  });
+
+  it("takes a line out once confirmed, and offers to put it back", async () => {
+    const { user, removeLine, putBack } = setup();
+
+    await removeConfirmed(user, "Silver Snowflake Card");
     expect(removeLine).toHaveBeenCalledWith("l1");
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
 
     const notice = await screen.findByRole("status");
     expect(notice).toHaveTextContent("Removed Silver Snowflake Card.");
@@ -109,7 +142,7 @@ describe("the basket's lines", () => {
     const { user, putBack } = setup();
     putBack.mockResolvedValue({ ok: false, message: "Sorry, this is out of stock." });
 
-    await user.click(within(lineFor("Silver Snowflake Card")).getByRole("button", { name: "Remove" }));
+    await removeConfirmed(user, "Silver Snowflake Card");
     await user.click(within(await screen.findByRole("status")).getByRole("button", { name: "Put it back" }));
 
     expect(await screen.findByText("Sorry, this is out of stock.")).toBeInTheDocument();

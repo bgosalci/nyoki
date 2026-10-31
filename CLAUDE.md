@@ -795,8 +795,15 @@ TypeScript, deployed to Vercel.
   (`BasketAddedProvider` in the shop layout joins the page to the header),
   with how far the basket is from free delivery, and in the bar's notice on
   a phone. The header counts pieces, not lines.
-- Remove takes a line out without asking; the notice offers Put it back for
-  ten seconds, checked again like any piece going in.
+- **Remove asks first** ("Remove ...?", Keep it or Remove), in the shop's own
+  `ConfirmDialog` (`src/components/shop/confirm-dialog.tsx`) - the admin's
+  carries dark-mode colours. It first took a line out without asking, and
+  that was not wanted. Once out, the notice still offers Put it back for ten
+  seconds, checked again like any piece going in.
+- **The lines keep one place on the page, empty or not** (`BasketView`,
+  drawn by the basket page). The empty basket was once a page of its own
+  with its own `BasketLines`, so React drew it afresh and the last piece
+  taken out could not be put back.
 
 ## Checkout
 

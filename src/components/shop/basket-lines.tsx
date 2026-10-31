@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useOptimistic, useState, useTransition } from "react";
 
 import type { AddResult, RemovedLine } from "@/app/(shop)/basket/actions";
+import { ConfirmDialog } from "@/components/shop/confirm-dialog";
 import { QuantityStepper } from "@/components/shop/quantity-stepper";
 import type { PricedLine } from "@/lib/basket/review";
 import { formatPence } from "@/lib/money";
@@ -14,8 +15,8 @@ import { formatPence } from "@/lib/money";
  * and what the line comes to, how many, and Remove.
  *
  * A quantity shows at once and is saved behind it; the server's answer then
- * takes over, cut to the stock if need be. Remove takes the line out without
- * asking, and the notice above the lines offers to put it back for a while -
+ * takes over, cut to the stock if need be. Remove asks first, and once the
+ * line is out the notice above the lines offers to put it back for a while -
  * checked again like any piece going in.
  *
  * The actions are props, so the lines can be tested without a server.
@@ -31,6 +32,7 @@ export function BasketLines({
   removeLine: (lineId: string) => Promise<RemovedLine | null>;
   putBack: (removed: RemovedLine) => Promise<AddResult>;
 }) {
+  const [confirming, setConfirming] = useState<PricedLine | null>(null);
   const [removed, setRemoved] = useState<RemovedLine | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [, startTransition] = useTransition();
@@ -76,9 +78,24 @@ export function BasketLines({
       {lines.length > 0 ? (
         <ul className="rounded-[20px] border-[1.5px] border-nyoki-light-slate bg-nyoki-white px-5 shadow-[0_1px_2px_rgb(0_0_0/0.03),0_10px_30px_-18px_rgb(0_0_0/0.18)] sm:px-7">
           {lines.map((line) => (
-            <Line key={line.id} line={line} onQuantity={(quantity) => changeQuantity(line.id, quantity)} onRemove={() => remove(line.id)} />
+            <Line key={line.id} line={line} onQuantity={(quantity) => changeQuantity(line.id, quantity)} onRemove={() => setConfirming(line)} />
           ))}
         </ul>
+      ) : null}
+
+      {confirming ? (
+        <ConfirmDialog
+          open
+          title={`Remove ${confirming.name}?`}
+          description="It comes out of your basket."
+          confirmLabel="Remove"
+          cancelLabel="Keep it"
+          onConfirm={() => {
+            setConfirming(null);
+            remove(confirming.id);
+          }}
+          onCancel={() => setConfirming(null)}
+        />
       ) : null}
     </div>
   );
