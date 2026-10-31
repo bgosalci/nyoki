@@ -1,13 +1,14 @@
 import { ProductForm } from "@/components/admin/product-form";
 import { SaveSlot, SaveSlotProvider } from "@/components/admin/save-slot";
 import { createProduct } from "@/app/admin/(protected)/products/actions";
+import { CATEGORY_ORDER } from "@/lib/categories/ordering";
 import { db } from "@/lib/db";
 import { deliverySettings, postageCategories, rateSources } from "@/lib/delivery/store";
 
 export default async function NewProductPage() {
   const [categories, options, settings, rates, usualCategories] = await Promise.all([
     db.category.findMany({
-      orderBy: { name: "asc" },
+      orderBy: CATEGORY_ORDER,
       select: { id: true, name: true, slug: true, parentId: true },
     }),
     // The pieces on the shop that could be suggested under "You may also like".

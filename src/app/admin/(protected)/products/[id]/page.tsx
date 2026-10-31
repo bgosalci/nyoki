@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { EditProductForm } from "@/components/admin/edit-product-form";
 import { EditProductImages } from "@/components/admin/edit-product-images";
 import { categoryPaths, pathsOf } from "@/lib/categories/path";
+import { CATEGORY_ORDER } from "@/lib/categories/ordering";
 import { db } from "@/lib/db";
 import { deliverySettings, postageCategories, rateSources } from "@/lib/delivery/store";
 import { closestFirst } from "@/lib/products/also-like";
@@ -27,7 +28,7 @@ export default async function EditProductPage({
         packs: { orderBy: { cards: "asc" }, select: { cards: true } },
       },
     }),
-    db.category.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, slug: true, parentId: true } }),
+    db.category.findMany({ orderBy: CATEGORY_ORDER, select: { id: true, name: true, slug: true, parentId: true } }),
     // "You may also like": what is chosen, in order, and the pieces on the
     // shop that could be.
     db.alsoLike.findMany({

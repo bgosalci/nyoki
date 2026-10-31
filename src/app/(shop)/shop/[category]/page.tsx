@@ -7,16 +7,13 @@ import { toggleFavourite } from "@/app/(shop)/account/actions";
 import { ProductGrid } from "@/components/shop/product-grid";
 import { currentCustomer } from "@/lib/account/dal";
 import { ui } from "@/lib/brand/ui";
-import { db } from "@/lib/db";
 import { chainTo, subtreeIds } from "@/lib/products/category-pills";
 import { categoryIntro, pluralise } from "@/lib/storefront/category-copy";
-import { activeProducts, savedProductIds, tileProducts, toCards } from "@/lib/storefront/queries";
+import { activeProducts, savedProductIds, shopCategories, tileProducts, toCards } from "@/lib/storefront/queries";
 import { categoryTiles } from "@/lib/storefront/tiles";
 
 async function findCategory(slug: string) {
-  const categories = await db.category.findMany({
-    select: { id: true, slug: true, name: true, parentId: true, description: true },
-  });
+  const categories = await shopCategories();
 
   return { categories, category: categories.find((c) => c.slug === slug) };
 }

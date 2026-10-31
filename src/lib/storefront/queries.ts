@@ -1,3 +1,4 @@
+import { CATEGORY_ORDER } from "@/lib/categories/ordering";
 import { db } from "@/lib/db";
 import { ALSO_LIKE_LIMIT } from "@/lib/products/also-like";
 import { toCardProduct, type CardProduct, type CardSource } from "@/lib/storefront/card";
@@ -34,6 +35,27 @@ export async function activeProducts(where = {}, take?: number) {
     orderBy: { sortKey: "desc" },
     take,
     select: CARD_SELECT,
+  });
+}
+
+/**
+ * The departments and the types in each, in the order set by dragging them
+ * on the admin's categories page: the header's menu, the footer and the home
+ * page all read this. `take` caps the types per department, first first.
+ */
+export async function departments(take?: number) {
+  return db.category.findMany({
+    where: { parentId: null },
+    orderBy: CATEGORY_ORDER,
+    select: { slug: true, name: true, children: { orderBy: CATEGORY_ORDER, take, select: { slug: true, name: true } } },
+  });
+}
+
+/** Every category in that same order, so the tiles a page builds from them follow it. */
+export async function shopCategories() {
+  return db.category.findMany({
+    orderBy: CATEGORY_ORDER,
+    select: { id: true, slug: true, name: true, parentId: true, description: true },
   });
 }
 

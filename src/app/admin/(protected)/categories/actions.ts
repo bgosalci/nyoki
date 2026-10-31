@@ -7,10 +7,12 @@ import type { CategoryCostsState } from "@/components/admin/category-costs-form"
 import type { CategoryFormState } from "@/components/admin/category-form";
 import type { CategoryPostageState } from "@/components/admin/category-postage-form";
 import { requireAdmin } from "@/lib/auth/dal";
+import { CATEGORY_ORDER, moveAmongSiblings } from "@/lib/categories/ordering";
 import { validateCategoryInput, wouldCreateCycle } from "@/lib/categories/validate";
 import { parseCostLines } from "@/lib/costing/validate";
 import { db } from "@/lib/db";
 import { readPostage } from "@/lib/delivery/postage-input";
+import type { Place } from "@/lib/products/ordering";
 import { uniqueSlug } from "@/lib/slug";
 
 async function takenSlugs(base: string, exceptId?: string): Promise<string[]> {
@@ -38,6 +40,18 @@ async function parentError(id: string | null, parentId: string | null): Promise<
     return "A category cannot sit inside itself or one of its own sub-categories.";
   }
   return null;
+}
+
+/**
+ * Keys from the categories' own sequence, lowest first: each above every key
+ * already held, as a new category's is - so a category given them goes
+ * last in whatever group it joins.
+ */
+async function freshPositions(count: number): Promise<number[]> {
+  const rows = await db.$queryRaw<{ position: bigint }[]>`
+    SELECT nextval(pg_get_serial_sequence('categories', 'position')) AS position FROM generate_series(1, ${count})
+  `;
+  return rows.map((row) => Number(row.position)).sort((a, b) => a - b);
 }
 
 export async function createCategory(
@@ -72,8 +86,14 @@ export async function updateCategory(
   const problem = await parentError(id, result.data.parentId);
   if (problem) return { errors: { parentId: problem } };
 
+  // Moved into another group, it goes last there: a key from its old group
+  // would put it wherever that number happens to fall among its new siblings.
+  const current = await db.category.findUnique({ where: { id }, select: { parentId: true } });
+  const regrouped = current !== null && current.parentId !== result.data.parentId;
+  const position = regrouped ? (await freshPositions(1))[0] : undefined;
+
   const slug = uniqueSlug(result.data.slug, await takenSlugs(result.data.slug, id));
-  await db.category.update({ where: { id }, data: { ...result.data, slug } });
+  await db.category.update({ where: { id }, data: { ...result.data, slug, ...(position === undefined ? {} : { position }) } });
 
   revalidatePath("/admin/categories");
   revalidatePath(`/admin/categories/${id}`);
@@ -125,14 +145,45 @@ export async function saveCategoryPostage(id: string, _state: CategoryPostageSta
 }
 
 /**
- * Deleting a category lifts its sub-categories to the top level (parentId is
- * SetNull in the schema) and unlinks its products; the products themselves are
- * untouched.
+ * Saves a category dropped just before or after a sibling, which is the
+ * shop's order too: the header's departments and their menus, the footer,
+ * the home page and the tiles all follow it. Worked out afresh from the
+ * database, so a stale list cannot write keys that no longer hold.
+ */
+export async function moveCategory(id: string, targetId: string, place: Place): Promise<{ ok: boolean }> {
+  await requireAdmin();
+  if (place !== "before" && place !== "after") return { ok: false };
+
+  const rows = await db.category.findMany({ orderBy: CATEGORY_ORDER, select: { id: true, parentId: true, position: true } });
+  const updates = moveAmongSiblings(rows, id, targetId, place);
+  if (updates === null) return { ok: false };
+
+  if (updates.length > 0) {
+    await db.$transaction(updates.map((row) => db.category.update({ where: { id: row.id }, data: { position: row.position } })));
+  }
+
+  revalidatePath("/admin/categories");
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/**
+ * Deleting a category lifts its sub-categories to the top level and unlinks
+ * its products; the products themselves are untouched. The sub-categories go
+ * to the end of the top level, in their own order - left to the schema's
+ * SetNull, they would keep keys that only meant something in the group they
+ * left, and land among the departments wherever those numbers fell.
  */
 export async function deleteCategory(id: string): Promise<void> {
   await requireAdmin();
 
-  await db.category.delete({ where: { id } });
+  const inside = await db.category.findMany({ where: { parentId: id }, orderBy: CATEGORY_ORDER, select: { id: true } });
+  const positions = inside.length > 0 ? await freshPositions(inside.length) : [];
+
+  await db.$transaction([
+    ...inside.map((child, index) => db.category.update({ where: { id: child.id }, data: { parentId: null, position: positions[index] } })),
+    db.category.delete({ where: { id } }),
+  ]);
 
   revalidatePath("/admin/categories");
   revalidatePath("/admin/products");

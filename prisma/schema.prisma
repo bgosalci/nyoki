@@ -275,7 +275,11 @@ model Category {
   slug        String  @unique
   name        String
   description String?
-  position    Int     @default(0)
+
+  /// Its place among its siblings, read lowest first, as dragged on the
+  /// categories page. A sequence, so a new category lands last in its group;
+  /// a move hands the group's keys round. See src/lib/categories/ordering.ts.
+  position    Int     @default(autoincrement())
 
   // Self-relation for sub-categories.
   parentId String?    @map("parent_id")

@@ -3,15 +3,15 @@ import userEvent from "@testing-library/user-event";
 
 import { CategoryTable } from "@/components/admin/category-table";
 
-const branches = [
-  { row: { id: "cards", name: "Cards", slug: "cards", productCount: 102 }, depth: 0 },
-  { row: { id: "birthday", name: "Birthday Card", slug: "birthday-card", productCount: 20 }, depth: 1 },
-  { row: { id: "christmas", name: "Christmas Cards", slug: "christmas-cards", productCount: 30 }, depth: 1 },
-  { row: { id: "clothes", name: "Clothes", slug: "clothes", productCount: 73 }, depth: 0 },
+const categories = [
+  { id: "cards", parentId: null, name: "Cards", slug: "cards", productCount: 102 },
+  { id: "birthday", parentId: "cards", name: "Birthday Card", slug: "birthday-card", productCount: 20 },
+  { id: "christmas", parentId: "cards", name: "Christmas Cards", slug: "christmas-cards", productCount: 30 },
+  { id: "clothes", parentId: null, name: "Clothes", slug: "clothes", productCount: 73 },
 ];
 
 function setup() {
-  render(<CategoryTable branches={branches} />);
+  render(<CategoryTable categories={categories} move={jest.fn(async () => ({ ok: true }))} />);
   return { user: userEvent.setup() };
 }
 
@@ -65,7 +65,7 @@ describe("CategoryTable", () => {
   it("offers nothing to collapse on a category with nothing inside it", () => {
     setup();
 
-    expect(screen.queryByRole("button", { name: /clothes/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /(collapse|expand) clothes/i })).not.toBeInTheDocument();
   });
 
   it("shuts and opens the whole list at once", async () => {
@@ -82,7 +82,7 @@ describe("CategoryTable", () => {
     const { user } = setup();
     await user.click(screen.getByRole("button", { name: "Collapse Cards" }));
 
-    const again = render(<CategoryTable branches={branches} />);
+    const again = render(<CategoryTable categories={categories} move={jest.fn(async () => ({ ok: true }))} />);
 
     expect(again.queryByRole("link", { name: "Birthday Card" })).not.toBeInTheDocument();
   });

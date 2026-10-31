@@ -181,6 +181,38 @@ TypeScript, deployed to Vercel.
   (the floor is a penny), and a was-price the new price has caught up with is
   cleared, since the product form rejects that combination anyway.
 
+## Category order
+
+- **The categories list is dragged into the shop's order**, as the products
+  list is: the departments among themselves, the types within each. The
+  header's departments and their menus, the footer, the home page's "Have a
+  look around" and every page's tiles follow it, through `departments()` and
+  `shopCategories()` (`src/lib/storefront/queries.ts`); the product page's
+  category chooser and the products list's pills read it too.
+- `Category.position` is a **sequence read lowest first**, compared only
+  among siblings (`CATEGORY_ORDER`, ties by name), so a new category - from
+  the admin or the Shopify import - lands last in its group with no code of
+  its own. A move hands the group's keys round (`moveAmongSiblings`,
+  `src/lib/categories/ordering.ts`). The migration started from the old
+  alphabetical order.
+- **A category moves only among its siblings**; giving it another parent is
+  its own page's job. A row dropped among another group's rows lands as near
+  there as its group allows (`categoryLanding`): a department dropped among
+  Cards' types goes straight after Cards, a type dragged out of its group
+  stops at its nearest end.
+- **A group takes what is inside it along**, and folds its types away while
+  it is dragged, so it moves as one row. Which row is being dragged is read
+  from dnd-kit (`useDndContext`), never kept in state beside it: a drag let
+  go of before it has properly begun ends with neither `onDragEnd` nor
+  `onDragCancel`, and state set on start left the group folded for good.
+  Found in real Chrome; a test reproduces it.
+- Given another parent, a category takes a fresh key from the sequence and
+  goes last in its new group; deleting one lifts what was inside it to the
+  end of the top level, in its order (`freshPositions`, the codebase's one
+  raw query - `nextval` has no Prisma call).
+- Rows drag from anywhere with the mouse and from the handle with the
+  keyboard, exactly as products do; the row is `SortableRow`, shared.
+
 ## Pricing
 
 - A product's costing is its `CostLine` rows - a label, a unit cost in pence,

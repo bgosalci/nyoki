@@ -5,8 +5,7 @@ import { toggleFavourite } from "@/app/(shop)/account/actions";
 import { ProductGrid } from "@/components/shop/product-grid";
 import { currentCustomer } from "@/lib/account/dal";
 import { ui } from "@/lib/brand/ui";
-import { db } from "@/lib/db";
-import { activeProducts, savedProductIds, tileProducts, toCards } from "@/lib/storefront/queries";
+import { activeProducts, savedProductIds, shopCategories, tileProducts, toCards } from "@/lib/storefront/queries";
 import { categoryTiles } from "@/lib/storefront/tiles";
 
 export const metadata: Metadata = {
@@ -20,10 +19,7 @@ export default async function ShopAllPage() {
 
   const [products, categories, forTiles, savedIds] = await Promise.all([
     activeProducts(),
-    db.category.findMany({
-      orderBy: [{ position: "asc" }, { name: "asc" }],
-      select: { id: true, slug: true, name: true, parentId: true },
-    }),
+    shopCategories(),
     tileProducts(),
     savedProductIds(shopper?.id ?? null),
   ]);

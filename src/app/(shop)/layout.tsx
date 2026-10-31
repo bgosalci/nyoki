@@ -10,6 +10,7 @@ import { basketPieces } from "@/lib/basket/store";
 import { orderingOpen } from "@/lib/ordering";
 import { db } from "@/lib/db";
 import { ui } from "@/lib/brand/ui";
+import { departments } from "@/lib/storefront/queries";
 
 /**
  * Storefront chrome. Deliberately light-only: the shop commits to one warm
@@ -28,15 +29,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
   const ordering = orderingOpen();
   const pieces = ordering ? await basketPieces() : 0;
 
-  const groups = await db.category.findMany({
-    where: { parentId: null },
-    orderBy: { name: "asc" },
-    select: {
-      slug: true,
-      name: true,
-      children: { orderBy: { name: "asc" }, select: { slug: true, name: true } },
-    },
-  });
+  const groups = await departments();
 
   return (
     <BasketAddedProvider>

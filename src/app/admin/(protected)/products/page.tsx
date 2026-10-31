@@ -6,6 +6,7 @@ import { deleteProducts, moveProduct, repriceProducts, setProductsStatus } from 
 import { PINNED_BLOCK_CLASS } from "@/components/admin/th";
 import Link from "next/link";
 
+import { CATEGORY_ORDER } from "@/lib/categories/ordering";
 import { db } from "@/lib/db";
 import { CategoryPills } from "@/components/admin/category-pills";
 import { ExportButton } from "@/components/admin/export-button";
@@ -22,7 +23,7 @@ export default async function ProductsPage({
   const filtering = filter.q !== null || filter.status !== null || filter.category !== null;
 
   const [categories, links] = await Promise.all([
-    db.category.findMany({ orderBy: [{ position: "asc" }, { name: "asc" }], select: { id: true, slug: true, name: true, parentId: true } }),
+    db.category.findMany({ orderBy: CATEGORY_ORDER, select: { id: true, slug: true, name: true, parentId: true } }),
     db.categoryProduct.groupBy({ by: ["categoryId"], _count: { productId: true } }),
   ]);
 

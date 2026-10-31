@@ -8,7 +8,7 @@ import { currentCustomer } from "@/lib/account/dal";
 import { ui } from "@/lib/brand/ui";
 import { db } from "@/lib/db";
 import { HOME_DEFAULTS, heroImageFor } from "@/lib/home/content";
-import { activeProducts, savedProductIds, toCards } from "@/lib/storefront/queries";
+import { activeProducts, departments, savedProductIds, toCards } from "@/lib/storefront/queries";
 
 const BUTTON = "inline-block px-6 py-3 text-xs tracking-[0.14em] uppercase";
 
@@ -24,11 +24,7 @@ export default async function HomePage() {
 
   const [row, groups, newest, savedIds] = await Promise.all([
     db.homePage.findUnique({ where: { id: "home" } }),
-    db.category.findMany({
-      where: { parentId: null },
-      orderBy: { name: "asc" },
-      select: { slug: true, name: true, children: { orderBy: { name: "asc" }, take: 6, select: { slug: true, name: true } } },
-    }),
+    departments(6),
     db.product.findFirst({
       where: { status: "ACTIVE", images: { some: {} } },
       orderBy: { createdAt: "desc" },
