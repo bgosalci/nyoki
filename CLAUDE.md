@@ -1198,6 +1198,34 @@ account. It upserts, so re-running resets the password - that is the password
 reset path until Settings grows account management. Pass `-C <project path>` to
 run it from another directory.
 
+## Backups
+
+- **Until the shop is live, the catalogue exists only on this Mac**: the
+  `nyoki` database and the photos in `public/uploads`, both on the Studio
+  drive - and **Time Machine leaves that drive out**. `pnpm backup` is the
+  copy; run it from the main checkout after entering products.
+- It saves into `BACKUP_DIR` (set in `.env`, a whole path; `~/` is the home
+  folder), which is iCloud Drive's `Nyoki backups`: off the Mac, and on the
+  internal disk Time Machine does cover. Never a folder on the Studio drive.
+- `database/` gets a dump per run (`pg_dump` custom format, named for the
+  database and the time in London), so any earlier one can be gone back to;
+  about 150 KB each, so none is deleted. A dump is written as `.partial` and
+  named only once `pg_restore --list` shows every table's rows in it.
+- `uploads/` is the photo folder copied with rsync, **added to, never
+  pruned**: a photo deleted since stays for the older dumps that point at it.
+- The rules - settings, names, the dump check, the summary - are
+  `src/lib/backup/backup.ts`, pure; `scripts/backup.ts` does the copying.
+  Its errors name the tool that failed, never its arguments, since one is
+  the database's address.
+- **Restoring** - to look first, into a database of its own:
+  `createdb nyoki_restored`, then
+  `pg_restore --no-owner -d postgresql://localhost:5432/nyoki_restored "<dump>"`.
+  Over the real one, with the dev server stopped:
+  `pg_restore --clean --if-exists --no-owner -d "<DATABASE_URL without ?schema=public>" "<dump>"`,
+  and the photos back with `rsync -a "<BACKUP_DIR>/uploads/" public/uploads/`.
+  Checked when it was built: a restored dump matched the original row for
+  row in all 30 tables, and the photo copy matched file for file.
+
 ## Git
 
 Remote is the **personal** account: `https://github.com/bgosalci/nyoki` over
