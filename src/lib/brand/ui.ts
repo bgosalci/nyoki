@@ -94,7 +94,17 @@ export const ui = {
   shopBadgeMade: "rounded-[3px] bg-nyoki-accent-beige text-nyoki-navy",
   shopBadgeOne: "rounded-[3px] bg-nyoki-ink text-nyoki-beige",
   shopCard: "overflow-hidden rounded-lg border border-nyoki-light-slate bg-nyoki-white",
+  // The home page's photo tiles. A photograph is no approved ground, so the
+  // words bring their own: white, over a fade to plain black at the tile's
+  // foot - black for the reason the modal scrim is, since a brand colour
+  // would tint the photo. A tile with no photo to show is drawn plainly.
+  shopTileLabel: "text-nyoki-white border-nyoki-white",
+  shopTileFade: "bg-linear-to-t from-black/50 via-black/15 to-transparent",
+  shopTilePlain: "bg-nyoki-soft-ash text-nyoki-navy border-nyoki-navy",
   pill: "border border-nyoki-light-slate bg-nyoki-white text-nyoki-navy hover:border-nyoki-navy dark:border-nyoki-night-rule dark:bg-nyoki-night dark:text-nyoki-blue-grey dark:hover:border-nyoki-beige dark:hover:text-nyoki-beige",
+  // The tile being edited, in the home page editor's picture of the mosaic.
+  tileChosen:
+    "ring-2 ring-offset-2 ring-nyoki-navy ring-offset-nyoki-white dark:ring-nyoki-beige dark:ring-offset-nyoki-night",
   pillActive: "border border-nyoki-navy bg-nyoki-navy text-nyoki-beige dark:border-nyoki-navy dark:bg-nyoki-navy dark:text-nyoki-beige",
   // Six tables share this, hover included: a row that does not answer the
   // pointer leaves you counting columns to be sure which one you are on.

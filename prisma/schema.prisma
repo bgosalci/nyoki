@@ -59,12 +59,12 @@ model Product {
   // discount a customer receives comes from an active Sale.
   compareAtPence Int? @map("compare_at_pence")
 
-  sku         String? @unique
+  sku      String? @unique
   // How many there are. For clothes sold in colours or sizes it is the total
   // of the variants' stock, kept in step whenever the Details tab is saved,
   // so the products list and the export read one number.
-  stock       Int     @default(0)
-  featured    Boolean @default(false)
+  stock    Int     @default(0)
+  featured Boolean @default(false)
 
   // Postage. The weight is the piece in its own wrapping - shoppers see it
   // under Need to know - and with the size it goes as and, for a letter, how
@@ -113,7 +113,6 @@ model Product {
   variants       ProductVariant[]
   categories     CategoryProduct[]
   favourites     Favourite[]
-  homeHeroFor    HomePage[]        @relation("HomeHero")
   costLines      CostLine[]
   priceListEntry PriceListEntry?
   sales          SaleProduct[]
@@ -238,6 +237,8 @@ model ProductImage {
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
+  homeTiles HomeTile[]
+
   @@index([productId])
   @@map("product_images")
 }
@@ -290,6 +291,10 @@ model Category {
 
   /// Its usual costs, copied into a piece to start that piece's costing from.
   costLines CategoryCostLine[]
+
+  /// Home page tiles and the button leading here.
+  homeTiles     HomeTile[]
+  homeButtonFor HomePage[] @relation("HomeButton")
 
   // Its usual postage: what a piece here, or in a type beneath it, goes by
   // when it has none of its own. Read live, never copied, so changing it
@@ -419,22 +424,60 @@ model Question {
 model HomePage {
   id String @id @default("home")
 
-  headline        String
-  intro           String?
-  ctaLabel        String  @map("cta_label")
-  featuredHeading String  @map("featured_heading")
+  /// The round badges under the header. They are artwork, so only shown or not.
+  showBadges Boolean @default(true) @map("show_badges")
 
-  /// Shown on the sage strip. Empty hides the strip entirely.
-  promises String[]
+  /// The sage banner's words. Empty takes the banner off.
+  bannerText String @default("Start with who you’re thinking of") @map("banner_text")
 
-  /// Whose photo leads the page. Null, archived or photoless falls back to
-  /// the newest piece that has one, so the page cannot end up blank.
-  heroProductId String?  @map("hero_product_id")
-  heroProduct   Product? @relation("HomeHero", fields: [heroProductId], references: [id], onDelete: SetNull)
+  /// The quiet band above the pieces. Empty takes the band off.
+  bandText String @default("Our most-loved handmade pieces, from friendship to forever love, for every heartfelt occasion.") @map("band_text")
+
+  /// The button beneath the pieces: its words, and where it leads - a
+  /// category, by id so renaming its address cannot break it, or an address.
+  /// Both empty (the category deleted) leads to the whole shop.
+  ctaLabel      String    @map("cta_label")
+  ctaCategoryId String?   @map("cta_category_id")
+  ctaCategory   Category? @relation("HomeButton", fields: [ctaCategoryId], references: [id], onDelete: SetNull)
+  ctaHref       String?   @map("cta_href")
 
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("home_page")
+}
+
+/// A photo tile on the home page, in blocks of five. None at all means the
+/// page has never been saved, and shows DEFAULT_TILES.
+model HomeTile {
+  id       String @id @default(cuid())
+  position Int
+  label    String
+
+  /// Where it leads, as the button does: a category or an address.
+  categoryId String?   @map("category_id")
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  href       String?
+
+  /// Its photo: one of the shop's own, or one uploaded for it. Neither (the
+  /// photo deleted since) takes the first piece's in the category it leads to.
+  productImageId String?       @map("product_image_id")
+  productImage   ProductImage? @relation(fields: [productImageId], references: [id], onDelete: SetNull)
+  photoId        String?       @map("photo_id")
+  photo          HomePhoto?    @relation(fields: [photoId], references: [id], onDelete: SetNull)
+
+  @@index([position])
+  @@map("home_tiles")
+}
+
+/// A photo uploaded for the home page rather than for a product. Deleted,
+/// with its file, once a save leaves no tile using it.
+model HomePhoto {
+  id        String     @id @default(cuid())
+  url       String
+  createdAt DateTime   @default(now()) @map("created_at")
+  tiles     HomeTile[]
+
+  @@map("home_photos")
 }
 
 /**

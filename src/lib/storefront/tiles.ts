@@ -63,3 +63,24 @@ export function categoryTiles(
 
   return tiles;
 }
+
+/**
+ * The photo each of `categoryIds` would lead with: its first piece's, from
+ * anywhere beneath it, exactly as its own tile above would show. A category
+ * with no photo anywhere beneath it is left out.
+ */
+export function leadPhotos(
+  categories: readonly TileCategory[],
+  categoryIds: readonly string[],
+  products: readonly TileProduct[],
+): Map<string, NonNullable<TileProduct["image"]>> {
+  const leads = new Map<string, NonNullable<TileProduct["image"]>>();
+
+  for (const id of new Set(categoryIds)) {
+    const within = new Set([id, ...descendantIds(categories, id)]);
+    const first = products.find((product) => product.image !== null && product.categoryIds.some((at) => within.has(at)));
+    if (first?.image) leads.set(id, first.image);
+  }
+
+  return leads;
+}

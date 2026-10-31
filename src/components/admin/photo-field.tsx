@@ -10,8 +10,8 @@ import { ui } from "@/lib/brand/ui";
  * A form field whose value is chosen by photograph: a box showing what is
  * chosen, a Choose button that opens the shared PhotoChooser, and Clear.
  *
- * Every choose-by-photo field in the admin is one of these - the home page's
- * main photo, a piece's row of the old price lists - so they look and behave
+ * Every choose-by-photo field in the admin is one of these - a home page
+ * tile's photo, a piece's row of the old price lists - so they look and behave
  * alike. It holds no value of its own: the caller keeps it, since choosing
  * can mean more than recording an id (a price-list row fills a piece's costs
  * in). Given a `name`, it also posts the id in a hidden input.
@@ -28,6 +28,7 @@ export function PhotoField({
   lead,
   hint,
   error,
+  extra,
 }: {
   label: string;
   name?: string;
@@ -43,6 +44,8 @@ export function PhotoField({
   lead?: React.ReactNode;
   hint?: string;
   error?: string;
+  /** Another way to fill it, beside Choose - an upload. */
+  extra?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const labelId = useId();
@@ -85,6 +88,8 @@ export function PhotoField({
           >
             Choose
           </button>
+
+          {extra}
 
           {value ? (
             <button

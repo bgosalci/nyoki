@@ -1,4 +1,4 @@
-import { categoryTiles } from "@/lib/storefront/tiles";
+import { categoryTiles, leadPhotos } from "@/lib/storefront/tiles";
 
 const categories = [
   { id: "cards", slug: "cards", name: "Cards", parentId: null },
@@ -57,5 +57,19 @@ describe("categoryTiles", () => {
 
   it("returns nothing for a category with no children at all", () => {
     expect(categoryTiles(categories, "clothes", products)).toEqual([]);
+  });
+});
+
+describe("leadPhotos", () => {
+  it("gives each category the photo of the first piece beneath it, as its own tile would show", () => {
+    const leads = leadPhotos(categories, ["cards", "birthday", "clothes"], products);
+
+    expect(leads.get("cards")).toEqual(photo("/milestone.jpg"));
+    expect(leads.get("birthday")).toEqual(photo("/milestone.jpg"));
+    expect(leads.get("clothes")).toEqual(photo("/cardigan.jpg"));
+  });
+
+  it("leaves out a category with no photo anywhere beneath it", () => {
+    expect(leadPhotos(categories, ["christmas"], products).has("christmas")).toBe(false);
   });
 });

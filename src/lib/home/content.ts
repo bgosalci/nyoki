@@ -1,17 +1,27 @@
 /**
  * The home page's editable content.
  *
- * Everything here used to be a string in the page's own source, which meant
- * the shop's first words could only be changed by someone who could deploy.
+ * Everything on the page that is not simply the catalogue: whether the
+ * badges show, the banner's words, the photo tiles (their words, where each
+ * leads and its photo), the band above the pieces, and the button beneath
+ * them. The badges themselves are artwork and are not edited here.
  */
 
-export interface HomeContent {
-  headline: string;
-  intro: string | null;
+import { linkFromRow, linkToRow, readLink, WHOLE_SHOP, type HomeLink } from "@/lib/home/links";
+import { MAX_BLOCKS, readPhoto, TILE_LABEL_MAX, TILES_PER_BLOCK, type TileContent } from "@/lib/home/tiles";
+
+export interface HomePageContent {
+  showBadges: boolean;
+  /** The sage banner's words. Empty takes the banner off. */
+  bannerText: string;
+  /** The quiet band above the pieces. Empty takes the band off. */
+  bandText: string;
   ctaLabel: string;
-  featuredHeading: string;
-  promises: string[];
-  heroProductId: string | null;
+  ctaLink: HomeLink;
+}
+
+export interface HomeContent extends HomePageContent {
+  tiles: TileContent[];
 }
 
 /**
@@ -19,23 +29,36 @@ export interface HomeContent {
  *
  * A complete page rather than placeholder text: a shop that never opens this
  * screen still reads as written, not as a form somebody forgot to fill in.
+ * The tiles' defaults are `DEFAULT_TILES`.
  */
-export const HOME_DEFAULTS: HomeContent = {
-  headline: "Made by hand, the kind way",
-  intro:
-    "Cards, clothes and little things for the home — crocheted, stitched and printed in the UK. A tradition carried from our mothers and grandmothers in Kosovo, made for now.",
-  ctaLabel: "Shop everything",
-  featuredHeading: "Just made",
-  promises: [
-    "Every piece touched by human hands",
-    "Eco-friendly, organic and recyclable",
-    "Materials sourced in the UK",
-  ],
-  heroProductId: null,
+export const HOME_DEFAULTS: HomePageContent = {
+  showBadges: true,
+  bannerText: "Start with who you’re thinking of",
+  bandText: "Our most-loved handmade pieces, from friendship to forever love, for every heartfelt occasion.",
+  ctaLabel: "See everything",
+  ctaLink: WHOLE_SHOP,
 };
 
-export type HomeField = "headline" | "intro" | "ctaLabel" | "featuredHeading" | "promises";
-export type HomeErrors = Partial<Record<HomeField, string>>;
+export const BANNER_MAX = 80;
+export const BAND_MAX = 200;
+export const BUTTON_MAX = 40;
+
+export interface TileErrors {
+  label?: string;
+  link?: string;
+  photo?: string;
+}
+
+export interface HomeErrors {
+  bannerText?: string;
+  bandText?: string;
+  ctaLabel?: string;
+  ctaLink?: string;
+  /** About the tiles as a whole: how many there are. */
+  tiles?: string;
+  /** About one tile, by its place. */
+  tile?: Record<number, TileErrors>;
+}
 
 export type HomeValidation = { ok: true; data: HomeContent } | { ok: false; errors: HomeErrors };
 
@@ -44,59 +67,177 @@ function text(form: FormData, key: string): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function texts(form: FormData, key: string): string[] {
+  return form.getAll(key).map((value) => (typeof value === "string" ? value.trim() : ""));
+}
+
+function readTiles(form: FormData): { tiles: TileContent[]; problem?: string; errors: Record<number, TileErrors> } {
+  const labels = texts(form, "tileLabel");
+  const links = texts(form, "tileLink");
+  const addresses = texts(form, "tileAddress");
+  const photos = texts(form, "tilePhoto");
+
+  // Read in parallel, so one missing field would pair a tile's words with
+  // the next tile's photo. Better refused than shuffled.
+  if (![links, addresses, photos].every((list) => list.length === labels.length)) {
+    return { tiles: [], problem: "The tiles did not arrive whole. Reload the page and try again.", errors: {} };
+  }
+
+  const count = labels.length;
+  if (count === 0 || count % TILES_PER_BLOCK !== 0 || count > MAX_BLOCKS * TILES_PER_BLOCK) {
+    return {
+      tiles: [],
+      problem: `Tiles come in blocks of ${TILES_PER_BLOCK}: one block at least, ${MAX_BLOCKS} at most.`,
+      errors: {},
+    };
+  }
+
+  const tiles: TileContent[] = [];
+  const errors: Record<number, TileErrors> = {};
+
+  labels.forEach((label, index) => {
+    const problems: TileErrors = {};
+
+    if (label.length === 0) problems.label = "Give the tile its words.";
+    else if (label.length > TILE_LABEL_MAX) {
+      problems.label = `Keep it to ${TILE_LABEL_MAX} characters, so it fits on the photo.`;
+    }
+
+    const link = readLink(links[index], addresses[index]);
+    if (!link.ok) problems.link = link.error;
+
+    const photo = readPhoto(photos[index]);
+    if (photo === undefined) problems.photo = "Choose the photo again.";
+    else if (photo === null && link.ok && link.link.kind !== "category") {
+      problems.photo = "Choose a photo. Only a tile leading to a category can take its first piece's.";
+    }
+
+    if (Object.keys(problems).length > 0) errors[index] = problems;
+    else if (link.ok && photo !== undefined) tiles.push({ label, link: link.link, photo });
+  });
+
+  return { tiles, errors };
+}
+
 export function validateHomeInput(form: FormData): HomeValidation {
   const errors: HomeErrors = {};
 
-  const headline = text(form, "headline");
-  if (headline.length === 0) errors.headline = "Give the page a headline.";
+  const bannerText = text(form, "bannerText");
+  if (bannerText.length > BANNER_MAX) errors.bannerText = `Keep the banner to ${BANNER_MAX} characters.`;
+
+  const bandText = text(form, "bandText");
+  if (bandText.length > BAND_MAX) errors.bandText = `Keep it to ${BAND_MAX} characters.`;
 
   const ctaLabel = text(form, "ctaLabel");
   if (ctaLabel.length === 0) errors.ctaLabel = "Say what the button should read.";
+  else if (ctaLabel.length > BUTTON_MAX) errors.ctaLabel = `Keep the button to ${BUTTON_MAX} characters.`;
 
-  const featuredHeading = text(form, "featuredHeading");
-  if (featuredHeading.length === 0) {
-    errors.featuredHeading = "Give the row of pieces a heading.";
-  }
+  const ctaLink = readLink(text(form, "ctaLink"), text(form, "ctaAddress"));
+  if (!ctaLink.ok) errors.ctaLink = ctaLink.error;
 
-  if (Object.keys(errors).length > 0) return { ok: false, errors };
+  const tiles = readTiles(form);
+  if (tiles.problem) errors.tiles = tiles.problem;
+  if (Object.keys(tiles.errors).length > 0) errors.tile = tiles.errors;
 
-  const intro = text(form, "intro");
-  const heroProductId = text(form, "heroProductId");
+  if (Object.keys(errors).length > 0 || !ctaLink.ok) return { ok: false, errors };
 
   return {
     ok: true,
     data: {
-      headline,
-      // Emptied on purpose leaves the paragraph out; it is not a mistake.
-      intro: intro.length > 0 ? intro : null,
+      showBadges: form.get("showBadges") === "on",
+      bannerText,
+      bandText,
       ctaLabel,
-      featuredHeading,
-      promises: form
-        .getAll("promises")
-        .filter((entry): entry is string => typeof entry === "string")
-        .map((entry) => entry.trim())
-        .filter((entry) => entry.length > 0),
-      heroProductId: heroProductId.length > 0 ? heroProductId : null,
+      ctaLink: ctaLink.link,
+      tiles: tiles.tiles,
     },
   };
 }
 
-export interface HeroPiece {
-  id: string;
-  name: string;
-  slug: string;
-  image: { url: string } | null;
+export interface ReferencedIds {
+  categoryIds: string[];
+  imageIds: string[];
+  photoIds: string[];
+}
+
+/** Every category and photo the page points at, once each, to look up before saving. */
+export function referencedIds(content: HomeContent): ReferencedIds {
+  const categoryIds = new Set<string>();
+  const imageIds = new Set<string>();
+  const photoIds = new Set<string>();
+
+  if (content.ctaLink.kind === "category") categoryIds.add(content.ctaLink.categoryId);
+  for (const tile of content.tiles) {
+    if (tile.link.kind === "category") categoryIds.add(tile.link.categoryId);
+    if (tile.photo?.kind === "shop") imageIds.add(tile.photo.imageId);
+    if (tile.photo?.kind === "upload") photoIds.add(tile.photo.photoId);
+  }
+
+  return { categoryIds: [...categoryIds], imageIds: [...imageIds], photoIds: [...photoIds] };
 }
 
 /**
- * The piece whose photo leads the page.
- *
- * The chosen one wins, but only while it still has a photo to show: it can be
- * archived, or have its last photo deleted, long after it was picked. The
- * newest piece with a photo stands in, and the page is never left blank over
- * a decision taken months ago.
+ * What the page points at that is no longer there - deleted since the
+ * editor was opened, or never there at all - named by where it was chosen.
  */
-export function heroImageFor(chosen: HeroPiece | null, newest: HeroPiece | null): HeroPiece | null {
-  if (chosen?.image) return chosen;
-  return newest?.image ? newest : null;
+export function missingReferences(
+  content: HomeContent,
+  known: { categoryIds: ReadonlySet<string>; imageIds: ReadonlySet<string>; photoIds: ReadonlySet<string> },
+): HomeErrors | null {
+  const errors: HomeErrors = {};
+  const gone = "That category is no longer there. Choose where it leads again.";
+
+  if (content.ctaLink.kind === "category" && !known.categoryIds.has(content.ctaLink.categoryId)) {
+    errors.ctaLink = gone;
+  }
+
+  content.tiles.forEach((tile, index) => {
+    const problems: TileErrors = {};
+    if (tile.link.kind === "category" && !known.categoryIds.has(tile.link.categoryId)) problems.link = gone;
+    const photoGone =
+      (tile.photo?.kind === "shop" && !known.imageIds.has(tile.photo.imageId)) ||
+      (tile.photo?.kind === "upload" && !known.photoIds.has(tile.photo.photoId));
+    if (photoGone) problems.photo = "That photo is no longer there. Choose another.";
+    if (Object.keys(problems).length > 0) errors.tile = { ...errors.tile, [index]: problems };
+  });
+
+  return Object.keys(errors).length > 0 ? errors : null;
 }
+
+export interface HomePageRow {
+  showBadges: boolean;
+  bannerText: string;
+  bandText: string;
+  ctaLabel: string;
+  ctaCategoryId: string | null;
+  ctaHref: string | null;
+}
+
+export function pageToRow(page: HomePageContent): HomePageRow {
+  const link = linkToRow(page.ctaLink);
+  return {
+    showBadges: page.showBadges,
+    bannerText: page.bannerText,
+    bandText: page.bandText,
+    ctaLabel: page.ctaLabel,
+    ctaCategoryId: link.categoryId,
+    ctaHref: link.href,
+  };
+}
+
+export function pageFromRow(row: HomePageRow): HomePageContent {
+  return {
+    showBadges: row.showBadges,
+    bannerText: row.bannerText,
+    bandText: row.bandText,
+    ctaLabel: row.ctaLabel,
+    ctaLink: linkFromRow({ categoryId: row.ctaCategoryId, href: row.ctaHref }),
+  };
+}
+
+/** The first tile with a problem, to open in the editor. */
+export function firstTileWithProblem(errors: HomeErrors): number | null {
+  const indexes = Object.keys(errors.tile ?? {}).map(Number);
+  return indexes.length > 0 ? Math.min(...indexes) : null;
+}
+

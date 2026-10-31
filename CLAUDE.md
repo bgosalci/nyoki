@@ -185,8 +185,8 @@ TypeScript, deployed to Vercel.
 
 - **The categories list is dragged into the shop's order**, as the products
   list is: the departments among themselves, the types within each. The
-  header's departments and their menus, the footer, the home page's "Have a
-  look around" and every page's tiles follow it, through `departments()` and
+  header's departments and their menus, the footer and every page's tiles
+  follow it, through `departments()` and
   `shopCategories()` (`src/lib/storefront/queries.ts`); the product page's
   category chooser and the products list's pills read it too.
 - `Category.position` is a **sequence read lowest first**, compared only
@@ -1057,28 +1057,74 @@ TypeScript, deployed to Vercel.
 
 ## Home page
 
-- Everything on it that is not simply the catalogue lives in the `HomePage`
-  singleton (one row, id `home`) and is edited at `/admin/home`: headline,
-  opening paragraph, button label, the promises, the heading above the
-  pieces, and which piece leads with its photo.
-- `HOME_DEFAULTS` is a **complete page**, not placeholder text. A shop that
-  has never opened that screen still reads as written, and the row is only
-  created on the first save.
-- The chosen hero is scoped to ACTIVE and must still have a photo;
-  `heroImageFor` falls back to the newest piece with one. A piece archived
-  months after it was picked must not keep leading the page, or empty it.
+- Laid out after the shop's Amazon store, as approved on a design canvas:
+  **badges**, a sage **banner**, **photo tiles**, a quiet **band** above the
+  pieces, the **pieces**, and a **button** beneath. The header and footer are
+  the shop's own. The hero photo, its headline and paragraph, the promise
+  strip and "Have a look around" went with that design; the badges say what
+  the promises said, and the Kosovo story is on About us.
+- **All of it is edited at `/admin/home`**: the badges shown or not, the
+  banner's words, every tile's words, where it leads and its photo, the
+  band's words, the button's words and where it leads. The `HomePage`
+  singleton (one row, id `home`) holds the page; `HomeTile` rows the tiles.
+  The rules are `src/lib/home/content.ts`, `tiles.ts` and `links.ts`, pure;
+  `loadHome()` (`load.ts`) reads it for the shop and the editor alike, so the
+  editor opens on exactly what the shop shows.
+- **The badges are artwork**, Njomza's own (`docs/brand/badges-artwork.jpg`),
+  each cut out onto a clear ground in `public/brand/badges/` (every pixel the
+  artwork's ink, #757b87, its opacity taken from how far it was from white)
+  so they sit on the beige rather than in white boxes. Their words cannot be
+  edited, only the row shown or hidden. "Since 2009", not "16 years". The
+  artwork is about 210px a badge, a little soft on a sharp screen: a larger
+  original would be better, cut the same way.
+- **Tiles come in blocks of five** - a large tile and four small, the large
+  on the left of the first block and the right of the next - one block to
+  four, added and removed five at a time. Every tile is square, so the large
+  one is exactly two rows tall. A block is written row by row, so on a phone
+  it reads two small, the large across, two small.
+- The editor draws the mosaic as the shop lays it out, each tile a button
+  that opens it beside the picture (`HomeTilesField`). Every tile posts its
+  fields as hidden inputs, in order (`tileLabel`, `tileLink`, `tileAddress`,
+  `tilePhoto`); tiles that arrive with a field missing are refused rather
+  than paired up wrongly.
+- **Where something leads** (`HomeLink`): one of the shop's pages, a
+  category, or somewhere else by address. A category is kept **by id**, so
+  renaming its web address cannot break the page; deleted (SetNull), the link
+  goes to the whole shop. An address is a page on the shop (one `/`, never
+  `//` or `/\`, which a browser reads as another website) or an `https://`
+  website; every other scheme is refused, `javascript:` above all.
+- **A tile's photo** is any photo of any piece - not only the first, since a
+  piece's second or third is often the one in a scene - or one uploaded for
+  the page. None chosen, a tile leading to a category takes the photo of its
+  first piece, as that category's own tile does (`leadPhotos`); a tile
+  leading anywhere else must have one. A chosen photo deleted since (SetNull)
+  falls back the same way, and with nothing to fall back on the tile is drawn
+  plainly (`ui.shopTilePlain`) rather than broken.
+- **Uploads** (`uploadHomePhoto`) are byte-sniffed and stored like product
+  photos, location stripped, as `HomePhoto` rows, straight away so the editor
+  can show them. A save deletes every upload no tile uses, file first, so
+  replacing a tile's photo leaves nothing behind.
+- A save looks every category and photo up again (`missingReferences`): one
+  deleted while the editor was open is named on its tile, not saved.
+- The words sit on the photo in white over a fade to plain black
+  (`ui.shopTileLabel`, `ui.shopTileFade`): a photograph is no approved
+  ground, and a brand colour would tint it. The brand tests hold both.
+- **Defaults are the approved design**, not placeholder text: `HOME_DEFAULTS`
+  for the page and `DEFAULT_TILES` for the mosaic, each tile named by its
+  category's and photo's addresses so it holds for any copy of the shop.
+  With no `HomeTile` rows at all the page shows them; a save always writes at
+  least one block, so none means never saved. An empty banner or band takes
+  it off the page.
 - The row of pieces shows whatever is marked **featured** on the product,
   in the shop's order, falling back to the first eight in that order when
-  nothing is. That checkbox existed on the
-  product form from the start and did nothing until now.
-- Emptying all three promise boxes takes the sage strip off the page.
+  nothing is.
 
 ## Storefront pages
 
 - A category page opens on a quiet band (`ui.shopBandQuiet`): breadcrumb,
   name, a line about it, the count. Then picture tiles for the types beneath,
-  then everything in it. The promise strip is the home page's alone - it was
-  tried here and was not wanted.
+  then everything in it. The badges are the home page's alone; a promise
+  strip was tried here and was not wanted.
 - **No text pills for the types.** They were tried twice. Only the three
   group pages ever had them, and Clothes has thirty types: four rows of
   shouting capitals above tiles that lead to the same places with a photo
@@ -1191,8 +1237,8 @@ TypeScript, deployed to Vercel.
   pins the lazy loading, since it is what makes showing them all cheap.
 - `PhotoField` (`photo-field.tsx`) is the form field around it: a box showing
   what is chosen by its photo and name, Choose, and Clear. **Every
-  choose-by-photo field is one**, so they all look alike - the home page's
-  main photo (through `ProductPicker`) and a piece's price-list row. It holds
+  choose-by-photo field is one**, so they all look alike - a home page tile's
+  photo and a piece's price-list row. It holds
   no value itself: the caller keeps it, because choosing a price-list row does
   more than record an id.
 - **It labels itself** and is a `role="group"`, rather than sitting inside

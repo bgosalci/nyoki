@@ -19,8 +19,8 @@ export interface ChooserItem {
  * Choosing one thing from many by looking at it: a modal of photographs with
  * a search.
  *
- * Shared by everything in the admin that picks by photo - a product for the
- * home page, a row of the old price lists for a piece's costs - so they look
+ * Shared by everything in the admin that picks by photo - a photo for a home
+ * page tile, a row of the old price lists for a piece's costs - so they look
  * and behave alike. It knows nothing about what it is choosing; it is handed
  * tiles and hands back an id.
  *

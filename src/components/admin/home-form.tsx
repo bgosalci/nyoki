@@ -1,10 +1,19 @@
 "use client";
 
+import { useState } from "react";
+
 import { Field, inputClass } from "@/components/admin/field";
-import { ProductPicker, type PickerProduct } from "@/components/admin/product-picker";
+import { HomeTilesField, type PhotoOption, type UploadPhoto, type UploadResult } from "@/components/admin/home-tiles-field";
+import { LinkField, type LinkDraft, type LinkTarget } from "@/components/admin/link-field";
+import { UnsavedChanges } from "@/components/admin/unsaved-changes";
 import { ui } from "@/lib/brand/ui";
-import type { HomeContent, HomeErrors } from "@/lib/home/content";
+import { BAND_MAX, BANNER_MAX, type HomeErrors, type HomePageContent } from "@/lib/home/content";
+import { linkChoice } from "@/lib/home/links";
+import type { LoadedTile } from "@/lib/home/tiles";
 import { useActionForm } from "@/lib/forms/action-form";
+import { shrinkPhoto } from "@/lib/images/shrink";
+
+export type { PhotoOption, UploadPhoto, UploadResult };
 
 export interface HomeState {
   errors: HomeErrors;
@@ -13,83 +22,106 @@ export interface HomeState {
 
 export type HomeAction = (state: HomeState, formData: FormData) => Promise<HomeState>;
 
-/** Three boxes, always. An emptied one drops that line from the strip. */
-const PROMISE_SLOTS = 3;
+export interface HomeFormContent extends HomePageContent {
+  tiles: LoadedTile[];
+}
 
 const EMPTY: HomeState = { errors: {} };
+const NO_TILE_ERRORS = {};
 
+/**
+ * The whole home page, top to bottom as the shop shows it: the badges, the
+ * banner, the photo tiles, the band above the pieces and the button beneath.
+ */
 export function HomeForm({
   content,
-  products,
+  categories,
+  photos,
+  automatic,
   action,
+  upload,
+  prepare = shrinkPhoto,
   initialState = EMPTY,
 }: {
-  content: HomeContent;
-  /** Pieces that could lead the page: on the shop, and with a photo. */
-  products: PickerProduct[];
+  content: HomeFormContent;
+  categories: LinkTarget[];
+  photos: PhotoOption[];
+  automatic: Record<string, string>;
   action: HomeAction;
+  upload: UploadPhoto;
+  prepare?: (file: File) => Promise<File>;
   initialState?: HomeState;
 }) {
-  const { state, formAction, isPending, formRef, onSubmit } = useActionForm(action, initialState, (result) => Object.keys(result.errors).length > 0);
+  const { state, formAction, isPending, formRef, onSubmit } = useActionForm(
+    action,
+    initialState,
+    (result) => Object.keys(result.errors).length > 0,
+  );
+  const [cta, setCta] = useState<LinkDraft>({
+    choice: linkChoice(content.ctaLink),
+    address: content.ctaLink.kind === "address" ? content.ctaLink.href : "",
+  });
 
   return (
-    <form ref={formRef} action={formAction} onSubmit={onSubmit} className="mt-8 flex max-w-2xl flex-col gap-6">
+    <form ref={formRef} action={formAction} onSubmit={onSubmit} className="mt-8 flex max-w-5xl flex-col gap-10">
       {state.saved ? (
         <p role="status" className={`rounded-md border px-3 py-2 text-sm ${ui.card} ${ui.rule}`}>
           Saved. The shop shows it now.
         </p>
       ) : null}
 
-      <Field label="Headline" name="headline" error={state.errors.headline}>
-        {(props) => <input {...props} type="text" defaultValue={content.headline} required className={inputClass} />}
-      </Field>
-
-      <Field
-        label="Opening paragraph"
-        name="intro"
-        error={state.errors.intro}
-        hint="Leave empty to show the headline on its own."
-      >
-        {(props) => <textarea {...props} rows={3} defaultValue={content.intro ?? ""} className={inputClass} />}
-      </Field>
-
-      <Field label="Button" name="ctaLabel" error={state.errors.ctaLabel} hint="It always leads to the whole shop.">
-        {(props) => <input {...props} type="text" defaultValue={content.ctaLabel} required className={inputClass} />}
-      </Field>
-
-      <ProductPicker
-        name="heroProductId"
-        label="Main photo"
-        products={products}
-        value={content.heroProductId}
-        emptyLabel="The newest piece with a photo"
-      />
-
-      <fieldset className="flex flex-col gap-3">
-        <legend className="text-sm font-medium">Our promises</legend>
+      <fieldset className="flex flex-col gap-2">
+        <legend className="text-sm font-medium">Badges</legend>
+        <label className="mt-1 flex items-center gap-2 text-sm">
+          <input type="checkbox" name="showBadges" defaultChecked={content.showBadges} className={ui.checkbox} />
+          Show the badges under the header
+        </label>
         <p className={`text-xs ${ui.mutedOnPage}`}>
-          The green strip across the page. Empty all three to take it off.
+          The seven round badges, from Small family business to Moments to memories since 2009. Their words are part of
+          the artwork, so they are shown or not rather than edited.
         </p>
-
-        {Array.from({ length: PROMISE_SLOTS }, (_, index) => (
-          <Field key={index} label={`Promise ${index + 1}`} name="promises" error={index === 0 ? state.errors.promises : undefined}>
-            {(props) => (
-              <input {...props} type="text" defaultValue={content.promises[index] ?? ""} className={inputClass} />
-            )}
-          </Field>
-        ))}
       </fieldset>
 
       <Field
-        label="Heading above the pieces"
-        name="featuredHeading"
-        error={state.errors.featuredHeading}
-        hint="The row below the promises. It shows the pieces you have marked featured, or the newest ones."
+        label="Banner"
+        name="bannerText"
+        error={state.errors.bannerText}
+        hint={`The sage band beneath the badges, in capitals. Up to ${BANNER_MAX} characters; leave it empty to take the band off.`}
       >
-        {(props) => (
-          <input {...props} type="text" defaultValue={content.featuredHeading} required className={inputClass} />
-        )}
+        {(props) => <input {...props} type="text" defaultValue={content.bannerText} className={inputClass} />}
       </Field>
+
+      <HomeTilesField
+        initial={content.tiles}
+        categories={categories}
+        photos={photos}
+        automatic={automatic}
+        upload={upload}
+        prepare={prepare}
+        problem={state.errors.tiles}
+        errors={state.errors.tile ?? NO_TILE_ERRORS}
+      />
+
+      <Field
+        label="Band above the pieces"
+        name="bandText"
+        error={state.errors.bandText}
+        hint={`Up to ${BAND_MAX} characters; leave it empty to take the band off. The pieces beneath are the ones marked featured on the product, or the newest eight.`}
+      >
+        {(props) => <textarea {...props} rows={2} defaultValue={content.bandText} className={inputClass} />}
+      </Field>
+
+      <fieldset className="flex flex-col gap-4">
+        <legend className="text-sm font-medium">The button beneath the pieces</legend>
+        <input type="hidden" name="ctaLink" value={cta.choice} />
+        <input type="hidden" name="ctaAddress" value={cta.choice === "other" ? cta.address : ""} />
+
+        <Field label="Button words" name="ctaLabel" error={state.errors.ctaLabel}>
+          {(props) => <input {...props} type="text" defaultValue={content.ctaLabel} required className={inputClass} />}
+        </Field>
+
+        <LinkField label="Button leads to" value={cta} onChange={setCta} categories={categories} error={state.errors.ctaLink} />
+      </fieldset>
 
       <button
         type="submit"
@@ -98,6 +130,8 @@ export function HomeForm({
       >
         {isPending ? "Saving…" : "Save"}
       </button>
+
+      <UnsavedChanges formRef={formRef} saved={state.saved ? state : null} />
     </form>
   );
 }

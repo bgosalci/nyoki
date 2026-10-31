@@ -1,53 +1,35 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import { toggleFavourite } from "@/app/(shop)/account/actions";
+import { HomeBadges } from "@/components/shop/home-badges";
+import { HomeMosaic } from "@/components/shop/home-mosaic";
 import { ProductGrid } from "@/components/shop/product-grid";
-import { PromiseStrip } from "@/components/shop/promise-strip";
 import { currentCustomer } from "@/lib/account/dal";
 import { ui } from "@/lib/brand/ui";
 import { db } from "@/lib/db";
-import { HOME_DEFAULTS, heroImageFor } from "@/lib/home/content";
-import { activeProducts, departments, savedProductIds, toCards } from "@/lib/storefront/queries";
+import { hrefFor } from "@/lib/home/links";
+import { loadHome } from "@/lib/home/load";
+import { shownTiles } from "@/lib/home/tiles";
+import { activeProducts, savedProductIds, tileProducts, toCards } from "@/lib/storefront/queries";
+import { leadPhotos } from "@/lib/storefront/tiles";
 
-const BUTTON = "inline-block px-6 py-3 text-xs tracking-[0.14em] uppercase";
+const BUTTON = "inline-block px-7 py-3.5 text-xs tracking-[0.14em] uppercase";
 
 export default async function HomePage() {
   const shopper = await currentCustomer();
 
-  const HERO_SELECT = {
-    id: true,
-    name: true,
-    slug: true,
-    images: { orderBy: { position: "asc" }, take: 1, select: { url: true } },
-  } as const;
-
-  const [row, groups, newest, savedIds] = await Promise.all([
-    db.homePage.findUnique({ where: { id: "home" } }),
-    departments(6),
-    db.product.findFirst({
-      where: { status: "ACTIVE", images: { some: {} } },
-      orderBy: { createdAt: "desc" },
-      select: HERO_SELECT,
-    }),
+  const [{ page, tiles }, categories, savedIds] = await Promise.all([
+    loadHome(),
+    db.category.findMany({ select: { id: true, slug: true, name: true, parentId: true } }),
     savedProductIds(shopper?.id ?? null),
   ]);
 
-  const content = row ?? HOME_DEFAULTS;
+  const categorySlugs = new Map(categories.map((category) => [category.id, category.slug]));
 
-  const chosen = content.heroProductId
-    ? await db.product.findFirst({
-        // Scoped to what is on the shop: a piece archived after it was chosen
-        // must not keep leading the page.
-        where: { id: content.heroProductId, status: "ACTIVE" },
-        select: HERO_SELECT,
-      })
-    : null;
-
-  const withImage = (piece: { id: string; name: string; slug: string; images: { url: string }[] } | null) =>
-    piece ? { ...piece, image: piece.images[0] ?? null } : null;
-
-  const hero = heroImageFor(withImage(chosen), withImage(newest));
+  // Only a tile with no photo of its own needs its category's first piece.
+  const lending = tiles.flatMap((tile) => (tile.link.kind === "category" && !tile.photoUrl ? [tile.link.categoryId] : []));
+  const leads = lending.length > 0 ? leadPhotos(categories, lending, await tileProducts()) : new Map();
+  const shown = shownTiles(tiles, categorySlugs, leads);
 
   // Whatever has been marked featured, or the newest if nothing has: the row
   // is never empty, and marking one piece is enough to take it over.
@@ -56,71 +38,49 @@ export default async function HomePage() {
 
   return (
     <>
-      <section className="mx-auto grid max-w-shop items-center gap-8 px-4 py-14 sm:px-6 md:grid-cols-2 md:py-20">
-        <div className="flex flex-col items-start gap-5">
-          <h1 className={`text-4xl leading-tight tracking-tight md:text-5xl ${ui.shopHeading}`}>
-            {content.headline}
+      {page.showBadges ? (
+        <section aria-label="Our promise" className="mx-auto max-w-shop px-4 pt-7 pb-6 sm:px-6 md:pt-10 md:pb-8">
+          <HomeBadges />
+        </section>
+      ) : null}
+
+      {page.bannerText ? (
+        <div className={`mx-auto max-w-shop px-4 sm:px-6 ${page.showBadges ? "" : "pt-8 md:pt-10"}`}>
+          <h1
+            className={`${ui.shopBand} px-6 py-10 text-center text-2xl leading-tight font-normal tracking-[0.08em] uppercase md:px-8 md:py-18 md:text-5xl`}
+          >
+            {page.bannerText}
           </h1>
-          {content.intro ? (
-            <p className={`max-w-prose leading-relaxed ${ui.shopMuted}`}>{content.intro}</p>
-          ) : null}
-          <Link href="/shop" className={`${BUTTON} ${ui.shopButton}`}>
-            {content.ctaLabel}
-          </Link>
         </div>
-        {hero?.image ? (
-          <Link href={`/product/${hero.slug}`} className="relative block aspect-[4/5] w-full overflow-hidden rounded-lg bg-nyoki-soft-ash">
-            <Image
-              src={hero.image.url}
-              alt={hero.name}
-              fill
-              sizes="(min-width: 768px) 50vw, 100vw"
-              priority
-              className="object-cover"
-            />
-          </Link>
-        ) : null}
-      </section>
+      ) : (
+        <h1 className="sr-only">Nyoki Handmade</h1>
+      )}
 
-      <PromiseStrip promises={content.promises} />
-
-      <section className="mx-auto max-w-shop px-4 py-14 sm:px-6">
-        <h2 className={`text-2xl tracking-tight ${ui.shopHeading}`}>Have a look around</h2>
-        <div className="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {groups.map((group) => (
-            <div key={group.slug} className="flex flex-col gap-3">
-              <h3 className={`text-xs tracking-[0.14em] uppercase ${ui.shopHeading}`}>{group.name}</h3>
-              <ul className="flex flex-col gap-1.5">
-                {group.children.map((child) => (
-                  <li key={child.slug}>
-                    <Link href={`/shop/${child.slug}`} className={`text-sm hover:underline hover:underline-offset-4 ${ui.shopMuted}`}>
-                      {child.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-              <Link href={`/shop/${group.slug}`} className="text-xs tracking-[0.14em] text-nyoki-navy uppercase underline underline-offset-4">
-                All {group.name.toLowerCase()}
-              </Link>
-            </div>
-          ))}
+      {shown.length > 0 ? (
+        <div className="mx-auto mt-3 max-w-shop px-4 sm:px-6 md:mt-4">
+          <HomeMosaic tiles={shown} />
         </div>
-      </section>
+      ) : null}
 
-      <section className="mx-auto max-w-shop px-4 pb-16 sm:px-6">
-        <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h2 className={`text-2xl tracking-tight ${ui.shopHeading}`}>{content.featuredHeading}</h2>
-          <Link href="/shop" className="text-xs tracking-[0.14em] text-nyoki-navy uppercase underline underline-offset-4">
-            See everything
-          </Link>
+      <section className="mx-auto max-w-shop px-4 pt-14 pb-16 sm:px-6 md:pt-18">
+        {page.bandText ? (
+          <div className={`${ui.shopBandQuiet} rounded-md px-6 py-10 text-center md:px-8 md:py-15`}>
+            <h2 className={`mx-auto max-w-4xl text-2xl leading-snug font-light md:text-[2.125rem] ${ui.shopHeading}`}>
+              {page.bandText}
+            </h2>
+          </div>
+        ) : (
+          <h2 className="sr-only">Pieces we love</h2>
+        )}
+
+        <div className="mt-10">
+          <ProductGrid products={toCards(pieces)} signedIn={shopper !== null} savedIds={savedIds} toggleFavourite={toggleFavourite} />
         </div>
-        <div className="mt-8">
-          <ProductGrid
-            products={toCards(pieces)}
-            signedIn={shopper !== null}
-            savedIds={savedIds}
-            toggleFavourite={toggleFavourite}
-          />
+
+        <div className="mt-10 flex justify-center">
+          <Link href={hrefFor(page.ctaLink, categorySlugs)} className={`${BUTTON} ${ui.shopButtonOutline}`}>
+            {page.ctaLabel}
+          </Link>
         </div>
       </section>
     </>

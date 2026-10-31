@@ -116,6 +116,22 @@ describe("CMS class recipes", () => {
     expect(approved).toContain(`${hexOfToken.get("nyoki-sage-deep")} on ${hexOfToken.get("nyoki-beige")}`);
   });
 
+  it("puts a home page tile's words on its photo in white, over a neutral fade", () => {
+    // A photograph is no approved ground, so the words carry their own: a
+    // fade to black at the foot of the tile. Plain black, as the modal scrim
+    // is, because every brand colour would tint the photo.
+    expect(ui.shopTileLabel).toMatch(/\btext-nyoki-white\b/);
+    expect(ui.shopTileFade).toMatch(/\bfrom-black\/\d+\b/);
+    expect(ui.shopTileFade).not.toMatch(/nyoki-/);
+  });
+
+  it("draws a tile with no photo in a pairing its words read on", () => {
+    const bg = /\bbg-(nyoki-[a-z-]+)/.exec(ui.shopTilePlain)?.[1];
+    const text = /\btext-(nyoki-[a-z-]+)/.exec(ui.shopTilePlain)?.[1];
+
+    expect(approved).toContain(`${hexOfToken.get(text!)} on ${hexOfToken.get(bg!)}`);
+  });
+
   it("nothing ever puts white or navy text on sage", () => {
     for (const classes of Object.values(ui)) {
       const onSage = /\bbg-nyoki-sage\b/.test(classes);
