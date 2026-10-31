@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 
+import { Checkbox } from "@/components/admin/checkbox";
 import { ui } from "@/lib/brand/ui";
 import { categoryPaths } from "@/lib/categories/path";
 import { flattenTree } from "@/lib/categories/tree";
@@ -145,8 +146,7 @@ export function CategoryChooser({
               {tree.map(({ row, depth }) => (
                 <li key={row.id} hidden={!shown.has(row.id)} style={{ paddingLeft: depth * 1.5 + "rem" }}>
                   <label className="flex items-center gap-2.5 text-sm">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       name="categoryIds"
                       value={row.id}
                       checked={chosen.has(row.id)}

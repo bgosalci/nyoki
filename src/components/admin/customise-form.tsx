@@ -2,6 +2,7 @@
 
 import { useActionState, useId, useRef, useState } from "react";
 
+import { Checkbox } from "@/components/admin/checkbox";
 import { Field, inputClass } from "@/components/admin/field";
 import { TopSaveButton } from "@/components/admin/save-slot";
 import { Select } from "@/components/admin/select";
@@ -314,7 +315,7 @@ function Switch({
 }) {
   return (
     <label className="flex items-center gap-2.5 self-start text-sm">
-      <input type="checkbox" name={name} checked={checked} onChange={(e) => onChange(e.target.checked)} className={`size-4 ${ui.checkbox}`} />
+      <Checkbox name={name} checked={checked} onChange={(e) => onChange(e.target.checked)} className={`size-4 ${ui.checkbox}`} />
       {children}
     </label>
   );
