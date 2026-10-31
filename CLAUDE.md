@@ -174,6 +174,10 @@ TypeScript, deployed to Vercel.
   region of its own (`DndLiveRegion-…`), which tests looking for the page's
   notices skip.
 
+- **Each row shows its categories** under the name, as pills, by their
+  places in the tree (`categoryPaths`/`pathsOf`, as its Details tab shows
+  them), or says "In no category". Filled (`ui.badgeQuiet`), not outlined
+  like the filter's pills above, which are links: these only say.
 - The bulk bar carries "Clear selection" beside the count, away from Delete.
 - The bulk bar changes prices across many pieces at once; a single piece is
   priced on its own Price tab. "Make active" skips anything not yet priced
