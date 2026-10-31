@@ -8,9 +8,8 @@ import { PINNED_BLOCK_CLASS, Th } from "@/components/admin/th";
 import { ui } from "@/lib/brand/ui";
 import { ROYAL_MAIL_PRICES_FROM } from "@/lib/delivery/royal-mail";
 import { deliverySettings, rateSources, unweighedCount } from "@/lib/delivery/store";
-import { deliveryDays, priceRange } from "@/lib/delivery/validate";
+import { deliveryDays, freeText, priceRange } from "@/lib/delivery/validate";
 import { db } from "@/lib/db";
-import { formatPence } from "@/lib/money";
 import { formatOrderDate } from "@/lib/orders/status";
 
 /** The ways an order can be sent, as checkout offers them, and how postage is worked out. */
@@ -69,7 +68,7 @@ export default async function DeliveryPage() {
                     </Link>
                   </td>
                   <td className="py-3 pr-4 tabular-nums">{priceRange(rate)}</td>
-                  <td className={`py-3 pr-4 tabular-nums ${ui.mutedOnPage}`}>{rate.freeOverPence !== null ? `over ${formatPence(rate.freeOverPence)}` : "Never"}</td>
+                  <td className={`py-3 pr-4 tabular-nums ${ui.mutedOnPage}`}>{freeText(rate)}</td>
                   <td className={`py-3 pr-4 ${ui.mutedOnPage}`}>{deliveryDays(rate) ?? "Not said"}</td>
                   <td className="py-3 pr-4">
                     {offered.has(rate.id) ? (

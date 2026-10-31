@@ -1,4 +1,4 @@
-import { apportion, cheapestDelivery, checkoutTotals, deliveryPence, freeDelivery, type DeliveryRate } from "@/lib/checkout/totals";
+import { apportion, cheapestDelivery, checkoutTotals, deliveryPence, freeDelivery, freeOption, type DeliveryRate } from "@/lib/checkout/totals";
 
 const tracked48: DeliveryRate = { id: "t48", name: "Royal Mail Tracked 48", pricePence: 395, freeOverPence: 4000, minDays: 2, maxDays: 3 };
 const tracked24: DeliveryRate = { id: "t24", name: "Royal Mail Tracked 24", pricePence: 550, freeOverPence: null, minDays: 1, maxDays: 2 };
@@ -8,6 +8,33 @@ describe("deliveryPence", () => {
     expect(deliveryPence(tracked48, 3999)).toBe(395);
     expect(deliveryPence(tracked48, 4000)).toBe(0);
     expect(deliveryPence(tracked24, 100_000)).toBe(550);
+  });
+});
+
+describe("free on every order", () => {
+  // Free over nothing: free whatever the goods come to, a code's discount and all.
+  const always: DeliveryRate = { ...tracked48, freeOverPence: 0 };
+
+  it("charges nothing, however little the goods come to", () => {
+    expect(deliveryPence(always, 0)).toBe(0);
+    expect(deliveryPence(always, 450)).toBe(0);
+  });
+
+  it("is free delivery already reached", () => {
+    expect(freeDelivery([tracked24, always], 450)).toEqual({ reached: true, rate: always });
+  });
+});
+
+describe("freeOption", () => {
+  it("is the first option that costs nothing for these goods, so checkout can start on it", () => {
+    const always: DeliveryRate = { ...tracked48, freeOverPence: 0 };
+    expect(freeOption([tracked24, always], 450)).toBe(always);
+    expect(freeOption([tracked24, tracked48], 4000)).toBe(tracked48);
+  });
+
+  it("is null when every option costs something - the shopper chooses what to pay", () => {
+    expect(freeOption([tracked24, tracked48], 3999)).toBeNull();
+    expect(freeOption([], 3999)).toBeNull();
   });
 });
 

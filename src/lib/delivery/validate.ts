@@ -171,6 +171,12 @@ export function validateDeliverySettings(form: FormData): DeliverySettingsValida
   return { ok: true, data: { unweighedGrams: unweighedGrams!, unweighedSize: unweighedSize as ParcelSize, packing } };
 }
 
+/** When an option is free, as the list of options says it: free over £0 is free on every order. */
+export function freeText({ freeOverPence }: { freeOverPence: number | null }): string {
+  if (freeOverPence === null) return "Never";
+  return freeOverPence === 0 ? "Always" : `over ${formatPence(freeOverPence)}`;
+}
+
 /** How long an option takes, as a shopper reads it: "2 to 3 working days"; null when not said. */
 export function deliveryDays({ minDays, maxDays }: { minDays: number | null; maxDays: number | null }): string | null {
   const unit = (n: number) => (n === 1 ? "working day" : "working days");

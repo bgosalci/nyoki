@@ -845,6 +845,16 @@ TypeScript, deployed to Vercel.
   the basket's parcel, checkout says so, points to Contact, and Continue is
   switched off. Deleted outright: an order copies the option's name, what it
   charged and the parcel.
+- **Every UK order goes free; faster costs.** Royal Mail Tracked 48 is free
+  over £0 - free on every order, "Always" in the list (`freeText`) - and
+  Tracked 24 is the paid faster way, at Royal Mail's Tracked 24 price for
+  the parcel (not the difference between the two). Both stay priced by
+  size and weight, so a free option still drops out for a parcel its list
+  cannot take, and checkout strikes through what it would have cost.
+- **Checkout starts on the free way** (`freeOption`): nobody need choose
+  what costs nothing. A paid way is the shopper's to choose, so with none
+  free nothing starts chosen; coming back to change something keeps the way
+  chosen before.
 
 ## Postage
 

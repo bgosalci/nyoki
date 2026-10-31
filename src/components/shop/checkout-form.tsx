@@ -8,7 +8,7 @@ import type { CheckoutState, CodeResult } from "@/app/(checkout)/checkout/action
 import { INPUT, PANEL, PANEL_SURFACE, Tile, TileGroup } from "@/components/shop/customiser";
 import { ShopField } from "@/components/shop/field";
 import { ui } from "@/lib/brand/ui";
-import { checkoutTotals, deliveryPence, type DeliveryRate, type Totals } from "@/lib/checkout/totals";
+import { checkoutTotals, deliveryPence, freeOption, type DeliveryRate, type Totals } from "@/lib/checkout/totals";
 import { GIFT_NOTE_MAX } from "@/lib/checkout/validate";
 import { deliveryDays } from "@/lib/delivery/validate";
 import { useActionForm } from "@/lib/forms/action-form";
@@ -111,8 +111,15 @@ export function CheckoutForm({
     if (prefill?.address) return savedAddresses.find((saved) => sameAddress(saved, prefill.address!))?.id ?? "new";
     return savedAddresses[0]?.id ?? "new";
   });
-  const [rateId, setRateId] = useState<string | null>(prefill?.rateId && rates.some((rate) => rate.id === prefill.rateId) ? prefill.rateId : null);
   const [code, setCode] = useState<AppliedCode | null>(prefill?.code ?? null);
+  // The way chosen before, coming back to change something; else the free
+  // way, since nobody need choose what costs nothing. A paid way is the
+  // shopper's to choose.
+  const [rateId, setRateId] = useState<string | null>(() => {
+    if (prefill?.rateId && rates.some((rate) => rate.id === prefill.rateId)) return prefill.rateId;
+    const start = checkoutTotals({ lines, discountPence: prefill?.code?.discountPence ?? 0, rate: null });
+    return freeOption(rates, start.subtotalPence - start.discountPence)?.id ?? null;
+  });
 
   const rate = rates.find((option) => option.id === rateId) ?? null;
   const totals = checkoutTotals({ lines, discountPence: code?.discountPence ?? 0, rate });

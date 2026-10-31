@@ -35,7 +35,17 @@ export function cheapestDelivery(rates: readonly Pick<DeliveryRate, "pricePence"
   return Math.min(...rates.map((rate) => deliveryPence(rate, goodsPence)));
 }
 
-export type FreeDelivery = { reached: true; rate: DeliveryRate } | { reached: false; morePence: number; rate: DeliveryRate };
+/**
+ * The first option that costs nothing for these goods - what checkout starts
+ * on, since nobody need choose what is free - or null when every option costs
+ * something, and the shopper chooses what to pay. Free over £0 is free on
+ * every order.
+ */
+export function freeOption<Rate extends Pick<DeliveryRate, "pricePence" | "freeOverPence">>(rates: readonly Rate[], goodsPence: number): Rate | null {
+  return rates.find((rate) => deliveryPence(rate, goodsPence) === 0) ?? null;
+}
+
+export type FreeDelivery ={ reached: true; rate: DeliveryRate } | { reached: false; morePence: number; rate: DeliveryRate };
 
 /** How close the goods are to free delivery, by the option free soonest; null when none ever is. */
 export function freeDelivery(rates: readonly DeliveryRate[], goodsPence: number): FreeDelivery | null {

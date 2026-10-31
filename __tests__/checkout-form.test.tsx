@@ -109,14 +109,35 @@ describe("checkout", () => {
       expect(screen.getByRole("radio", { name: /tracked 24/i })).toHaveAccessibleName(expect.stringMatching(/£5\.50/));
     });
 
-    it("leaves delivery out of the total until one is chosen, then adds it", async () => {
-      const { user } = setup();
+    it("leaves delivery out of the total until one is chosen, when every way costs something, then adds it", async () => {
+      const { user } = setup({ rates: [{ ...tracked48, freeOverPence: null }, tracked24] });
 
+      expect(screen.getByRole("radio", { name: /tracked 48/i })).not.toBeChecked();
+      expect(screen.getByRole("radio", { name: /tracked 24/i })).not.toBeChecked();
       expect(within(summary()).getByText("Choose below")).toBeInTheDocument();
       expect(within(summary()).getByTestId("checkout-total")).toHaveTextContent("£74.90");
 
       await user.click(screen.getByRole("radio", { name: /tracked 24/i }));
 
+      expect(within(summary()).getByTestId("checkout-total")).toHaveTextContent("£80.40");
+    });
+
+    it("starts on the free way of sending, so nobody has to choose what costs nothing", () => {
+      const always = { ...tracked48, freeOverPence: 0 };
+      setup({ rates: [always, tracked24] });
+
+      expect(screen.getByRole("radio", { name: /tracked 48/i })).toBeChecked();
+      expect(within(summary()).queryByText("Choose below")).not.toBeInTheDocument();
+      expect(within(summary()).getByTestId("checkout-total")).toHaveTextContent("£74.90");
+    });
+
+    it("still offers faster delivery at its price, and adds it once chosen", async () => {
+      const always = { ...tracked48, freeOverPence: 0 };
+      const { user } = setup({ rates: [always, tracked24] });
+
+      await user.click(screen.getByRole("radio", { name: /tracked 24/i }));
+
+      expect(screen.getByRole("radio", { name: /tracked 24/i })).toBeChecked();
       expect(within(summary()).getByTestId("checkout-total")).toHaveTextContent("£80.40");
     });
 

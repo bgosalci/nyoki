@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  */
-import { deliveryDays, priceRange, validateDeliveryRate, validateDeliverySettings } from "@/lib/delivery/validate";
+import { deliveryDays, freeText, priceRange, validateDeliveryRate, validateDeliverySettings } from "@/lib/delivery/validate";
 
 function form(entries: Record<string, string | string[]>): FormData {
   const data = new FormData();
@@ -117,6 +117,19 @@ describe("validateDeliveryRate, priced by size and weight", () => {
   it("leaves the price list alone when the option is priced at one price", () => {
     const result = validateDeliveryRate(form({ ...byWeight, priced: "one", bandUpTo: ["nonsense", "", ""] }));
     expect(result.ok && result.data).toEqual({ name: "Royal Mail Tracked 48", pricePence: 395, byWeight: false, freeOverPence: 4000, minDays: 2, maxDays: 3, active: true });
+  });
+});
+
+describe("free on every order", () => {
+  it("takes free over £0 as free on every order", () => {
+    const result = validateDeliveryRate(form({ ...tracked48, freeOver: "0" }));
+    expect(result).toMatchObject({ ok: true, data: { freeOverPence: 0 } });
+  });
+
+  it("says when an option is free: on every order, over an amount, or never", () => {
+    expect(freeText({ freeOverPence: 0 })).toBe("Always");
+    expect(freeText({ freeOverPence: 4000 })).toBe("over £40.00");
+    expect(freeText({ freeOverPence: null })).toBe("Never");
   });
 });
 

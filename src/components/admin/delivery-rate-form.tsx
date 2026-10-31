@@ -238,7 +238,7 @@ export function DeliveryRateForm({
       </div>
 
       <section className="grid gap-5 sm:grid-cols-3">
-        <Field label="Free on orders over (£)" name="freeOver" error={errors.freeOver} hint="After any promo code. Leave blank if it is never free.">
+        <Field label="Free on orders over (£)" name="freeOver" error={errors.freeOver} hint="After any promo code. 0 makes it free on every order; leave it blank if it is never free.">
           {(props) => <input {...props} type="text" inputMode="decimal" defaultValue={pounds(rate?.freeOverPence)} placeholder="40.00" className={inputClass} />}
         </Field>
 
