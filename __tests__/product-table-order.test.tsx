@@ -12,6 +12,7 @@ const row = (id: string, name: string, status: ProductRow["status"]): ProductRow
   madeToOrder: false,
   oneOfAKind: false,
   image: null,
+  categories: [],
 });
 
 // As the page sends them: drafts first, then active, each in the set order.

@@ -10,9 +10,19 @@ beforeAll(() => {
 });
 
 const rows: ProductRow[] = [
-  { id: "p1", name: "Snowflake Card", status: "ACTIVE", pricePence: 600, stock: 3, madeToOrder: false, oneOfAKind: false, image: null },
-  { id: "p2", name: "Stocking Card", status: "DRAFT", pricePence: 500, stock: 0, madeToOrder: false, oneOfAKind: true, image: null },
-  { id: "p3", name: "Bud Vase", status: "ARCHIVED", pricePence: 1800, stock: 1, madeToOrder: true, oneOfAKind: false, image: null },
+  {
+    id: "p1",
+    name: "Snowflake Card",
+    status: "ACTIVE",
+    pricePence: 600,
+    stock: 3,
+    madeToOrder: false,
+    oneOfAKind: false,
+    image: null,
+    categories: ["Cards › Christmas Cards", "Gifts"],
+  },
+  { id: "p2", name: "Stocking Card", status: "DRAFT", pricePence: 500, stock: 0, madeToOrder: false, oneOfAKind: true, image: null, categories: [] },
+  { id: "p3", name: "Bud Vase", status: "ARCHIVED", pricePence: 1800, stock: 1, madeToOrder: true, oneOfAKind: false, image: null, categories: ["Home"] },
 ];
 
 /** The page's own notices: not the region dragging announces itself through. */
@@ -48,6 +58,23 @@ describe("ProductTable", () => {
       { id: "p2", name: "Stocking Card" },
       { id: "p3", name: "Bud Vase" },
     ]);
+  });
+
+  it("shows each piece's categories by their place in the tree", () => {
+    setup();
+
+    const snowflake = screen.getByRole("list", { name: "Categories of Snowflake Card" });
+    expect(within(snowflake).getAllByRole("listitem").map((item) => item.textContent)).toEqual(["Cards › Christmas Cards", "Gifts"]);
+    const vase = screen.getByRole("list", { name: "Categories of Bud Vase" });
+    expect(within(vase).getAllByRole("listitem").map((item) => item.textContent)).toEqual(["Home"]);
+  });
+
+  it("says when a piece is in no category, since the shop's category pages will not show it", () => {
+    setup();
+
+    expect(screen.queryByRole("list", { name: "Categories of Stocking Card" })).not.toBeInTheDocument();
+    const stocking = screen.getByRole("link", { name: "Stocking Card" }).closest("td")!;
+    expect(within(stocking).getByText("In no category")).toBeInTheDocument();
   });
 
   it("offers nothing to act on until something is chosen", () => {

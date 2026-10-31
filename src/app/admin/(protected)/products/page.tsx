@@ -7,6 +7,7 @@ import { PINNED_BLOCK_CLASS } from "@/components/admin/th";
 import Link from "next/link";
 
 import { CATEGORY_ORDER } from "@/lib/categories/ordering";
+import { categoryPaths, pathsOf } from "@/lib/categories/path";
 import { db } from "@/lib/db";
 import { CategoryPills } from "@/components/admin/category-pills";
 import { ExportButton } from "@/components/admin/export-button";
@@ -40,11 +41,13 @@ export default async function ProductsPage({
     db.product.findMany({
       where: productWhere(filter, categoryIds),
       orderBy: PRODUCT_LIST_ORDER,
-      include: { images: { orderBy: { position: "asc" }, take: 1 } },
+      include: { images: { orderBy: { position: "asc" }, take: 1 }, categories: { select: { categoryId: true } } },
     }),
     db.product.count(),
     unweighedCount(),
   ]);
+
+  const paths = categoryPaths(categories);
 
   const HEADER = (
     <>
@@ -112,6 +115,7 @@ export default async function ProductsPage({
             madeToOrder: product.madeToOrder,
             oneOfAKind: product.oneOfAKind,
             image: product.images[0] ?? null,
+            categories: pathsOf(product.categories.map((link) => link.categoryId), paths),
           }))}
           setStatus={setProductsStatus}
           remove={deleteProducts}
