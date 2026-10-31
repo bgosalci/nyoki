@@ -55,7 +55,8 @@ export function BasketLines({
     startTransition(async () => {
       setRemoved(null);
       const result = await putBack(line);
-      setMessage(result.ok ? null : result.message);
+      // Fewer may go back than came out, if the stock has gone since.
+      setMessage(result.ok ? result.note : result.message);
     });
 
   return (

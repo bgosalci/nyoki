@@ -43,6 +43,12 @@ export type AddResult =
   | { ok: true; added: AddedPiece; basket: BasketSummary; note: string | null }
   | { ok: false; message: string };
 
+/** Why fewer went in than were asked for: the stock alone, or the stock beside what the basket already holds. */
+function fewerNote(adding: number, asked: number, holding: boolean): string {
+  const enough = holding ? `with what's already in your basket we only have enough for ${adding} more` : `we only have enough for ${adding}`;
+  return `Sorry, ${enough}, so we've added ${adding} rather than ${asked}.`;
+}
+
 async function activeProduct(productId: string, now: Date): Promise<ReviewProduct | null> {
   const [row, categories] = await Promise.all([
     db.product.findFirst({ where: { id: productId, status: "ACTIVE" }, include: BASKET_PRODUCT }),
@@ -90,7 +96,8 @@ async function place(product: ReviewProduct, stored: StoredChoices, quantity: nu
     ok: true,
     added: { name: product.name, image: product.image, quantity: adding, unitPence, details: lineDetails(product.offer, choices) },
     basket: { pieces: review.pieces, subtotalPence: review.subtotalPence, freeDelivery: freeDelivery(rates, review.subtotalPence) },
-    note: adding < quantity ? `There were only enough for ${adding}, so we've added ${adding}.` : null,
+    // The basket is to blame only if an empty one would have had room for more.
+    note: adding < quantity ? fewerNote(adding, quantity, room < roomFor([], { stored, product })) : null,
   };
 }
 

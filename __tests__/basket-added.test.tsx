@@ -70,12 +70,16 @@ describe("the panel that says a piece went in", () => {
     expect(panel()).toHaveTextContent("Your basket gets free Royal Mail Tracked 48 delivery.");
   });
 
-  it("passes on a note about how many went in", async () => {
-    const { user } = setup({ ...notice, note: "There were only enough for 2, so we've added 2." });
+  it("says first, straight under its heading, when fewer went in than were asked for", async () => {
+    const short = "Sorry, we only have enough for 2, so we've added 2 rather than 5.";
+    const { user } = setup({ ...notice, note: short });
 
     await user.click(screen.getByRole("button", { name: "Pretend to add" }));
 
-    expect(panel()).toHaveTextContent("There were only enough for 2, so we've added 2.");
+    const note = within(panel()).getByText(short);
+    // Before the piece and its "2 × £7.50", where it cannot be read past.
+    expect(note.compareDocumentPosition(within(panel()).getByText("Snowman Card")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(note).toHaveClass("bg-nyoki-accent-beige");
   });
 
   it("closes with its own button, with Escape, and with a click anywhere else", async () => {

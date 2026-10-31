@@ -138,6 +138,17 @@ describe("the basket's lines", () => {
     expect(putBack).toHaveBeenCalledWith({ productId: "snowflake", name: "Silver Snowflake Card", quantity: 1, stored });
   });
 
+  it("says when fewer could go back than were taken out", async () => {
+    const { user, putBack } = setup();
+    const short = "Sorry, we only have enough for 1, so we've added 1 rather than 3.";
+    putBack.mockResolvedValue({ ok: true, added: { name: "Silver Snowflake Card", image: null, quantity: 1, unitPence: 650, details: [] }, basket: { pieces: 1, subtotalPence: 650, freeDelivery: null }, note: short });
+
+    await removeConfirmed(user, "Silver Snowflake Card");
+    await user.click(within(await screen.findByRole("status")).getByRole("button", { name: "Put it back" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent(short);
+  });
+
   it("says so when a removed line cannot go back", async () => {
     const { user, putBack } = setup();
     putBack.mockResolvedValue({ ok: false, message: "Sorry, this is out of stock." });

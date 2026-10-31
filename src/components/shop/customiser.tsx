@@ -57,6 +57,8 @@ export interface BarNotice {
   text: string;
   /** With the way to the basket. */
   added: boolean;
+  /** Fewer went in than were asked for, which a computer is told here too. */
+  fewer?: boolean;
 }
 
 interface Customiser {
@@ -199,7 +201,7 @@ export function CustomiserProvider({
           .then((result) => {
             if (result.ok) {
               basketAdded?.show(result);
-              setNotice({ text: result.note ?? "Added to your basket.", added: true });
+              setNotice({ text: result.note ?? "Added to your basket.", added: true, fewer: result.note !== null });
             } else {
               setNotice({ text: result.message, added: false });
             }
@@ -624,7 +626,9 @@ export function CustomiserBar() {
 /**
  * A notice above the page's bar, in ink. That a piece went in comes with the
  * way to the basket, and is drawn on a phone only: on a computer the panel
- * from the header's basket says it.
+ * from the header's basket says it. That fewer went in than were asked for
+ * is drawn on a computer as well, beside the button just pressed: the panel
+ * says it too, but at the top of the screen, far from where the eyes are.
  */
 export function InkNotice({ notice, testId }: { notice: BarNotice; testId?: string }) {
   return (
@@ -632,7 +636,7 @@ export function InkNotice({ notice, testId }: { notice: BarNotice; testId?: stri
       data-testid={testId}
       role="status"
       className={`absolute inset-x-4 bottom-full mb-3 flex items-center justify-center gap-3 rounded-2xl bg-nyoki-ink px-4 py-2.5 text-center text-sm leading-snug text-nyoki-beige shadow-[0_8px_24px_-10px_rgb(0_0_0/0.4)] sm:inset-x-6 md:inset-x-auto md:right-0 md:max-w-sm ${
-        notice.added ? "justify-between text-left md:hidden" : ""
+        notice.added ? `justify-between text-left ${notice.fewer ? "" : "md:hidden"}` : ""
       }`}
     >
       <span>{notice.text}</span>

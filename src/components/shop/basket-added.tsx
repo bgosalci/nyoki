@@ -139,6 +139,10 @@ function AddedPanel() {
         </button>
       </div>
 
+      {/* Fewer went in than were asked for: said first, before the piece and
+          its count, where it cannot be read past. */}
+      {note ? <p className="mt-4 rounded-md bg-nyoki-accent-beige px-4 py-3 text-sm leading-snug text-nyoki-navy">{note}</p> : null}
+
       <div className="mt-4 grid grid-cols-[64px_minmax(0,1fr)] items-center gap-3.5">
         <div className="relative aspect-square overflow-hidden rounded-lg bg-nyoki-soft-ash">
           {added.image ? <Image src={added.image} alt="" fill sizes="64px" className="object-cover" /> : null}
@@ -150,8 +154,6 @@ function AddedPanel() {
           </p>
         </div>
       </div>
-
-      {note ? <p className="mt-3 text-sm text-nyoki-text-dark">{note}</p> : null}
 
       {free ? (
         <div className="mt-4">

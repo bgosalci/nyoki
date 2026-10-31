@@ -502,6 +502,8 @@ describe("Add to basket, once ordering is open", () => {
     const notice = screen.getByTestId("customiser-notice");
     expect(notice).toHaveTextContent("Added to your basket.");
     expect(within(notice).getByRole("link", { name: "View basket" })).toHaveAttribute("href", "/basket");
+    // A computer has the panel from the header's basket instead.
+    expect(notice).toHaveClass("md:hidden");
   });
 
   it("still shows what is missing when pressed too soon, and sends nothing", async () => {
@@ -523,13 +525,19 @@ describe("Add to basket, once ordering is open", () => {
     expect(within(screen.getByTestId("customiser-notice")).queryByRole("link")).not.toBeInTheDocument();
   });
 
-  it("says when only some could go in", async () => {
-    const { user } = setupOpen(everything, jest.fn().mockResolvedValue({ ...added, note: "There were only enough for 2, so we've added 2." }));
+  it("says when only some could go in, beside the button on a computer too", async () => {
+    const short = "Sorry, we only have enough for 2, so we've added 2 rather than 5.";
+    const { user } = setupOpen(everything, jest.fn().mockResolvedValue({ ...added, note: short }));
     await chooseEverything(user);
 
     await user.click(addButton());
 
-    expect(screen.getByTestId("customiser-notice")).toHaveTextContent("There were only enough for 2, so we've added 2.");
+    const notice = screen.getByTestId("customiser-notice");
+    expect(notice).toHaveTextContent(short);
+    expect(within(notice).getByRole("link", { name: "View basket" })).toHaveAttribute("href", "/basket");
+    // The panel from the header's basket says it too, but far from where
+    // the shopper's eyes are.
+    expect(notice).not.toHaveClass("md:hidden");
   });
 
   it("sends it once, however quickly it is pressed again", async () => {

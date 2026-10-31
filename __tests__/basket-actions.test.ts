@@ -167,7 +167,29 @@ describe("addToBasket", () => {
     const result = await addToBasket("card", { ...printedPack, quantity: 5 });
 
     expect(upsert).toHaveBeenCalledWith(expect.objectContaining({ update: { quantity: { increment: 2 } } }));
-    expect(result).toMatchObject({ ok: true, added: { quantity: 2 }, note: "There were only enough for 2, so we've added 2." });
+    expect(result).toMatchObject({ ok: true, added: { quantity: 2 }, note: "Sorry, we only have enough for 2, so we've added 2 rather than 5." });
+  });
+
+  it("says when what is already in the basket is why fewer went in", async () => {
+    // Seven cards, a pack of three already in: room for one more pack.
+    const product = toReviewProduct(cardRow({ stock: 7 }), [{ id: "cards", slug: "cards", name: "Cards", parentId: null, usualGrams: 40, usualParcelSize: "LARGE_LETTER", usualThicknessMm: 5 }], new Date());
+    findFirst.mockResolvedValue(cardRow({ stock: 7 }));
+    loadReviewLines.mockResolvedValue([{ id: "l1", quantity: 1, addedPricePence: 2190, stored, product } satisfies ReviewLine]);
+
+    const result = await addToBasket("card", { ...printedPack, quantity: 5 });
+
+    expect(upsert).toHaveBeenCalledWith(expect.objectContaining({ update: { quantity: { increment: 1 } } }));
+    expect(result).toMatchObject({
+      ok: true,
+      added: { quantity: 1 },
+      note: "Sorry, with what's already in your basket we only have enough for 1 more, so we've added 1 rather than 5.",
+    });
+  });
+
+  it("says nothing about how many when all of them went in", async () => {
+    findFirst.mockResolvedValue(cardRow({ stock: 7 }));
+
+    expect(await addToBasket("card", printedPack)).toMatchObject({ ok: true, added: { quantity: 2 }, note: null });
   });
 
   it("puts in nothing once the basket holds all there is", async () => {

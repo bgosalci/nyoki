@@ -827,6 +827,13 @@ TypeScript, deployed to Vercel.
   (`BasketAddedProvider` in the shop layout joins the page to the header),
   with how far the basket is from free delivery, and in the bar's notice on
   a phone. The header counts pieces, not lines.
+- **Fewer going in than were asked for is said where it cannot be missed.**
+  The page's quantity stops at the stock as it loaded, so 10 can be asked
+  for and 7 go in: stock sold since, or some already in the basket, which
+  the note names when it is the reason. The panel says it first, in a beige
+  band above the piece, and the bar's notice says it on a computer too,
+  beside the button just pressed. It was a grey line beneath the piece, at
+  the top of the screen, and was read past. Put it back says it the same way.
 - **Remove asks first** ("Remove ...?", Keep it or Remove), in the shop's own
   `ConfirmDialog` (`src/components/shop/confirm-dialog.tsx`) - the admin's
   carries dark-mode colours. It first took a line out without asking, and
