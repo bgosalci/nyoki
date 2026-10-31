@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { CustomiserBar, CustomiserPanels, CustomiserProvider } from "@/components/shop/customiser";
@@ -515,6 +515,22 @@ describe("Add to basket, once ordering is open", () => {
     expect(add).not.toHaveBeenCalled();
   });
 
+  // A browser sends a form from its fields on Enter, to the button tied to
+  // it by its form attribute. user-event looks for that button only inside
+  // the form, so it never sends this one: what stops a browser is Enter's
+  // keydown being cancelled, which is what these check.
+  it("never puts the piece in from Enter in a box or on a choice, only from the button", async () => {
+    const { user } = setupOpen();
+    await chooseEverything(user);
+    const sends = (element: HTMLElement) => fireEvent.keyDown(element, { key: "Enter" });
+
+    expect(sends(screen.getByLabelText("Name"))).toBe(false);
+    expect(sends(screen.getByRole("radio", { name: /^pack of 3/i }))).toBe(false);
+    expect(sends(screen.getByRole("switch", { name: /personalise it/i }))).toBe(false);
+    // A message can still run onto a new line.
+    expect(sends(screen.getByLabelText("Your message"))).toBe(true);
+  });
+
   it("says why, when the piece could not go in", async () => {
     const { user } = setupOpen(everything, jest.fn().mockResolvedValue({ ok: false, message: "Sorry, this is out of stock." }));
     await chooseEverything(user);
@@ -598,6 +614,21 @@ describe("a piece with nothing to choose, once ordering is open", () => {
 
     expect(add).toHaveBeenCalledWith("tree", expect.objectContaining({ quantity: 2 }));
     expect(total()).toHaveTextContent("£11.00");
+  });
+
+  it("takes Enter in the quantity box as done typing, not as Add to basket", async () => {
+    const { user } = setupPlain({ stock: 3 });
+    const box = screen.getByLabelText("Quantity");
+
+    await user.clear(box);
+    await user.type(box, "9");
+
+    expect(fireEvent.keyDown(box, { key: "Enter" })).toBe(false);
+    // Tidied to what there is, as leaving the box does.
+    expect(box).toHaveValue(3);
+    expect(box).toHaveFocus();
+    // The steppers still press with Enter.
+    expect(fireEvent.keyDown(screen.getByRole("button", { name: "One fewer" }), { key: "Enter" })).toBe(true);
   });
 
   it("has no summary of choices, since there were none", () => {

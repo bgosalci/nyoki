@@ -823,6 +823,13 @@ TypeScript, deployed to Vercel.
   page is handed the piece's own `stock` (null for made to order), not
   whether it is sold out. What is already in the basket is not counted
   there: adding puts in what there is room for and says so.
+- **Only Add to basket puts a piece in.** Enter in a box or on a choice
+  does not (`holdEnter`, on the customiser's form): a browser sends a form
+  from its fields on Enter, so finishing a quantity bought the piece. Enter
+  in the quantity box tidies it, as leaving it does; a message still takes
+  Enter as a new line. jsdom never shows the bug - user-event looks for the
+  button only inside the form, and this one is outside it, tied by `form` -
+  so the tests check that Enter's keydown is cancelled.
 - Adding says so in a panel dropping from the header's basket on a computer
   (`BasketAddedProvider` in the shop layout joins the page to the header),
   with how far the basket is from free delivery, and in the bar's notice on

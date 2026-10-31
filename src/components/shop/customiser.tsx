@@ -236,7 +236,7 @@ export function CustomiserPanels() {
   return (
     // POST, though nothing is sent: pressed before the page has loaded its
     // script, a GET would put what was typed in the address.
-    <form id={formId} noValidate method="post" onSubmit={submit} className="flex flex-col gap-5">
+    <form id={formId} noValidate method="post" onSubmit={submit} onKeyDown={holdEnter} className="flex flex-col gap-5">
       {offer.clothing && offer.clothing.colours.length > 0 ? <ColourPanel /> : null}
       {offer.clothing && offer.clothing.sizes.length > 0 ? <SizePanel /> : null}
       {offer.packs.length > 0 ? <UnitPanel /> : null}
@@ -247,6 +247,17 @@ export function CustomiserPanels() {
       {summarise(offer, choices).length > 0 ? <SummaryPanel /> : null}
     </form>
   );
+}
+
+/**
+ * Enter in a box or on a choice does not put the piece in. A browser sends a
+ * form from any of its fields on Enter, so finishing a number or a name
+ * bought the piece; only Add to basket does now. A message still takes Enter
+ * as a new line, the steppers still press with it, and Enter that finishes a
+ * word in an input method is left to it.
+ */
+function holdEnter(event: React.KeyboardEvent<HTMLFormElement>) {
+  if (event.key === "Enter" && event.target instanceof HTMLInputElement && !event.nativeEvent.isComposing) event.preventDefault();
 }
 
 function ColourPanel() {
@@ -547,6 +558,10 @@ function QuantityPanel() {
           value={quantityText}
           onChange={(event) => changeQuantity(event.target.value)}
           onBlur={tidyQuantity}
+          // Done typing, as leaving the box is; the form keeps Enter from adding.
+          onKeyDown={(event) => {
+            if (event.key === "Enter") tidyQuantity();
+          }}
           className="w-10 [appearance:textfield] bg-transparent text-center tabular-nums outline-none focus-visible:rounded focus-visible:outline-2 focus-visible:outline-nyoki-navy [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
         />
         <StepButton label="One more" disabled={choices.quantity >= limit} onClick={() => changeQuantity(String(clampQuantity(choices.quantity + 1, most)))}>
