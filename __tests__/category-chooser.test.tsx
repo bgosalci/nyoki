@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { CategoryChooser } from "@/components/admin/category-chooser";
@@ -63,6 +63,35 @@ describe("CategoryChooser", () => {
 
     expect(within(summary()).queryByText("Vases")).not.toBeInTheDocument();
     expect(posted()).toEqual(["cat_mugs"]);
+  });
+
+  it("shows the ticks as they were saved once the save goes through, and saves them so again", async () => {
+    // React resets the form after its action returns, which put each box
+    // back to how the page opened: a group taken off showed ticked again,
+    // though the summary and the save left it out.
+    const action = jest.fn(async () => {});
+    const { container } = render(
+      <form action={action}>
+        <CategoryChooser categories={categories} chosen={["cat_tableware", "cat_mugs"]} />
+        <button type="submit">Save</button>
+      </form>,
+    );
+    const user = userEvent.setup();
+    const posted = () => (action.mock.calls.at(-1) as unknown as [FormData])[0].getAll("categoryIds");
+
+    await user.click(screen.getByRole("button", { name: "Change categories" }));
+    await user.click(screen.getByRole("checkbox", { name: "Tableware" }));
+    await user.click(screen.getByRole("checkbox", { name: "Vases" }));
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    await act(async () => {});
+
+    expect(posted()).toEqual(["cat_mugs", "cat_vases"]);
+    expect(screen.getByRole("checkbox", { name: "Tableware" })).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Vases" })).toBeChecked();
+    expect(new FormData(container.querySelector("form")!).getAll("categoryIds")).toEqual(["cat_mugs", "cat_vases"]);
+
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(posted()).toEqual(["cat_mugs", "cat_vases"]);
   });
 
   it("says when none is chosen, and offers to choose", () => {

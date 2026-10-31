@@ -345,6 +345,13 @@ TypeScript, deployed to Vercel.
   zero-rated piece went back to 20% VAT. `Select` keeps the chosen option the
   default. A form that leaves the page on success, or submits through
   `onSubmit` (the bulk price dialog, the shop's customiser), is never reset.
+- **A controlled checkbox is a `Checkbox`** (`src/components/admin/checkbox.tsx`)
+  in such a form, for the same reason: React sets its default once, from the
+  tick it was first drawn with, so the reset put every box back to how the
+  page opened. A product's Cards, taken off and saved, showed ticked again
+  beside a summary without it, and the next save would have put it back; the
+  Customise tab's switches did the same. `SwatchField`'s radios keep their
+  own default the same way.
 - Controlled text boxes (a product's Price tab, a category's usual costs)
   never lose anything - React owns their values - and have tests saying so.
 

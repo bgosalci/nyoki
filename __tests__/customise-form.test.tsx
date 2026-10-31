@@ -240,6 +240,35 @@ describe("CustomiseForm", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Only cards and bookmarks can be customised.");
   });
 
+  it("shows each switch as it was saved once the save goes through, so the next save does not undo it", async () => {
+    // React resets the form after it saves, which put each switch back to
+    // how the page opened while the sections beneath still followed it.
+    const { user, action } = setup();
+    await user.click(screen.getByRole("checkbox", { name: "Offer a printed message inside" }));
+    await user.click(screen.getByRole("checkbox", { name: "Offer personalisation" }));
+    await user.click(screen.getByRole("checkbox", { name: /only sold personalised/i }));
+
+    await submitted(user, action);
+    await act(async () => {});
+
+    expect(screen.getByRole("checkbox", { name: "Offer a printed message inside" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Offer personalisation" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /only sold personalised/i })).toBeChecked();
+    const again = await submitted(user, action);
+    expect([again.get("message"), again.get("personalisation"), again.get("personalisationRequired")]).toEqual(["on", "on", "on"]);
+  });
+
+  it("shows a switch turned off as off once saved, so the next save does not turn it back on", async () => {
+    const { user, action } = setup(everythingSet);
+    await user.click(screen.getByRole("checkbox", { name: "Offer a printed message inside" }));
+
+    await submitted(user, action);
+    await act(async () => {});
+
+    expect(screen.getByRole("checkbox", { name: "Offer a printed message inside" })).not.toBeChecked();
+    expect((await submitted(user, action)).get("message")).toBeNull();
+  });
+
   it("says when it has saved", async () => {
     const { user } = setup(everythingSet);
 
