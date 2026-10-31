@@ -68,8 +68,12 @@ const WORKING_OUT = ["margin", "ending"];
 
 const pounds = (pence: number) => (pence / 100).toFixed(2);
 
-function Money({ pence, loss = false }: { pence: number; loss?: boolean }) {
-  return <dd className={`text-right tabular-nums ${loss && pence < 0 ? "text-red-600 dark:text-red-400" : ""}`}>{formatPence(pence)}</dd>;
+function Money({ pence, loss = false, strong = false }: { pence: number; loss?: boolean; strong?: boolean }) {
+  return (
+    <dd className={`text-right tabular-nums ${strong ? "font-semibold" : ""} ${loss && pence < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
+      {formatPence(pence)}
+    </dd>
+  );
 }
 
 /**
@@ -323,7 +327,7 @@ export function PricingEditor({
               <dt>Costs</dt>
               <Money pence={costPence} />
               <dt className="font-semibold">Profit</dt>
-              <Money pence={breakdown.profitPence} loss />
+              <Money pence={breakdown.profitPence} loss strong />
               <dt>Margin</dt>
               <dd className={`text-right tabular-nums ${margined !== null && margined < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
                 {margined === null ? "—" : `${margined.toFixed(1)}%`}
@@ -347,7 +351,7 @@ export function PricingEditor({
               <dt>VAT</dt>
               <Money pence={noths.vatPence} />
               <dt className="font-semibold">Profit</dt>
-              <Money pence={noths.profitPence} loss />
+              <Money pence={noths.profitPence} loss strong />
             </dl>
           </div>
         </section>

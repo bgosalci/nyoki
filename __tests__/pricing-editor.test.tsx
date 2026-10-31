@@ -109,6 +109,17 @@ describe("PricingEditor", () => {
     expect(figure(/^profit/i)).toHaveClass("text-red-600");
   });
 
+  it("sets each profit in bold, as its label is, here and on Not On The High Street", () => {
+    setup();
+
+    for (const name of [/what it makes/i, /not on the high street/i]) {
+      const terms = [...screen.getByRole("group", { name }).querySelectorAll("dt")];
+      const profit = terms.find((dt) => /^profit/i.test(dt.textContent ?? ""))!;
+      expect(profit).toHaveClass("font-semibold");
+      expect(profit.nextElementSibling).toHaveClass("font-semibold");
+    }
+  });
+
   it("works out every step of a sale, down to half price", () => {
     setup();
 
