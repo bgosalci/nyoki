@@ -6,6 +6,7 @@ import {
   initialChoices,
   isPersonalising,
   missingChoices,
+  mostAvailable,
   packSavingPence,
   barHint,
   readyHint,
@@ -121,6 +122,12 @@ describe("clampQuantity", () => {
     [100, 99],
   ] as const)("brings %p into the range 1 to 99 as %p", (raw, expected) => {
     expect(clampQuantity(raw)).toBe(expected);
+  });
+
+  it("brings it down to the most there is, but never below one", () => {
+    expect(clampQuantity("5", 3)).toBe(3);
+    expect(clampQuantity(2, 3)).toBe(2);
+    expect(clampQuantity("5", 0)).toBe(1);
   });
 });
 
@@ -304,6 +311,42 @@ const dress: Offer = {
     ],
   }),
 };
+
+describe("mostAvailable", () => {
+  it("is the piece's own stock, for anything not clothing", () => {
+    expect(mostAvailable(plain, EMPTY_CHOICES, 4)).toBe(4);
+    expect(mostAvailable(plain, EMPTY_CHOICES, 0)).toBe(0);
+  });
+
+  it("is as many as the box takes for a piece made to order, which never runs out", () => {
+    expect(mostAvailable(plain, EMPTY_CHOICES, null)).toBe(99);
+    expect(mostAvailable(plain, EMPTY_CHOICES, 500)).toBe(99);
+  });
+
+  it("counts every card in the pack chosen - a pack of three takes three", () => {
+    expect(mostAvailable(offer, { ...EMPTY_CHOICES, unit: "p3" }, 10)).toBe(3);
+    expect(mostAvailable(offer, { ...EMPTY_CHOICES, unit: "p6" }, 5)).toBe(0);
+    expect(mostAvailable(offer, { ...EMPTY_CHOICES, unit: SINGLE }, 10)).toBe(10);
+    // Until one is chosen, as many as there are single cards.
+    expect(mostAvailable(offer, EMPTY_CHOICES, 10)).toBe(10);
+  });
+
+  it("is the stock of the colour in the size chosen", () => {
+    expect(mostAvailable(dress, { ...EMPTY_CHOICES, colour: "Lupin", size: "S" }, 3)).toBe(2);
+    expect(mostAvailable(dress, { ...EMPTY_CHOICES, colour: "Gypsum", size: "S" }, 3)).toBe(1);
+  });
+
+  it("is the most of any still possible until both are chosen", () => {
+    expect(mostAvailable(dress, EMPTY_CHOICES, 3)).toBe(2);
+    expect(mostAvailable(dress, { ...EMPTY_CHOICES, colour: "Gypsum" }, 3)).toBe(1);
+    expect(mostAvailable(dress, { ...EMPTY_CHOICES, size: "M" }, 3)).toBe(0);
+  });
+
+  it("goes by clothing's own colours and sizes, unless it is made to order", () => {
+    const madeToOrder: Offer = { ...dress, clothing: { ...dress.clothing!, madeToOrder: true } };
+    expect(mostAvailable(madeToOrder, { ...EMPTY_CHOICES, colour: "Gypsum", size: "M" }, 0)).toBe(99);
+  });
+});
 
 describe("clothes", () => {
   it("asks for a colour, then a size", () => {

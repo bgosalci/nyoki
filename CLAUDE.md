@@ -781,6 +781,16 @@ TypeScript, deployed to Vercel.
   to order never runs out; one of a kind is one in all. Taking stock off
   waits for payment, so an unpaid order cannot empty the shelf. 10 active
   pieces had stock 0 when this landed, and read as out of stock.
+- **A piece's page asks no more than there are**, as the basket's stepper
+  does (`mostAvailable`, `src/lib/customisation/choices.ts`): the stock of
+  the colour in the size chosen - the most of any still possible until both
+  are - over the cards in the pack chosen. One more switches off there and
+  says "That's all we have"; a number typed past it comes down when the box
+  is left, and the total and Add to basket go by the limit meanwhile.
+  Choosing a colour, size or pack with fewer brings the quantity down. The
+  page is handed the piece's own `stock` (null for made to order), not
+  whether it is sold out. What is already in the basket is not counted
+  there: adding puts in what there is room for and says so.
 - Adding says so in a panel dropping from the header's basket on a computer
   (`BasketAddedProvider` in the shop layout joins the page to the header),
   with how far the basket is from free delivery, and in the bar's notice on

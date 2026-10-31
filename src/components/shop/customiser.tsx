@@ -17,6 +17,7 @@ import {
   extraNote,
   initialChoices,
   missingChoices,
+  mostAvailable,
   packSavingPence,
   readyHint,
   summarise,
@@ -77,6 +78,8 @@ interface Customiser {
   adding: boolean;
   /** Only ever one: no quantity is asked. */
   oneOfAKind: boolean;
+  /** The most there is of what is chosen so far (`mostAvailable`); QUANTITY_MAX is no limit. */
+  most: number;
   change: (patch: Partial<Choices>) => void;
   changeField: (id: string, value: string) => void;
   changeQuantity: (text: string) => void;
@@ -110,7 +113,7 @@ export function CustomiserProvider({
   offer,
   productId = "",
   add,
-  soldOut: noneLeft = false,
+  stock = null,
   oneOfAKind = false,
   children,
 }: {
@@ -118,8 +121,8 @@ export function CustomiserProvider({
   productId?: string;
   /** Absent while ordering is closed. */
   add?: AddToBasket;
-  /** None left of a piece that is not clothing - clothing's stock is in the offer. */
-  soldOut?: boolean;
+  /** How many there are of a piece that is not clothing - clothing's stock is in the offer. Null, made to order, is no limit. */
+  stock?: number | null;
   oneOfAKind?: boolean;
   children: React.ReactNode;
 }) {
@@ -134,10 +137,13 @@ export function CustomiserProvider({
   // A second press while the first is on its way sends nothing.
   const sending = useRef(false);
 
-  const choices: Choices = { ...answers, quantity: oneOfAKind ? 1 : clampQuantity(quantityText) };
+  // No more than there are, as the basket allows: the box may say more while
+  // it is being typed in, but the total and the basket go by this.
+  const most = mostAvailable(offer, answers, stock);
+  const choices: Choices = { ...answers, quantity: oneOfAKind ? 1 : clampQuantity(quantityText, most) };
   const missing = missingChoices(offer, choices);
   // Nothing left in any colour or size: nothing to choose, nothing to say is missing.
-  const outOfStock = offer.clothing !== null ? soldOut(offer.clothing) : noneLeft;
+  const outOfStock = offer.clothing !== null ? soldOut(offer.clothing) : stock !== null && stock < 1;
 
   const touched = () => setNotice(null);
 
@@ -161,8 +167,12 @@ export function CustomiserProvider({
     open: add !== undefined,
     adding,
     oneOfAKind,
+    most,
     change: (patch) => {
       setAnswers((previous) => ({ ...previous, ...patch }));
+      // A colour, size or pack with fewer to go round brings the quantity down to them.
+      const fewer = mostAvailable(offer, { ...answers, ...patch }, stock);
+      if (clampQuantity(quantityText) > Math.max(QUANTITY_MIN, fewer)) setQuantityText(String(clampQuantity(quantityText, fewer)));
       touched();
     },
     changeField: (id, value) => {
@@ -173,7 +183,7 @@ export function CustomiserProvider({
       setQuantityText(text);
       touched();
     },
-    tidyQuantity: () => setQuantityText(String(clampQuantity(quantityText))),
+    tidyQuantity: () => setQuantityText(String(clampQuantity(quantityText, most))),
     submit: (event) => {
       event.preventDefault();
       if (outOfStock) return;
@@ -499,18 +509,30 @@ function PersonalisationInput({ field }: { field: PersonalisationFieldOffer }) {
   );
 }
 
-/** How many: with the choices rather than in the bar, so the bar can be one slim row. */
+/**
+ * How many: with the choices rather than in the bar, so the bar can be one
+ * slim row. No more than there are of what is chosen, as the basket allows,
+ * saying so in the basket's words once it gets there.
+ */
 function QuantityPanel() {
-  const { choices, quantityText, changeQuantity, tidyQuantity } = useCustomiser();
+  const { choices, most, quantityText, changeQuantity, tidyQuantity } = useCustomiser();
   const quantityId = useId();
+  const limit = Math.max(QUANTITY_MIN, most);
+  // None left at all is said by the bar; no limit needs no saying.
+  const allWeHave = most > 0 && most < QUANTITY_MAX && choices.quantity >= most;
 
   return (
     <div className={`flex items-center justify-between gap-4 py-3 pr-3 pl-7 ${PANEL_SURFACE}`}>
-      <label htmlFor={quantityId} className={`text-xl font-medium tracking-tight ${ui.shopHeading}`}>
-        Quantity
-      </label>
+      <div className="flex flex-col">
+        <label htmlFor={quantityId} className={`text-xl font-medium tracking-tight ${ui.shopHeading}`}>
+          Quantity
+        </label>
+        <p aria-live="polite" className="text-[13px] text-nyoki-text-dark">
+          {allWeHave ? "That's all we have" : null}
+        </p>
+      </div>
       <div className="flex items-center rounded-full bg-nyoki-beige ring-1 ring-nyoki-light-slate">
-        <StepButton label="One fewer" onClick={() => changeQuantity(String(clampQuantity(choices.quantity - 1)))}>
+        <StepButton label="One fewer" disabled={choices.quantity <= QUANTITY_MIN} onClick={() => changeQuantity(String(clampQuantity(choices.quantity - 1, most)))}>
           <path d="M5 10h10" />
         </StepButton>
         <input
@@ -518,14 +540,14 @@ function QuantityPanel() {
           type="number"
           inputMode="numeric"
           min={QUANTITY_MIN}
-          max={QUANTITY_MAX}
+          max={limit}
           step={1}
           value={quantityText}
           onChange={(event) => changeQuantity(event.target.value)}
           onBlur={tidyQuantity}
           className="w-10 [appearance:textfield] bg-transparent text-center tabular-nums outline-none focus-visible:rounded focus-visible:outline-2 focus-visible:outline-nyoki-navy [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
         />
-        <StepButton label="One more" onClick={() => changeQuantity(String(clampQuantity(choices.quantity + 1)))}>
+        <StepButton label="One more" disabled={choices.quantity >= limit} onClick={() => changeQuantity(String(clampQuantity(choices.quantity + 1, most)))}>
           <path d="M5 10h10M10 5v10" />
         </StepButton>
       </div>
@@ -790,14 +812,15 @@ function Reveal({ children }: { children: React.ReactNode }) {
   return <div className={`mt-5 flex flex-col gap-4 border-t pt-5 ${ui.shopRule}`}>{children}</div>;
 }
 
-function StepButton({ label, onClick, children }: { label: string; onClick: () => void; children: React.ReactNode }) {
+function StepButton({ label, disabled, onClick, children }: { label: string; disabled: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button
       type="button"
       aria-label={label}
       title={label}
+      disabled={disabled}
       onClick={onClick}
-      className="grid size-10 place-items-center rounded-full text-nyoki-navy transition-colors duration-150 hover:bg-nyoki-accent-beige focus-visible:outline-2 focus-visible:outline-nyoki-navy motion-reduce:transition-none"
+      className="grid size-10 place-items-center rounded-full text-nyoki-navy transition-colors duration-150 hover:bg-nyoki-accent-beige focus-visible:outline-2 focus-visible:outline-nyoki-navy disabled:opacity-35 disabled:hover:bg-transparent motion-reduce:transition-none"
     >
       <svg viewBox="0 0 20 20" fill="none" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true" className="size-4 stroke-current">
         {children}

@@ -92,8 +92,6 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   // keeps the phone's buy bar, saying ordering opens soon.
   const ordering = orderingOpen();
   const withBar = customising || ordering;
-  // None left of anything that is not clothing; clothing's stock is in its offer.
-  const soldOut = !product.madeToOrder && product.stock < 1;
 
   // Clothing is told by its colours and sizes; any dimensions it kept from
   // before are out of sight in the admin, so they stay off the page too.
@@ -246,7 +244,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       offer={offer}
       productId={product.id}
       add={ordering ? addToBasket : undefined}
-      soldOut={soldOut}
+      // How many there are of anything that is not clothing - clothing's stock
+      // is in its offer. Made to order never runs out.
+      stock={product.madeToOrder ? null : product.stock}
       oneOfAKind={product.oneOfAKind}
     >
       {page}

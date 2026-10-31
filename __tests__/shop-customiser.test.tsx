@@ -465,7 +465,7 @@ describe("Add to basket, once ordering is open", () => {
     note: null,
   };
 
-  function setupOpen(offer: Offer = everything, add = jest.fn().mockResolvedValue(added), extra: { soldOut?: boolean } = {}) {
+  function setupOpen(offer: Offer = everything, add = jest.fn().mockResolvedValue(added), extra: { stock?: number | null } = {}) {
     const user = userEvent.setup();
     render(
       <CustomiserProvider offer={offer} productId="card-1" add={add} {...extra}>
@@ -549,7 +549,7 @@ describe("Add to basket, once ordering is open", () => {
   });
 
   it("says a card with none left is out of stock, and sends nothing", async () => {
-    const { user, add } = setupOpen(everything, undefined, { soldOut: true });
+    const { user, add } = setupOpen(everything, undefined, { stock: 0 });
 
     expect(status()).toHaveTextContent("Out of stock for now");
     await user.click(addButton());
@@ -566,7 +566,7 @@ describe("a piece with nothing to choose, once ordering is open", () => {
     note: null,
   };
 
-  function setupPlain(extra: { oneOfAKind?: boolean; soldOut?: boolean } = {}) {
+  function setupPlain(extra: { oneOfAKind?: boolean; stock?: number | null } = {}) {
     const user = userEvent.setup();
     const add = jest.fn().mockResolvedValue(added);
     render(
@@ -607,10 +607,101 @@ describe("a piece with nothing to choose, once ordering is open", () => {
   });
 
   it("says when none are left, and sends nothing", async () => {
-    const { user, add } = setupPlain({ soldOut: true });
+    const { user, add } = setupPlain({ stock: 0 });
 
     expect(status()).toHaveTextContent("Out of stock for now");
     await user.click(addButton());
     expect(add).not.toHaveBeenCalled();
+  });
+});
+
+describe("quantity, as far as the stock goes", () => {
+  const plainOffer: Offer = { ...everything, noun: { one: "piece", many: "pieces" }, packs: [], message: null, personalisation: null };
+  const quantity = () => screen.getByLabelText("Quantity");
+  const more = () => screen.getByRole("button", { name: "One more" });
+  const fewer = () => screen.getByRole("button", { name: "One fewer" });
+  const allWeHave = () => screen.queryByText("That's all we have");
+
+  function setupStock(offer: Offer, stock: number | null, add?: jest.Mock) {
+    const user = userEvent.setup();
+    render(
+      <CustomiserProvider offer={offer} productId="tree" add={add} stock={stock}>
+        <CustomiserPanels />
+        <CustomiserBar />
+      </CustomiserProvider>,
+    );
+    return { user };
+  }
+
+  it("goes no higher than there are, and says so, as the basket does", async () => {
+    const { user } = setupStock(plainOffer, 3);
+    expect(allWeHave()).not.toBeInTheDocument();
+
+    await user.click(more());
+    await user.click(more());
+
+    expect(quantity()).toHaveValue(3);
+    expect(more()).toBeDisabled();
+    expect(allWeHave()).toBeInTheDocument();
+  });
+
+  it("goes no lower than one", async () => {
+    const { user } = setupStock(plainOffer, 3);
+    expect(fewer()).toBeDisabled();
+
+    await user.click(more());
+    expect(fewer()).toBeEnabled();
+  });
+
+  it("brings a quantity typed past what there is down to it, and sends no more than that", async () => {
+    const add = jest.fn().mockResolvedValue({ ok: false, message: "No." });
+    const { user } = setupStock(plainOffer, 3, add);
+
+    await user.clear(quantity());
+    await user.type(quantity(), "10");
+    expect(total()).toHaveTextContent("£16.50");
+    await user.click(addButton());
+
+    expect(add).toHaveBeenCalledWith("tree", expect.objectContaining({ quantity: 3 }));
+    await user.click(quantity());
+    await user.tab();
+    expect(quantity()).toHaveValue(3);
+  });
+
+  it("goes on to the box's own limit for a piece made to order, which never runs out", async () => {
+    const { user } = setupStock(plainOffer, null);
+
+    await user.click(more());
+    await user.click(more());
+
+    expect(more()).toBeEnabled();
+    expect(allWeHave()).not.toBeInTheDocument();
+  });
+
+  it("counts every card in a pack: three packs of three, from ten cards, is too many", async () => {
+    const { user } = setupStock(everything, 10);
+    await user.click(screen.getByRole("radio", { name: /^pack of 3/i }));
+
+    await user.click(more());
+    await user.click(more());
+
+    expect(quantity()).toHaveValue(3);
+    expect(more()).toBeDisabled();
+  });
+
+  it("goes by the colour in the size chosen, and comes down to a smaller stock when another is chosen", async () => {
+    const { user } = setupStock(dress, null);
+    await user.click(tile("Gypsum"));
+    await user.click(tile("M"));
+
+    await user.click(more());
+    await user.click(more());
+    expect(quantity()).toHaveValue(3);
+    expect(more()).toBeDisabled();
+
+    await user.click(tile("S"));
+
+    expect(quantity()).toHaveValue(1);
+    expect(allWeHave()).toBeInTheDocument();
   });
 });

@@ -254,11 +254,42 @@ export const QUANTITY_MIN = 1;
 export const QUANTITY_MAX = 99;
 
 /**
- * A typed quantity, brought into 1 to 99. A blank, a nought or anything that
- * is not a number counts as one; a fraction is cut to the whole number below.
+ * A typed quantity, brought into 1 to 99, and down to `most` when there are
+ * fewer than that. A blank, a nought or anything that is not a number counts
+ * as one; a fraction is cut to the whole number below. Never below one, even
+ * with none left: the page says that itself.
  */
-export function clampQuantity(raw: string | number): number {
+export function clampQuantity(raw: string | number, most: number = QUANTITY_MAX): number {
   const number = typeof raw === "number" ? raw : raw.trim() === "" ? NaN : Number(raw);
   if (!Number.isFinite(number)) return QUANTITY_MIN;
-  return Math.min(QUANTITY_MAX, Math.max(QUANTITY_MIN, Math.trunc(number)));
+  return Math.max(QUANTITY_MIN, Math.min(QUANTITY_MAX, most, Math.trunc(number)));
+}
+
+/**
+ * The most a shopper can ask for of what is chosen so far, as the basket
+ * would let them have: the stock of the colour in the size chosen - or, until
+ * both are, the most of any still possible - shared out by the cards in the
+ * pack chosen. `stock` is the piece's own, for anything not clothing (whose
+ * stock is in its offer); null is made to order, which never runs out. Never
+ * more than the box takes.
+ *
+ * What is already in the basket is not counted: adding puts in what there is
+ * room for, and says so.
+ */
+export function mostAvailable(offer: Offer, choices: Pick<Choices, "unit" | "colour" | "size">, stock: number | null): number {
+  const clothing = offer.clothing;
+  const held = !clothing
+    ? stock
+    : clothing.madeToOrder
+      ? null
+      : Math.max(
+          0,
+          ...clothing.stock
+            .filter((row) => (choices.colour === null || row.colour === choices.colour) && (choices.size === null || row.size === choices.size))
+            .map((row) => row.stock),
+        );
+  if (held === null) return QUANTITY_MAX;
+
+  const cards = offer.packs.find((pack) => pack.id === choices.unit)?.cards ?? 1;
+  return Math.max(0, Math.min(QUANTITY_MAX, Math.floor(held / cards)));
 }
