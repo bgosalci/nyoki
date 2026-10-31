@@ -123,6 +123,8 @@ describe("CMS class recipes", () => {
     expect(ui.shopTileLabel).toMatch(/\btext-nyoki-white\b/);
     expect(ui.shopTileFade).toMatch(/\bfrom-black\/\d+\b/);
     expect(ui.shopTileFade).not.toMatch(/nyoki-/);
+    expect(ui.shopTileFadeLight).toMatch(/\bfrom-white\/\d+\b/);
+    expect(ui.shopTileFadeLight).not.toMatch(/nyoki-/);
   });
 
   it("draws a tile with no photo in a pairing its words read on", () => {

@@ -7,6 +7,7 @@ const tile = (label: string, overrides: Partial<ShownTile> = {}): ShownTile => (
   label,
   href: `/shop/${label.toLowerCase().replace(/\s+/g, "-")}`,
   image: { url: `/${label}.jpg` },
+  words: "nyoki-white",
   ...overrides,
 });
 
@@ -62,6 +63,15 @@ describe("HomeMosaic", () => {
     const link = screen.getByRole("link", { name: "For love" });
     expect(link.querySelector("img")).toBeNull();
     expect(link.className).toMatch(/\bbg-nyoki-soft-ash\b/);
+  });
+
+  it("draws each tile's words in the colour chosen for it, dark words over a light fade", () => {
+    render(<HomeMosaic tiles={[tiles[0], tile("For love", { words: "nyoki-navy" }), ...tiles.slice(2, 5)]} />);
+
+    const link = screen.getByRole("link", { name: "For love" });
+    expect(screen.getByText("For love").className).toMatch(/\btext-nyoki-navy\b/);
+    expect(link.querySelector("[aria-hidden]")?.className).toMatch(/\bfrom-white\//);
+    expect(screen.getByText("For Christmas").className).toMatch(/\btext-nyoki-white\b/);
   });
 
   it("shows nothing at all with no tiles", () => {

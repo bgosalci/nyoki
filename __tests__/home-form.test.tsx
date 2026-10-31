@@ -28,6 +28,7 @@ const tiles: LoadedTile[] = LABELS.map((label, index) => ({
   link: { kind: "category", categoryId: index === 0 ? "c-xmas" : "c-cards" },
   photo: index === 1 ? null : { kind: "shop", imageId: `i${index}` },
   photoUrl: index === 1 ? null : `/photo-${index}.jpg`,
+  words: "nyoki-white",
 }));
 
 const content: HomeFormContent = { ...HOME_DEFAULTS, tiles };
@@ -168,6 +169,47 @@ describe("HomeForm", () => {
 
     expect(await within(editor()).findByText("That is not a photo we can use.")).toBeInTheDocument();
     expect(posted(container.querySelector("form")!, "tilePhoto")[0]).toBe("image:i0");
+  });
+
+  it("chooses the banner's colour from the brand's own", () => {
+    const { container } = setup();
+
+    const grounds = screen.getByRole("radiogroup", { name: /colour of the banner$/i });
+    expect(within(grounds).getByRole("radio", { name: "Sage" })).toBeChecked();
+    expect(posted(container.querySelector("form")!, "bannerGround")).toEqual(["nyoki-sage"]);
+  });
+
+  it("offers only words that read on the banner's colour, and changes them when they would not", async () => {
+    const { container } = setup();
+    const user = userEvent.setup();
+
+    const words = () => screen.getByRole("radiogroup", { name: /colour of the banner's words/i });
+    expect(within(words()).getAllByRole("radio").map((radio) => radio.getAttribute("aria-label") ?? radio.closest("label")?.textContent)).toEqual(["Ink"]);
+
+    await user.click(within(screen.getByRole("radiogroup", { name: /colour of the banner$/i })).getByRole("radio", { name: "Navy" }));
+
+    expect(within(words()).queryByRole("radio", { name: "Ink" })).not.toBeInTheDocument();
+    expect(within(words()).getByRole("radio", { name: "Beige" })).toBeInTheDocument();
+    expect(posted(container.querySelector("form")!, "bannerInk")).toEqual(["nyoki-white"]);
+  });
+
+  it("shows the banner in the colours chosen", async () => {
+    setup();
+    const user = userEvent.setup();
+
+    await user.click(within(screen.getByRole("radiogroup", { name: /colour of the banner$/i })).getByRole("radio", { name: "Navy" }));
+
+    expect(screen.getByText(HOME_DEFAULTS.bannerText, { selector: "p" })).toHaveStyle({ backgroundColor: "#4a5667", color: "#ffffff" });
+  });
+
+  it("chooses each tile's colour of words", async () => {
+    const { container } = setup();
+    const user = userEvent.setup();
+
+    await user.click(within(within(editor()).getByRole("radiogroup", { name: /colour of the words/i })).getByRole("radio", { name: "Navy" }));
+
+    expect(posted(container.querySelector("form")!, "tileColour")[0]).toBe("nyoki-navy");
+    expect(posted(container.querySelector("form")!, "tileColour")[1]).toBe("nyoki-white");
   });
 
   it("posts every tile, in order", () => {

@@ -46,6 +46,7 @@ describe("defaultTiles", () => {
       link: { kind: "category", categoryId: "c-xmas" },
       photo: { kind: "shop", imageId: "i-snow" },
       photoUrl: "/snow.jpg",
+      words: "nyoki-white",
     });
   });
 
@@ -104,6 +105,7 @@ describe("storing a tile", () => {
     photoId: null,
     productImage: { url: "/love.jpg" },
     photo: null,
+    wordColour: "nyoki-navy",
   };
 
   it("reads a tile with one of the shop's photos", () => {
@@ -112,6 +114,7 @@ describe("storing a tile", () => {
       link: { kind: "category", categoryId: "c1" },
       photo: { kind: "shop", imageId: "i1" },
       photoUrl: "/love.jpg",
+      words: "nyoki-navy",
     });
   });
 
@@ -134,6 +137,7 @@ describe("storing a tile", () => {
       href: null,
       productImageId: "i1",
       photoId: null,
+      wordColour: "nyoki-navy",
     });
   });
 });
@@ -147,13 +151,14 @@ describe("shownTiles", () => {
     link: { kind: "category", categoryId: "c1" },
     photo: null,
     photoUrl: null,
+    words: "nyoki-white",
     ...overrides,
   });
 
   it("shows the photo chosen for it", () => {
     const [shown] = shownTiles([tile({ photo: { kind: "shop", imageId: "i1" }, photoUrl: "/chosen.jpg" })], slugs, leads);
 
-    expect(shown).toEqual({ label: "For love", href: "/shop/valentine-cards", image: { url: "/chosen.jpg" } });
+    expect(shown).toEqual({ label: "For love", href: "/shop/valentine-cards", image: { url: "/chosen.jpg" }, words: "nyoki-white" });
   });
 
   it("takes the first piece's photo from the category it leads to when none is chosen", () => {
@@ -165,6 +170,6 @@ describe("shownTiles", () => {
   it("shows no photo, rather than a broken one, when there is none to be had", () => {
     const [shown] = shownTiles([tile({ link: { kind: "address", href: "/about" } })], slugs, leads);
 
-    expect(shown).toEqual({ label: "For love", href: "/about", image: null });
+    expect(shown).toEqual({ label: "For love", href: "/about", image: null, words: "nyoki-white" });
   });
 });

@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { ui } from "@/lib/brand/ui";
+import { tileWords } from "@/lib/home/colours";
 import { blocksOf, type ShownTile } from "@/lib/home/tiles";
 
 /**
@@ -35,6 +36,8 @@ export function HomeMosaic({ tiles }: { tiles: readonly ShownTile[] }) {
 }
 
 function Tile({ tile, large }: { tile: ShownTile; large: boolean }) {
+  const words = tileWords(tile.words);
+
   return (
     <Link
       href={tile.href}
@@ -51,12 +54,12 @@ function Tile({ tile, large }: { tile: ShownTile; large: boolean }) {
             sizes={large ? "(min-width: 1376px) 680px, (min-width: 768px) 50vw, 100vw" : "(min-width: 1376px) 340px, (min-width: 768px) 25vw, 50vw"}
             className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
           />
-          <span className={`absolute inset-0 ${ui.shopTileFade}`} aria-hidden="true" />
+          <span className={`absolute inset-0 ${words.fade}`} aria-hidden="true" />
         </>
       ) : null}
       <span
         className={`absolute left-0 max-w-[calc(100%-1.5rem)] border-b leading-tight font-medium tracking-[0.14em] uppercase ${
-          tile.image ? ui.shopTileLabel : ""
+          tile.image ? words.label : ""
         } ${
           large
             ? "bottom-6 pr-5 pb-2.5 pl-6 text-xl md:bottom-8 md:pr-6 md:pb-3 md:pl-9 md:text-3xl"

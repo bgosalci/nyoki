@@ -1,3 +1,4 @@
+import { DEFAULT_TILE_WORDS } from "@/lib/home/colours";
 import { hrefFor, linkFromRow, linkToRow, WHOLE_SHOP, type HomeLink } from "@/lib/home/links";
 
 /**
@@ -21,6 +22,8 @@ export interface TileContent {
   link: HomeLink;
   /** None chosen: a tile leading to a category takes its first piece's photo. */
   photo: TilePhoto | null;
+  /** The colour of its words, a brand token from TILE_WORDS. */
+  words: string;
 }
 
 /** A tile as read for the page or the editor, with its chosen photo's address. */
@@ -33,6 +36,7 @@ export interface ShownTile {
   label: string;
   href: string;
   image: { url: string } | null;
+  words: string;
 }
 
 export function photoChoice(photo: TilePhoto | null): string {
@@ -68,6 +72,7 @@ export interface TileRow {
   photoId: string | null;
   productImage: { url: string } | null;
   photo: { url: string } | null;
+  wordColour: string;
 }
 
 export function tileFromRow(row: TileRow): LoadedTile {
@@ -82,6 +87,7 @@ export function tileFromRow(row: TileRow): LoadedTile {
     link: linkFromRow(row),
     photo,
     photoUrl: row.productImage?.url ?? row.photo?.url ?? null,
+    words: row.wordColour,
   };
 }
 
@@ -92,6 +98,7 @@ export function tileToRow(tile: TileContent, position: number) {
     ...linkToRow(tile.link),
     productImageId: tile.photo?.kind === "shop" ? tile.photo.imageId : null,
     photoId: tile.photo?.kind === "upload" ? tile.photo.photoId : null,
+    wordColour: tile.words,
   };
 }
 
@@ -154,6 +161,7 @@ export function defaultTiles(found: DefaultsFound): LoadedTile[] {
       link: categoryId ? { kind: "category", categoryId } : WHOLE_SHOP,
       photo: image ? { kind: "shop", imageId: image.id } : null,
       photoUrl: image?.url ?? null,
+      words: DEFAULT_TILE_WORDS,
     };
   });
 }
@@ -171,6 +179,6 @@ export function shownTiles(
     const lead = tile.link.kind === "category" ? leadPhotos.get(tile.link.categoryId) : undefined;
     const url = tile.photoUrl ?? lead?.url ?? null;
 
-    return { label: tile.label, href: hrefFor(tile.link, categorySlugs), image: url ? { url } : null };
+    return { label: tile.label, href: hrefFor(tile.link, categorySlugs), image: url ? { url } : null, words: tile.words };
   });
 }

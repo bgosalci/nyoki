@@ -99,7 +99,12 @@ export const ui = {
   // foot - black for the reason the modal scrim is, since a brand colour
   // would tint the photo. A tile with no photo to show is drawn plainly.
   shopTileLabel: "text-nyoki-white border-nyoki-white",
+  shopTileLabelBeige: "text-nyoki-beige border-nyoki-beige",
   shopTileFade: "bg-linear-to-t from-black/50 via-black/15 to-transparent",
+  // Dark words, for a pale photo, sit on a fade to plain white instead.
+  shopTileLabelNavy: "text-nyoki-navy border-nyoki-navy",
+  shopTileLabelInk: "text-nyoki-ink border-nyoki-ink",
+  shopTileFadeLight: "bg-linear-to-t from-white/75 via-white/25 to-transparent",
   shopTilePlain: "bg-nyoki-soft-ash text-nyoki-navy border-nyoki-navy",
   pill: "border border-nyoki-light-slate bg-nyoki-white text-nyoki-navy hover:border-nyoki-navy dark:border-nyoki-night-rule dark:bg-nyoki-night dark:text-nyoki-blue-grey dark:hover:border-nyoki-beige dark:hover:text-nyoki-beige",
   // The tile being edited, in the home page editor's picture of the mosaic.

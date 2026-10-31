@@ -15,6 +15,7 @@ interface TileFields {
   link: string;
   address?: string;
   photo?: string;
+  colour?: string;
 }
 
 const tile = (label: string, overrides: Partial<TileFields> = {}): TileFields => ({
@@ -22,6 +23,7 @@ const tile = (label: string, overrides: Partial<TileFields> = {}): TileFields =>
   link: "category:c1",
   address: "",
   photo: "",
+  colour: "nyoki-white",
   ...overrides,
 });
 
@@ -35,6 +37,7 @@ function form(fields: Record<string, string>, tiles: TileFields[] = fiveTiles())
     data.append("tileLink", entry.link);
     data.append("tileAddress", entry.address ?? "");
     data.append("tilePhoto", entry.photo ?? "");
+    data.append("tileColour", entry.colour ?? "nyoki-white");
   }
   return data;
 }
@@ -42,6 +45,8 @@ function form(fields: Record<string, string>, tiles: TileFields[] = fiveTiles())
 const filled = {
   showBadges: "on",
   bannerText: "  Start with who you’re thinking of  ",
+  bannerGround: "nyoki-sage",
+  bannerInk: "nyoki-ink",
   bandText: "Our most-loved handmade pieces.",
   ctaLabel: "See everything",
   ctaLink: "page:/shop",
@@ -52,6 +57,7 @@ describe("HOME_DEFAULTS", () => {
   it("is a complete page in its own right, so a shop that has never edited it still reads", () => {
     expect(HOME_DEFAULTS.showBadges).toBe(true);
     expect(HOME_DEFAULTS.bannerText.length).toBeGreaterThan(0);
+    expect([HOME_DEFAULTS.bannerGround, HOME_DEFAULTS.bannerInk]).toEqual(["nyoki-sage", "nyoki-ink"]);
     expect(HOME_DEFAULTS.bandText.length).toBeGreaterThan(0);
     expect(HOME_DEFAULTS.ctaLabel.length).toBeGreaterThan(0);
     expect(HOME_DEFAULTS.ctaLink).toEqual({ kind: "address", href: "/shop" });
@@ -67,6 +73,8 @@ describe("validateHomeInput", () => {
     expect(result.data).toMatchObject({
       showBadges: true,
       bannerText: "Start with who you’re thinking of",
+      bannerGround: "nyoki-sage",
+      bannerInk: "nyoki-ink",
       bandText: "Our most-loved handmade pieces.",
       ctaLabel: "See everything",
       ctaLink: { kind: "address", href: "/shop" },
@@ -76,6 +84,7 @@ describe("validateHomeInput", () => {
       label: "For Christmas",
       link: { kind: "category", categoryId: "c1" },
       photo: null,
+      words: "nyoki-white",
     });
   });
 
@@ -103,6 +112,42 @@ describe("validateHomeInput", () => {
     const result = validateHomeInput(form({ ...filled, bandText: "" }));
 
     expect(result.ok === true && result.data.bandText).toBe("");
+  });
+
+  it("takes the banner's colours", () => {
+    const result = validateHomeInput(form({ ...filled, bannerGround: "nyoki-navy", bannerInk: "nyoki-beige" }));
+
+    expect(result.ok === true && [result.data.bannerGround, result.data.bannerInk]).toEqual(["nyoki-navy", "nyoki-beige"]);
+  });
+
+  it("refuses banner words that cannot be read on its ground: white on sage", () => {
+    const result = validateHomeInput(form({ ...filled, bannerGround: "nyoki-sage", bannerInk: "nyoki-white" }));
+
+    expect(result.ok === false && result.errors.bannerColour).toBeTruthy();
+  });
+
+  it("refuses a ground that is not one of the brand's", () => {
+    const result = validateHomeInput(form({ ...filled, bannerGround: "#ff0000" }));
+
+    expect(result.ok === false && result.errors.bannerColour).toBeTruthy();
+  });
+
+  it("takes each tile's colour of words", () => {
+    const tiles = fiveTiles();
+    tiles[2].colour = "nyoki-navy";
+
+    const result = validateHomeInput(form(filled, tiles));
+
+    expect(result.ok === true && result.data.tiles[2].words).toBe("nyoki-navy");
+  });
+
+  it("refuses a colour of words it does not offer, and says which tile", () => {
+    const tiles = fiveTiles();
+    tiles[1].colour = "nyoki-sage";
+
+    const result = validateHomeInput(form(filled, tiles));
+
+    expect(result.ok === false && result.errors.tile?.[1]?.colour).toBeTruthy();
   });
 
   it("insists on words for the button, since a blank one cannot be clicked knowingly", () => {
@@ -222,11 +267,11 @@ describe("references", () => {
     ...HOME_DEFAULTS,
     ctaLink: { kind: "category", categoryId: "c-button" },
     tiles: [
-      { label: "A", link: { kind: "category", categoryId: "c1" }, photo: { kind: "shop", imageId: "i1" } },
-      { label: "B", link: { kind: "address", href: "/about" }, photo: { kind: "upload", photoId: "u1" } },
-      { label: "C", link: { kind: "category", categoryId: "c1" }, photo: null },
-      { label: "D", link: { kind: "category", categoryId: "c2" }, photo: null },
-      { label: "E", link: { kind: "category", categoryId: "c2" }, photo: null },
+      { label: "A", link: { kind: "category", categoryId: "c1" }, photo: { kind: "shop", imageId: "i1" }, words: "nyoki-white" },
+      { label: "B", link: { kind: "address", href: "/about" }, photo: { kind: "upload", photoId: "u1" }, words: "nyoki-white" },
+      { label: "C", link: { kind: "category", categoryId: "c1" }, photo: null, words: "nyoki-white" },
+      { label: "D", link: { kind: "category", categoryId: "c2" }, photo: null, words: "nyoki-white" },
+      { label: "E", link: { kind: "category", categoryId: "c2" }, photo: null, words: "nyoki-white" },
     ],
   };
 
@@ -273,7 +318,12 @@ describe("references", () => {
 
 describe("storing the page", () => {
   it("goes back and forth", () => {
-    const page = { ...HOME_DEFAULTS, ctaLink: { kind: "category" as const, categoryId: "c1" } };
+    const page = {
+      ...HOME_DEFAULTS,
+      bannerGround: "nyoki-ink",
+      bannerInk: "nyoki-accent-beige",
+      ctaLink: { kind: "category" as const, categoryId: "c1" },
+    };
 
     expect(pageFromRow(pageToRow(page))).toEqual(page);
   });

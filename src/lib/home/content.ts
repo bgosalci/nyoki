@@ -7,13 +7,17 @@
  * them. The badges themselves are artwork and are not edited here.
  */
 
+import { DEFAULT_BANNER, DEFAULT_TILE_WORDS, isTileWords, readsOn } from "@/lib/home/colours";
 import { linkFromRow, linkToRow, readLink, WHOLE_SHOP, type HomeLink } from "@/lib/home/links";
 import { MAX_BLOCKS, readPhoto, TILE_LABEL_MAX, TILES_PER_BLOCK, type TileContent } from "@/lib/home/tiles";
 
 export interface HomePageContent {
   showBadges: boolean;
-  /** The sage banner's words. Empty takes the banner off. */
+  /** The banner's words. Empty takes the banner off. */
   bannerText: string;
+  /** Its colour and its words', as brand tokens, in a pairing that reads. */
+  bannerGround: string;
+  bannerInk: string;
   /** The quiet band above the pieces. Empty takes the band off. */
   bandText: string;
   ctaLabel: string;
@@ -34,6 +38,8 @@ export interface HomeContent extends HomePageContent {
 export const HOME_DEFAULTS: HomePageContent = {
   showBadges: true,
   bannerText: "Start with who you’re thinking of",
+  bannerGround: DEFAULT_BANNER.ground,
+  bannerInk: DEFAULT_BANNER.ink,
   bandText: "Our most-loved handmade pieces, from friendship to forever love, for every heartfelt occasion.",
   ctaLabel: "See everything",
   ctaLink: WHOLE_SHOP,
@@ -47,10 +53,12 @@ export interface TileErrors {
   label?: string;
   link?: string;
   photo?: string;
+  colour?: string;
 }
 
 export interface HomeErrors {
   bannerText?: string;
+  bannerColour?: string;
   bandText?: string;
   ctaLabel?: string;
   ctaLink?: string;
@@ -76,10 +84,11 @@ function readTiles(form: FormData): { tiles: TileContent[]; problem?: string; er
   const links = texts(form, "tileLink");
   const addresses = texts(form, "tileAddress");
   const photos = texts(form, "tilePhoto");
+  const colours = texts(form, "tileColour");
 
   // Read in parallel, so one missing field would pair a tile's words with
   // the next tile's photo. Better refused than shuffled.
-  if (![links, addresses, photos].every((list) => list.length === labels.length)) {
+  if (![links, addresses, photos, colours].every((list) => list.length === labels.length)) {
     return { tiles: [], problem: "The tiles did not arrive whole. Reload the page and try again.", errors: {} };
   }
 
@@ -112,8 +121,11 @@ function readTiles(form: FormData): { tiles: TileContent[]; problem?: string; er
       problems.photo = "Choose a photo. Only a tile leading to a category can take its first piece's.";
     }
 
+    const words = colours[index] || DEFAULT_TILE_WORDS;
+    if (!isTileWords(words)) problems.colour = "Choose one of the colours offered.";
+
     if (Object.keys(problems).length > 0) errors[index] = problems;
-    else if (link.ok && photo !== undefined) tiles.push({ label, link: link.link, photo });
+    else if (link.ok && photo !== undefined) tiles.push({ label, link: link.link, photo, words });
   });
 
   return { tiles, errors };
@@ -124,6 +136,10 @@ export function validateHomeInput(form: FormData): HomeValidation {
 
   const bannerText = text(form, "bannerText");
   if (bannerText.length > BANNER_MAX) errors.bannerText = `Keep the banner to ${BANNER_MAX} characters.`;
+
+  const bannerGround = text(form, "bannerGround");
+  const bannerInk = text(form, "bannerInk");
+  if (!readsOn(bannerGround, bannerInk)) errors.bannerColour = "Choose the banner's colours again: those words would not read on it.";
 
   const bandText = text(form, "bandText");
   if (bandText.length > BAND_MAX) errors.bandText = `Keep it to ${BAND_MAX} characters.`;
@@ -146,6 +162,8 @@ export function validateHomeInput(form: FormData): HomeValidation {
     data: {
       showBadges: form.get("showBadges") === "on",
       bannerText,
+      bannerGround,
+      bannerInk,
       bandText,
       ctaLabel,
       ctaLink: ctaLink.link,
@@ -207,6 +225,8 @@ export function missingReferences(
 export interface HomePageRow {
   showBadges: boolean;
   bannerText: string;
+  bannerGround: string;
+  bannerInk: string;
   bandText: string;
   ctaLabel: string;
   ctaCategoryId: string | null;
@@ -218,6 +238,8 @@ export function pageToRow(page: HomePageContent): HomePageRow {
   return {
     showBadges: page.showBadges,
     bannerText: page.bannerText,
+    bannerGround: page.bannerGround,
+    bannerInk: page.bannerInk,
     bandText: page.bandText,
     ctaLabel: page.ctaLabel,
     ctaCategoryId: link.categoryId,
@@ -229,6 +251,8 @@ export function pageFromRow(row: HomePageRow): HomePageContent {
   return {
     showBadges: row.showBadges,
     bannerText: row.bannerText,
+    bannerGround: row.bannerGround,
+    bannerInk: row.bannerInk,
     bandText: row.bandText,
     ctaLabel: row.ctaLabel,
     ctaLink: linkFromRow({ categoryId: row.ctaCategoryId, href: row.ctaHref }),

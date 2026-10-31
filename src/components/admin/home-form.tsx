@@ -5,8 +5,10 @@ import { useState } from "react";
 import { Field, inputClass } from "@/components/admin/field";
 import { HomeTilesField, type PhotoOption, type UploadPhoto, type UploadResult } from "@/components/admin/home-tiles-field";
 import { LinkField, type LinkDraft, type LinkTarget } from "@/components/admin/link-field";
+import { SwatchField } from "@/components/admin/swatch-field";
 import { UnsavedChanges } from "@/components/admin/unsaved-changes";
 import { ui } from "@/lib/brand/ui";
+import { bannerGrounds, bannerInks, bannerStyle, inkFor } from "@/lib/home/colours";
 import { BAND_MAX, BANNER_MAX, type HomeErrors, type HomePageContent } from "@/lib/home/content";
 import { linkChoice } from "@/lib/home/links";
 import type { LoadedTile } from "@/lib/home/tiles";
@@ -61,6 +63,7 @@ export function HomeForm({
     choice: linkChoice(content.ctaLink),
     address: content.ctaLink.kind === "address" ? content.ctaLink.href : "",
   });
+  const [banner, setBanner] = useState({ text: content.bannerText, ground: content.bannerGround, ink: content.bannerInk });
 
   return (
     <form ref={formRef} action={formAction} onSubmit={onSubmit} className="mt-8 flex max-w-5xl flex-col gap-10">
@@ -82,14 +85,56 @@ export function HomeForm({
         </p>
       </fieldset>
 
-      <Field
-        label="Banner"
-        name="bannerText"
-        error={state.errors.bannerText}
-        hint={`The sage band beneath the badges, in capitals. Up to ${BANNER_MAX} characters; leave it empty to take the band off.`}
-      >
-        {(props) => <input {...props} type="text" defaultValue={content.bannerText} className={inputClass} />}
-      </Field>
+      <fieldset className="flex flex-col gap-4">
+        <legend className="text-sm font-medium">Banner</legend>
+
+        <Field
+          label="Banner"
+          name="bannerText"
+          error={state.errors.bannerText}
+          hint={`The band beneath the badges, in capitals. Up to ${BANNER_MAX} characters; leave it empty to take the band off.`}
+        >
+          {(props) => (
+            <input
+              {...props}
+              type="text"
+              value={banner.text}
+              onChange={(event) => setBanner({ ...banner, text: event.target.value })}
+              className={inputClass}
+            />
+          )}
+        </Field>
+
+        <SwatchField
+          label="Colour of the banner"
+          name="bannerGround"
+          options={bannerGrounds()}
+          value={banner.ground}
+          // Words that would not read on the new colour give way to ones that do.
+          onChange={(ground) => setBanner({ ...banner, ground, ink: inkFor(ground, banner.ink) })}
+          error={state.errors.bannerColour}
+        />
+
+        <SwatchField
+          label="Colour of the banner's words"
+          name="bannerInk"
+          options={bannerInks(banner.ground)}
+          value={banner.ink}
+          onChange={(ink) => setBanner({ ...banner, ink })}
+          hint="Only the colours that can be read on the banner's are offered."
+        />
+
+        {banner.text.trim() ? (
+          <p
+            style={bannerStyle(banner.ground, banner.ink)}
+            className="rounded-md px-4 py-6 text-center text-lg leading-tight tracking-[0.08em] uppercase"
+          >
+            {banner.text}
+          </p>
+        ) : (
+          <p className={`text-xs ${ui.mutedOnPage}`}>No words, so no banner on the page.</p>
+        )}
+      </fieldset>
 
       <HomeTilesField
         initial={content.tiles}

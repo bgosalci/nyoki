@@ -6,8 +6,10 @@ import { useMemo, useRef, useState } from "react";
 import { Field, inputClass } from "@/components/admin/field";
 import { LinkField, type LinkDraft, type LinkTarget } from "@/components/admin/link-field";
 import { PhotoField } from "@/components/admin/photo-field";
+import { SwatchField } from "@/components/admin/swatch-field";
 import type { ChooserItem } from "@/components/admin/photo-chooser";
 import { ui } from "@/lib/brand/ui";
+import { DEFAULT_TILE_WORDS, tileWords, tileWordSwatches } from "@/lib/home/colours";
 import { firstTileWithProblem, type TileErrors } from "@/lib/home/content";
 import { linkChoice } from "@/lib/home/links";
 import { blocksOf, MAX_BLOCKS, photoChoice, TILE_LABEL_MAX, TILES_PER_BLOCK, type LoadedTile } from "@/lib/home/tiles";
@@ -32,6 +34,7 @@ interface TileDraft {
   link: LinkDraft;
   /** As posted: "" for automatic, else a PhotoOption's choice. */
   photo: string;
+  words: string;
 }
 
 const SNIFF_BYTES = 16;
@@ -42,6 +45,7 @@ function draftOf(tile: LoadedTile, key: string): TileDraft {
     label: tile.label,
     link: { choice: linkChoice(tile.link), address: tile.link.kind === "address" ? tile.link.href : "" },
     photo: photoChoice(tile.photo),
+    words: tile.words,
   };
 }
 
@@ -152,6 +156,7 @@ export function HomeTilesField({
       label: "",
       link: { choice: "", address: "" },
       photo: "",
+      words: DEFAULT_TILE_WORDS,
     }));
     setSelected(tiles.length);
     setTiles((current) => [...current, ...added]);
@@ -211,6 +216,7 @@ export function HomeTilesField({
           <input type="hidden" name="tileLink" value={tile.link.choice} />
           <input type="hidden" name="tileAddress" value={tile.link.choice === "other" ? tile.link.address : ""} />
           <input type="hidden" name="tilePhoto" value={tile.photo} />
+          <input type="hidden" name="tileColour" value={tile.words} />
         </div>
       ))}
 
@@ -256,12 +262,12 @@ export function HomeTilesField({
                         {url ? (
                           <>
                             <Image src={url} alt="" fill sizes="(min-width: 768px) 20rem, 45vw" className="object-cover" />
-                            <span className={`absolute inset-0 ${ui.shopTileFade}`} aria-hidden="true" />
+                            <span className={`absolute inset-0 ${tileWords(tile.words).fade}`} aria-hidden="true" />
                           </>
                         ) : null}
                         <span
                           className={`absolute bottom-2 left-0 max-w-[calc(100%-0.5rem)] border-b pr-2 pb-1 pl-3 leading-tight font-medium tracking-[0.12em] uppercase ${
-                            url ? ui.shopTileLabel : ""
+                            url ? tileWords(tile.words).label : ""
                           } ${large ? "text-sm sm:text-base" : "text-[0.625rem] sm:text-xs"}`}
                         >
                           {tile.label || "New tile"}
@@ -310,6 +316,15 @@ export function HomeTilesField({
               onChange={(link) => update(openIndex, { link })}
               categories={categories}
               error={openErrors.link}
+            />
+
+            <SwatchField
+              label="Colour of the words"
+              options={tileWordSwatches()}
+              value={open.words}
+              onChange={(words) => update(openIndex, { words })}
+              hint="Light words for a dark photo, dark words for a pale one."
+              error={openErrors.colour}
             />
 
             <PhotoField

@@ -7,6 +7,7 @@ import { ProductGrid } from "@/components/shop/product-grid";
 import { currentCustomer } from "@/lib/account/dal";
 import { ui } from "@/lib/brand/ui";
 import { db } from "@/lib/db";
+import { bannerStyle } from "@/lib/home/colours";
 import { hrefFor } from "@/lib/home/links";
 import { loadHome } from "@/lib/home/load";
 import { shownTiles } from "@/lib/home/tiles";
@@ -47,7 +48,8 @@ export default async function HomePage() {
       {page.bannerText ? (
         <div className={`mx-auto max-w-shop px-4 sm:px-6 ${page.showBadges ? "" : "pt-8 md:pt-10"}`}>
           <h1
-            className={`${ui.shopBand} px-6 py-10 text-center text-2xl leading-tight font-normal tracking-[0.08em] uppercase md:px-8 md:py-18 md:text-5xl`}
+            style={bannerStyle(page.bannerGround, page.bannerInk)}
+            className="rounded-md px-6 py-10 text-center text-2xl leading-tight font-normal tracking-[0.08em] uppercase md:px-8 md:py-18 md:text-5xl"
           >
             {page.bannerText}
           </h1>

@@ -1064,7 +1064,8 @@ TypeScript, deployed to Vercel.
   strip and "Have a look around" went with that design; the badges say what
   the promises said, and the Kosovo story is on About us.
 - **All of it is edited at `/admin/home`**: the badges shown or not, the
-  banner's words, every tile's words, where it leads and its photo, the
+  banner's words and colours, every tile's words, their colour, where it
+  leads and its photo, the
   band's words, the button's words and where it leads. The `HomePage`
   singleton (one row, id `home`) holds the page; `HomeTile` rows the tiles.
   The rules are `src/lib/home/content.ts`, `tiles.ts` and `links.ts`, pure;
@@ -1106,9 +1107,19 @@ TypeScript, deployed to Vercel.
   replacing a tile's photo leaves nothing behind.
 - A save looks every category and photo up again (`missingReferences`): one
   deleted while the editor was open is named on its tile, not saved.
-- The words sit on the photo in white over a fade to plain black
-  (`ui.shopTileLabel`, `ui.shopTileFade`): a photograph is no approved
-  ground, and a brand colour would tint it. The brand tests hold both.
+- **Colours are chosen, from the brand's own only** (`src/lib/home/colours.ts`,
+  picked by `SwatchField`): the banner's colour and its words', and each
+  tile's words. No free colour picker: it would let white onto sage.
+- The banner offers every brand colour but the page's beige, and for each
+  only the words in an approved pairing on it - its words are always 24px or
+  more, so the large-text pairings count - clearest first. Changing the
+  colour swaps words that would not read for the first that do; a stored pair
+  that stops reading draws as designed (ink on sage) rather than unreadable.
+- A tile's words sit on its photo over a fade, since a photograph is no
+  approved ground: white or beige over a fade to plain black, navy or ink
+  over a fade to plain white for a pale photo (`ui.shopTileLabel*`,
+  `ui.shopTileFade`, `ui.shopTileFadeLight`). Neutral fades, for the reason
+  the modal scrim is black; each colour is tested readable against its own.
 - **Defaults are the approved design**, not placeholder text: `HOME_DEFAULTS`
   for the page and `DEFAULT_TILES` for the mosaic, each tile named by its
   category's and photo's addresses so it holds for any copy of the shop.

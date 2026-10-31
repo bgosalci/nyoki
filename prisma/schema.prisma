@@ -280,7 +280,7 @@ model Category {
   /// Its place among its siblings, read lowest first, as dragged on the
   /// categories page. A sequence, so a new category lands last in its group;
   /// a move hands the group's keys round. See src/lib/categories/ordering.ts.
-  position    Int     @default(autoincrement())
+  position Int @default(autoincrement())
 
   // Self-relation for sub-categories.
   parentId String?    @map("parent_id")
@@ -427,8 +427,13 @@ model HomePage {
   /// The round badges under the header. They are artwork, so only shown or not.
   showBadges Boolean @default(true) @map("show_badges")
 
-  /// The sage banner's words. Empty takes the banner off.
+  /// The banner's words. Empty takes the banner off.
   bannerText String @default("Start with who you’re thinking of") @map("banner_text")
+
+  /// Its colour and its words', as brand tokens. Only pairings that read are
+  /// saved (src/lib/home/colours.ts); one that stops reading draws as designed.
+  bannerGround String @default("nyoki-sage") @map("banner_ground")
+  bannerInk    String @default("nyoki-ink") @map("banner_ink")
 
   /// The quiet band above the pieces. Empty takes the band off.
   bandText String @default("Our most-loved handmade pieces, from friendship to forever love, for every heartfelt occasion.") @map("band_text")
@@ -464,6 +469,9 @@ model HomeTile {
   productImage   ProductImage? @relation(fields: [productImageId], references: [id], onDelete: SetNull)
   photoId        String?       @map("photo_id")
   photo          HomePhoto?    @relation(fields: [photoId], references: [id], onDelete: SetNull)
+
+  /// The colour of its words: light over a dark fade, or dark over a light one.
+  wordColour String @default("nyoki-white") @map("word_colour")
 
   @@index([position])
   @@map("home_tiles")
