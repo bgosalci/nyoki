@@ -97,6 +97,8 @@ export async function updateCategory(
 
   revalidatePath("/admin/categories");
   revalidatePath(`/admin/categories/${id}`);
+  // The shop's header shows its name, in its colour.
+  revalidatePath("/", "layout");
   return { errors: {} };
 }
 

@@ -121,6 +121,15 @@ describe("a category given another parent", () => {
     expect(written().birthday).not.toHaveProperty("position");
     expect(queryRaw).not.toHaveBeenCalled();
   });
+
+  it("saves the colour of its name, and redraws the shop's header, which shows it", async () => {
+    findUnique.mockResolvedValue({ parentId: null });
+
+    await updateCategory("acc", { errors: {} }, form({ name: "Accessories", labelColour: "nyoki-sage-deep" }));
+
+    expect(written().acc).toEqual(expect.objectContaining({ labelColour: "nyoki-sage-deep" }));
+    expect(revalidatePath).toHaveBeenCalledWith("/", "layout");
+  });
 });
 
 describe("deleteCategory", () => {

@@ -47,7 +47,12 @@ describe("the categories' order", () => {
     expect(findCategories).toHaveBeenCalledWith({
       where: { parentId: null },
       orderBy: CATEGORY_ORDER,
-      select: { slug: true, name: true, children: { orderBy: CATEGORY_ORDER, take: undefined, select: { slug: true, name: true } } },
+      select: {
+        slug: true,
+        name: true,
+        labelColour: true,
+        children: { orderBy: CATEGORY_ORDER, take: undefined, select: { slug: true, name: true, labelColour: true } },
+      },
     });
   });
 

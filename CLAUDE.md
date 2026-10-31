@@ -190,6 +190,21 @@ TypeScript, deployed to Vercel.
   (the floor is a penny), and a was-price the new price has caught up with is
   cleared, since the product form rejects that combination anyway.
 
+## A category's colour in the header
+
+- **Each category's name can take a colour in the shop's header** - the
+  department row and the drop-down menus - set on its own page in the admin
+  (`Category.labelColour`, a brand token, navy to begin with). The choice is
+  by swatch (`SwatchField`), with the name previewed on the page's beige.
+- Both the row and its menus sit on the page's beige, so the colours offered
+  are those approved as text on it (`src/lib/categories/label-colour.ts`):
+  navy, then ink, text dark and sage deep, the clearest first. Sage and white
+  barely show on beige and are not offered. A colour no longer offered draws
+  in navy.
+- Saving a category redraws the shop's layout, since the header shows its
+  name and colour. Only the header takes the colour: the footer's list and
+  every page's tiles keep their own.
+
 ## Category order
 
 - **The categories list is dragged into the shop's order**, as the products

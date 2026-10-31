@@ -28,6 +28,21 @@ beforeEach(() => {
 });
 
 describe("DepartmentNav", () => {
+  it("draws each department's name, and each sub-category's, in the colour chosen for it", () => {
+    render(
+      <DepartmentNav
+        groups={[
+          { slug: "christmas", name: "CHRISTMAS", labelColour: "nyoki-sage-deep", children: [{ slug: "cards", name: "Cards", labelColour: "nyoki-ink" }] },
+          ...groups,
+        ]}
+      />,
+    );
+
+    expect(screen.getByRole("link", { name: "CHRISTMAS" })).toHaveStyle({ color: "#637273" });
+    expect(within(menuOf("CHRISTMAS")).getByText("Cards").closest("a")).toHaveStyle({ color: "#0b063c" });
+    expect(screen.getByRole("link", { name: "Accessories" })).toHaveStyle({ color: "#4a5667" });
+  });
+
   it("links each department to its page", () => {
     render(<DepartmentNav groups={groups} />);
 

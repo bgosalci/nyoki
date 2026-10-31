@@ -15,7 +15,7 @@ describe("validateCategoryInput", () => {
 
     expect(result).toEqual({
       ok: true,
-      data: { name: "Mugs", slug: "mugs", description: null, parentId: null },
+      data: { name: "Mugs", slug: "mugs", description: null, parentId: null, labelColour: "nyoki-navy" },
     });
   });
 
@@ -43,6 +43,17 @@ describe("validateCategoryInput", () => {
       ok: true,
       data: { description: "Things to drink from", parentId: "cat_tableware" },
     });
+  });
+
+  it("takes the colour of its name in the shop's header", () => {
+    expect(validateCategoryInput(form({ labelColour: "nyoki-sage-deep" })))
+      .toMatchObject({ ok: true, data: { labelColour: "nyoki-sage-deep" } });
+  });
+
+  it("refuses a colour it does not offer, which might not read on the header", () => {
+    const result = validateCategoryInput(form({ labelColour: "nyoki-sage-light" }));
+
+    expect(!result.ok && result.errors.labelColour).toBeTruthy();
   });
 
   it("treats a blank parent as top level", () => {

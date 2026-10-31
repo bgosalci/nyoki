@@ -1,3 +1,4 @@
+import { DEFAULT_LABEL_COLOUR, isLabelColour } from "@/lib/categories/label-colour";
 import { slugify } from "@/lib/slug";
 
 export interface CategoryInput {
@@ -5,6 +6,8 @@ export interface CategoryInput {
   slug: string;
   description: string | null;
   parentId: string | null;
+  /** The colour of its name in the shop's header, a brand token. */
+  labelColour: string;
 }
 
 export type CategoryField = keyof CategoryInput;
@@ -32,6 +35,9 @@ export function validateCategoryInput(form: FormData): CategoryValidation {
     errors.name = "That name has no letters or numbers to build a web address from.";
   }
 
+  const labelColour = text(form, "labelColour") || DEFAULT_LABEL_COLOUR;
+  if (!isLabelColour(labelColour)) errors.labelColour = "Choose one of the colours offered.";
+
   if (Object.keys(errors).length > 0) return { ok: false, errors };
 
   const description = text(form, "description");
@@ -44,6 +50,7 @@ export function validateCategoryInput(form: FormData): CategoryValidation {
       slug,
       description: description.length > 0 ? description : null,
       parentId: parentId.length > 0 ? parentId : null,
+      labelColour,
     },
   };
 }

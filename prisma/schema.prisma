@@ -282,6 +282,10 @@ model Category {
   /// a move hands the group's keys round. See src/lib/categories/ordering.ts.
   position Int @default(autoincrement())
 
+  /// The colour of its name in the shop's header, a brand token approved as
+  /// text on the page's beige (src/lib/categories/label-colour.ts).
+  labelColour String @default("nyoki-navy") @map("label_colour")
+
   // Self-relation for sub-categories.
   parentId String?    @map("parent_id")
   parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)

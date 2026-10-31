@@ -32,6 +32,7 @@ export default async function EditCategoryPage({ params }: { params: Promise<{ i
     slug: category.slug,
     description: category.description,
     parentId: category.parentId,
+    labelColour: category.labelColour,
   };
 
   return (

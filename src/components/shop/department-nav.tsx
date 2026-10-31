@@ -4,10 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
+import { labelColourHex } from "@/lib/categories/label-colour";
+
 export interface DepartmentGroup {
   slug: string;
   name: string;
-  children: { slug: string; name: string }[];
+  /** The colour of its name, chosen on the category; navy when not given. */
+  labelColour?: string;
+  children: { slug: string; name: string; labelColour?: string }[];
 }
 
 /**
@@ -61,7 +65,7 @@ export function DepartmentNav({ groups }: { groups: DepartmentGroup[] }) {
               }
             }}
           >
-            <Link href={`/shop/${group.slug}`} className={linkClass}>
+            <Link href={`/shop/${group.slug}`} className={linkClass} style={{ color: labelColourHex(group.labelColour) }}>
               {group.name}
             </Link>
 
@@ -78,6 +82,7 @@ export function DepartmentNav({ groups }: { groups: DepartmentGroup[] }) {
                       <Link
                         href={`/shop/${child.slug}`}
                         className="block py-1 text-sm text-nyoki-navy hover:underline hover:underline-offset-4"
+                        style={{ color: labelColourHex(child.labelColour) }}
                       >
                         {child.name}
                       </Link>

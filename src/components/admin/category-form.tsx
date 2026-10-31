@@ -2,8 +2,11 @@
 
 import { ui } from "@/lib/brand/ui";
 import Link from "next/link";
+import { useState } from "react";
 
 import { Field, inputClass } from "@/components/admin/field";
+import { SwatchField } from "@/components/admin/swatch-field";
+import { DEFAULT_LABEL_COLOUR, LABEL_COLOURS, labelColourHex } from "@/lib/categories/label-colour";
 import { descendantIds } from "@/lib/categories/validate";
 import type { CategoryErrors, CategoryInput } from "@/lib/categories/validate";
 import { useActionForm } from "@/lib/forms/action-form";
@@ -43,6 +46,7 @@ export function CategoryForm({
 }) {
   const { state, formAction, isPending, formRef, onSubmit } = useActionForm(action, initialState, (result) => Object.keys(result.errors).length > 0);
   const errors = state.errors;
+  const [labelColour, setLabelColour] = useState(category?.labelColour ?? DEFAULT_LABEL_COLOUR);
 
   // A category cannot sit inside itself or anything beneath it. The server
   // checks this too; hiding the options just stops the mistake being offered.
@@ -101,6 +105,24 @@ export function CategoryForm({
           </select>
         )}
       </Field>
+
+      <div className="flex flex-col gap-3">
+        <SwatchField
+          label="Colour of its name in the shop's header"
+          name="labelColour"
+          options={LABEL_COLOURS}
+          value={labelColour}
+          onChange={setLabelColour}
+          hint="In the row of departments and their menus. Only colours that read on the page's beige are offered."
+          error={errors.labelColour}
+        />
+        <p
+          style={{ color: labelColourHex(labelColour) }}
+          className={`self-start rounded-md px-4 py-2 text-lg ${ui.shopPage}`}
+        >
+          {category?.name || "Its name"}
+        </p>
+      </div>
 
       <div className={`flex items-center gap-3 border-t pt-6 ${ui.ruleOnPage}`}>
         <button

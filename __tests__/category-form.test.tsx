@@ -39,7 +39,7 @@ describe("CategoryForm", () => {
         action={noopAction}
         categories={categories}
         excludeId="mugs"
-        category={{ name: "Mugs", slug: "mugs", description: null, parentId: "tableware" }}
+        category={{ name: "Mugs", slug: "mugs", description: null, parentId: "tableware", labelColour: "nyoki-navy" }}
       />,
     );
 
@@ -57,7 +57,7 @@ describe("CategoryForm", () => {
         action={noopAction}
         categories={categories}
         excludeId="mugs"
-        category={{ name: "Mugs", slug: "mugs", description: null, parentId: "tableware" }}
+        category={{ name: "Mugs", slug: "mugs", description: null, parentId: "tableware", labelColour: "nyoki-navy" }}
       />,
     );
 
@@ -96,7 +96,7 @@ describe("CategoryForm, when a save is rejected", () => {
 });
 
 describe("CategoryForm, when a save goes through", () => {
-  const mugs = { name: "Mugs", slug: "mugs", description: null, parentId: "tableware" };
+  const mugs = { name: "Mugs", slug: "mugs", description: null, parentId: "tableware", labelColour: "nyoki-navy" };
 
   it.each([
     ["Vases", "vases"],
@@ -121,9 +121,49 @@ describe("CategoryForm, when a save goes through", () => {
 describe("CategoryForm, as React draws it", () => {
   it("raises no warning about keys", () => {
     const errors = jest.spyOn(console, "error").mockImplementation(() => {});
-    render(<CategoryForm action={noopAction} categories={categories} category={{ name: "Mugs", slug: "mugs", description: null, parentId: "tableware" }} excludeId="mugs" />);
+    render(<CategoryForm action={noopAction} categories={categories} category={{ name: "Mugs", slug: "mugs", description: null, parentId: "tableware", labelColour: "nyoki-navy" }} excludeId="mugs" />);
 
     expect(errors.mock.calls.filter(([message]) => String(message).includes('unique "key"'))).toEqual([]);
     errors.mockRestore();
+  });
+});
+
+describe("CategoryForm, the colour of its name", () => {
+  it("offers the colours a name can take in the shop's header, starting from the one saved", () => {
+    render(
+      <CategoryForm
+        action={noopAction}
+        categories={categories}
+        category={{ name: "CHRISTMAS", slug: "christmas", description: null, parentId: null, labelColour: "nyoki-ink" }}
+      />,
+    );
+
+    const colours = screen.getByRole("radiogroup", { name: /colour of its name/i });
+    expect(within(colours).getByRole("radio", { name: "Ink" })).toBeChecked();
+    expect(within(colours).getByRole("radio", { name: "Navy" })).not.toBeChecked();
+  });
+
+  it("starts a new category in navy, and posts the colour chosen", async () => {
+    const { container } = render(<CategoryForm action={noopAction} categories={categories} />);
+    const user = userEvent.setup();
+
+    const colours = screen.getByRole("radiogroup", { name: /colour of its name/i });
+    expect(within(colours).getByRole("radio", { name: "Navy" })).toBeChecked();
+
+    await user.click(within(colours).getByRole("radio", { name: "Sage deep" }));
+
+    expect(new FormData(container.querySelector("form")!).get("labelColour")).toBe("nyoki-sage-deep");
+  });
+
+  it("shows the name in that colour on the header's beige", async () => {
+    render(
+      <CategoryForm
+        action={noopAction}
+        categories={categories}
+        category={{ name: "CHRISTMAS", slug: "christmas", description: null, parentId: null, labelColour: "nyoki-sage-deep" }}
+      />,
+    );
+
+    expect(screen.getByText("CHRISTMAS", { selector: "p" })).toHaveStyle({ color: "#637273" });
   });
 });
