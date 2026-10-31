@@ -2,6 +2,7 @@ import { contrastRatio } from "@/lib/brand/contrast";
 import { APPROVED_LARGE_TEXT_PAIRINGS, APPROVED_TEXT_PAIRINGS, palette } from "@/lib/brand/palette";
 import { ui } from "@/lib/brand/ui";
 import {
+  BANNER_EXCEPTIONS,
   bannerGrounds,
   bannerInks,
   bannerStyle,
@@ -25,12 +26,32 @@ describe("the banner's colours", () => {
     expect(bannerGrounds().map((ground) => ground.token)).not.toContain("nyoki-beige");
   });
 
-  it("offers words for every ground in an approved pairing only", () => {
+  it("offers words for every ground in an approved pairing only, but for the exceptions chosen", () => {
+    const chosen = new Set(BANNER_EXCEPTIONS.map((pair) => `${pair.ink} on ${pair.ground}`));
+
     for (const ground of bannerGrounds()) {
       const inks = bannerInks(ground.token);
       expect(inks.length).toBeGreaterThan(0);
-      for (const ink of inks) expect(approved).toContain(`${ink.hex} on ${ground.hex}`);
+      for (const ink of inks) {
+        if (chosen.has(`${ink.token} on ${ground.token}`)) continue;
+        expect(approved).toContain(`${ink.hex} on ${ground.hex}`);
+      }
     }
+  });
+
+  it("makes one exception, chosen knowingly: white words on a sage light banner", () => {
+    // 2.0:1, below even the large-text minimum. Asked for on 31 October 2026
+    // with that said. Listed here so that no other can slip in unnoticed.
+    expect(BANNER_EXCEPTIONS.map((pair) => `${pair.ink} on ${pair.ground}`)).toEqual(["nyoki-white on nyoki-sage-light"]);
+    expect(contrastRatio(hexOf.get("nyoki-white")!, hexOf.get("nyoki-sage-light")!)).toBeLessThan(3);
+  });
+
+  it("offers white on sage light, after the words that read better", () => {
+    expect(bannerInks("nyoki-sage-light").map((ink) => ink.token)).toEqual(["nyoki-ink", "nyoki-navy", "nyoki-white"]);
+    expect(bannerStyle("nyoki-sage-light", "nyoki-white")).toEqual({
+      backgroundColor: hexOf.get("nyoki-sage-light"),
+      color: hexOf.get("nyoki-white"),
+    });
   });
 
   it("offers only ink on sage: white and navy both fail there", () => {

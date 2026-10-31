@@ -1115,6 +1115,12 @@ TypeScript, deployed to Vercel.
   more, so the large-text pairings count - clearest first. Changing the
   colour swaps words that would not read for the first that do; a stored pair
   that stops reading draws as designed (ink on sage) rather than unreadable.
+- **One exception, chosen knowingly**: white words on a sage light banner,
+  2.0:1 - below even the 3:1 large-text minimum - asked for on 31 October
+  2026 with that said. It is `BANNER_EXCEPTIONS` in `colours.ts`, for the
+  banner alone, offered after the words that read better; the brand's
+  approved pairings and every other surface are untouched. A test lists the
+  exceptions, so another cannot slip in unnoticed.
 - A tile's words sit on its photo over a fade, since a photograph is no
   approved ground: white or beige over a fade to plain black, navy or ink
   over a fade to plain white for a pale photo (`ui.shopTileLabel*`,

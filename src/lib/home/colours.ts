@@ -9,6 +9,10 @@ import { ui } from "@/lib/brand/ui";
  * what they sit on: the banner's from the approved pairings (its words are
  * always large, so the large-text pairings count too), a tile's by the fade
  * laid over its photo. A free colour picker would let white onto sage.
+ *
+ * The one way past that is BANNER_EXCEPTIONS: a pairing the shop asked for
+ * knowing it fails, for the banner alone. The rest of the site, and the
+ * brand's approved pairings, are untouched by it.
  */
 
 export interface Swatch {
@@ -31,6 +35,15 @@ const GROUNDS = [
 
 export const DEFAULT_BANNER = { ground: "nyoki-sage", ink: "nyoki-ink" } as const;
 
+/**
+ * Banner words chosen despite failing the contrast rules, each asked for with
+ * its ratio said. White on sage light is 2.0:1, below even the 3:1 large-text
+ * minimum - wanted on 31 October 2026 all the same.
+ */
+export const BANNER_EXCEPTIONS: readonly { ground: string; ink: string }[] = [
+  { ground: "nyoki-sage-light", ink: "nyoki-white" },
+];
+
 const PAIRINGS = new Set([...APPROVED_TEXT_PAIRINGS, ...APPROVED_LARGE_TEXT_PAIRINGS].map((p) => `${p.text} on ${p.surface}`));
 
 function swatch(token: string): Swatch | undefined {
@@ -47,7 +60,11 @@ export function bannerInks(ground: string): Swatch[] {
   const surface = swatch(ground);
   if (!surface || !(GROUNDS as readonly string[]).includes(ground)) return [];
   return palette
-    .filter((entry) => !DECORATIVE.includes(entry.hex) && PAIRINGS.has(`${entry.hex} on ${surface.hex}`))
+    .filter(
+      (entry) =>
+        (!DECORATIVE.includes(entry.hex) && PAIRINGS.has(`${entry.hex} on ${surface.hex}`)) ||
+        BANNER_EXCEPTIONS.some((pair) => pair.ground === ground && pair.ink === entry.token),
+    )
     .map((entry) => ({ token: entry.token, name: entry.name, hex: entry.hex }))
     .sort((a, b) => contrastRatio(b.hex, surface.hex) - contrastRatio(a.hex, surface.hex));
 }
