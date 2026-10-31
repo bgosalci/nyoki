@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 
 import { ThemeToggle } from "@/components/admin/theme-toggle";
 import { sectionTitle } from "@/lib/admin/nav";
+import { LOGO_SMALL } from "@/lib/brand/logo";
 import { ui } from "@/lib/brand/ui";
 
 /** Height shared with the layout's top padding and the sticky page headers. */
@@ -21,10 +22,10 @@ export function AdminTopBar() {
     >
       <Link href="/admin" className="flex shrink-0 items-center">
         <Image
-          src="/brand/nyoki-logo-small.png"
+          src={LOGO_SMALL.src}
           alt="Nyoki Handmade"
-          width={227}
-          height={142}
+          width={LOGO_SMALL.width}
+          height={LOGO_SMALL.height}
           priority
           className="h-9 w-auto"
         />
