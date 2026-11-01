@@ -828,6 +828,11 @@ TypeScript, deployed to Vercel.
   (`Product.madeOnOrder`). The piece keeps a stock count, often low, of
   things quick to make, and goes on selling when it reaches 0: more is made
   once it is ordered. Any quantity can be ordered, in any colour and size.
+- The switch (`Toggle`, `src/components/admin/toggle.tsx`) is **green when
+  on**: `ui.toggle` draws the track in sage deep (5:1 on the white page, and
+  under the white knob), sage itself on the dark admin's night ground; off is
+  navy faded to 70%, still 3:1 off the page. It was navy when on, and green
+  was wanted.
 - **Shoppers are told nothing of it**: no tag, no lead time, no "sent
   together" note, and never "Out of stock". That is what sets it apart from
   **made to order**, which keeps no stock and shows its lead time on the
@@ -1018,7 +1023,8 @@ TypeScript, deployed to Vercel.
   a sheet of every live piece where Enter moves down a row and the last
   column says what each costs to send alone; a category's usual postage; and
   the Postage section of a piece's Details tab, which says what it costs to
-  send alone and in each pack. The products list links to the sheet with how
+  send alone and in each pack - the tab's last section, after You may also
+  like, just above Save. The products list links to the sheet with how
   many are not weighed. "Goes as" and "Thickness (mm)" go through the
   export and import beside Weight.
 - Shoppers see only a piece's **own** weight, under Need to know; a usual

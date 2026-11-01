@@ -460,6 +460,37 @@ describe("ProductForm, You may also like", () => {
     expect(new FormData(container.querySelector("form")!).getAll("alsoLikeIds")).toEqual(["p8"]);
   });
 
+  it("comes before Postage, which is the last thing in the form, just above Save", () => {
+    render(
+      <ProductForm
+        action={noopAction}
+        product={mug}
+        categories={categories}
+        postage={postage}
+        alsoLike={{ options: [], automatic: [], chosen: [] }}
+      />,
+    );
+
+    const alsoLike = screen.getByRole("group", { name: "You may also like" });
+    const postageSection = screen.getByRole("region", { name: "Postage" });
+    const save = screen.getByRole("button", { name: /save/i });
+    expect(alsoLike.compareDocumentPosition(postageSection) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(postageSection.compareDocumentPosition(save) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    // Nothing else between them: Postage is the form's last section.
+    const sections = [...postageSection.closest("form")!.querySelectorAll(":scope > section, :scope > div[role=group], :scope > fieldset")];
+    expect(sections.at(-1)).toBe(postageSection);
+  });
+
+  it("puts Postage last on a new product too, which has no You may also like yet", () => {
+    render(<ProductForm action={noopAction} categories={categories} postage={postage} />);
+
+    const postageSection = screen.getByRole("region", { name: "Postage" });
+    const sections = [...postageSection.closest("form")!.querySelectorAll(":scope > section, :scope > div[role=group], :scope > fieldset")];
+    expect(sections.at(-1)).toBe(postageSection);
+    expect(screen.getByLabelText(/materials/i).compareDocumentPosition(postageSection) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it("shows why a choice was refused", () => {
     render(
       <ProductForm

@@ -248,29 +248,6 @@ export function ProductForm({
         />
       </section>
 
-      <section aria-labelledby="postage-heading" className="flex flex-col gap-4">
-        <div>
-          <h2 id="postage-heading" className="text-sm font-semibold">
-            Postage
-          </h2>
-          <p className={`mt-1 text-sm ${ui.mutedOnPage}`}>
-            What it costs to send, worked out at checkout. Shoppers see its weight under Need to know.
-          </p>
-        </div>
-        <PostageFields
-          names={POSTAGE_NAMES}
-          value={postageValue}
-          onChange={setPostageValue}
-          errors={errors}
-          blank={{
-            grams: usual?.grams != null ? `${usual.grams} · usual` : "",
-            size: usual?.size ? `Usual for ${usual.categoryName}: ${SIZE_NAMES[usual.size]}` : "Not set",
-            mm: usual?.mm != null ? `${usual.mm} · usual` : "",
-          }}
-        />
-        {postage ? <PostageSummary text={postageValue} usual={usual} context={postage} packs={postage.packs} /> : null}
-      </section>
-
       <section className="flex flex-col gap-5">
         <h2 className="text-sm font-semibold">About the piece</h2>
 
@@ -362,6 +339,29 @@ export function ProductForm({
       <CategoryChooser categories={categories} chosen={product?.categoryIds ?? []} error={errors.categoryIds} onChange={setCategoryIds} />
 
       {alsoLike ? <AlsoLikeField options={alsoLike.options} automatic={alsoLike.automatic} chosen={alsoLike.chosen} error={errors.alsoLikeIds} /> : null}
+
+      <section aria-labelledby="postage-heading" className="flex flex-col gap-4">
+        <div>
+          <h2 id="postage-heading" className="text-sm font-semibold">
+            Postage
+          </h2>
+          <p className={`mt-1 text-sm ${ui.mutedOnPage}`}>
+            What it costs to send, worked out at checkout. Shoppers see its weight under Need to know.
+          </p>
+        </div>
+        <PostageFields
+          names={POSTAGE_NAMES}
+          value={postageValue}
+          onChange={setPostageValue}
+          errors={errors}
+          blank={{
+            grams: usual?.grams != null ? `${usual.grams} · usual` : "",
+            size: usual?.size ? `Usual for ${usual.categoryName}: ${SIZE_NAMES[usual.size]}` : "Not set",
+            mm: usual?.mm != null ? `${usual.mm} · usual` : "",
+          }}
+        />
+        {postage ? <PostageSummary text={postageValue} usual={usual} context={postage} packs={postage.packs} /> : null}
+      </section>
 
       <div className={`flex items-center gap-3 border-t pt-6 ${ui.ruleOnPage}`}>
         <button

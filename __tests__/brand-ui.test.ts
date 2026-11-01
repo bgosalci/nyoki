@@ -55,14 +55,25 @@ describe("CMS class recipes", () => {
     expect(ui.checkbox).toMatch(/\baccent-nyoki-navy\b/);
   });
 
-  it("draws a switch in navy when on, and in the night neutrals in the dark", () => {
-    expect(ui.toggle).toMatch(/(?:^|\s)peer-checked:bg-nyoki-navy\b/);
+  it("draws a switch green when on - the logo's sage, deep enough to see - and faded navy when off", () => {
+    const on = /(?:^|\s)peer-checked:bg-(nyoki-[a-z-]+)/.exec(ui.toggle)?.[1];
+    const darkOn = /\bdark:peer-checked:bg-(nyoki-[a-z-]+)/.exec(ui.toggle)?.[1];
+    const darkKnobOn = /\bdark:peer-checked:after:bg-(nyoki-[a-z-]+)/.exec(ui.toggle)?.[1];
+
+    expect({ on, darkOn }).toEqual({ on: "nyoki-sage-deep", darkOn: "nyoki-sage" });
     expect(ui.toggle).toMatch(/(?:^|\s)after:bg-nyoki-white\b/);
-    // Off, it must still be seen against the page: navy at a strength a
-    // control needs (3:1 on white), not the faint slate of a divider.
+
+    // Switched on, the track stands 3:1 off the page and the knob off the
+    // track, as a control must - in both themes.
+    const white = hexOfToken.get("nyoki-white")!;
+    const night = hexOfToken.get("nyoki-night")!;
+    expect(contrastRatio(hexOfToken.get(on!)!, white)).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(hexOfToken.get(darkOn!)!, night)).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(hexOfToken.get(darkOn!)!, hexOfToken.get(darkKnobOn!)!)).toBeGreaterThanOrEqual(3);
+
+    // Off, navy faded only so far that the track is still seen on white.
     expect(ui.toggle).toMatch(/(?:^|\s)bg-nyoki-navy\/(?:[6-9]\d)\b/);
     expect(ui.toggle).toMatch(/\bdark:bg-nyoki-night-rule\b/);
-    expect(ui.toggle).toMatch(/\bdark:peer-checked:bg-nyoki-beige\b/);
     expect(ui.toggle).not.toMatch(/nyoki-ink/);
   });
 
