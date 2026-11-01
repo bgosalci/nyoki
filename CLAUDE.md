@@ -223,6 +223,15 @@ TypeScript, deployed to Vercel.
   follow it, through `departments()` and
   `shopCategories()` (`src/lib/storefront/queries.ts`); the product page's
   category chooser and the products list's pills read it too.
+- **The shop lists only categories with a piece on it**: the header's row,
+  its menus and the footer leave out any with no active piece in it or
+  anywhere beneath it (`stockedDepartments`,
+  `src/lib/storefront/departments.ts`), as the tiles already did
+  (`categoryTiles`). A draft fills nothing; a piece filed only in a type
+  fills the department above it, however deep. It first listed every
+  category, and half of Clothing's menu led to empty pages. An empty
+  category's page still opens, saying "Nothing here just yet", so a
+  bookmark or a home page tile leading there is not broken.
 - `Category.position` is a **sequence read lowest first**, compared only
   among siblings (`CATEGORY_ORDER`, ties by name), so a new category - from
   the admin or the Shopify import - lands last in its group with no code of
