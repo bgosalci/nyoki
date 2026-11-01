@@ -32,7 +32,7 @@ const hat: Offer = {
     colours: ["Seascape", "Polar"],
     sizes: ["2-3 years", "3-4 years"],
     stock: hatVariants.map(({ colour, size, stock }) => ({ colour, size, stock })),
-    madeToOrder: false,
+    unlimited: false,
   },
 };
 
@@ -60,6 +60,7 @@ function product(overrides: Partial<ReviewProduct> = {}): ReviewProduct {
     image: "/uploads/reindeer.jpg",
     stock: 10,
     madeToOrder: false,
+    madeOnOrder: false,
     leadTimeDays: null,
     oneOfAKind: false,
     vatRate: 20,
@@ -269,6 +270,22 @@ describe("reviewBasket", () => {
     expect(review.lines[0]).toMatchObject({ quantity: 40, maxQuantity: 99, madeToOrder: true, leadTimeDays: 14 });
   });
 
+  it("never runs out of a piece made on order, and says nothing of it to the shopper", () => {
+    const review = reviewBasket([line({ quantity: 40, product: product({ stock: 0, madeOnOrder: true }) })]);
+
+    expect(review.lines[0]).toMatchObject({ quantity: 40, maxQuantity: 99, madeToOrder: false });
+    expect(review.changes).toEqual([]);
+    expect(review.updates).toEqual([]);
+  });
+
+  it("never runs out of clothing made on order, in any colour or size", () => {
+    const madeOnOrder = product({ madeOnOrder: true, offer: hat, variants: hatVariants, saleName: null });
+    const review = reviewBasket([line({ quantity: 6, addedPricePence: 4500, stored: { ...PLAIN, variantId: "v-sea-3" }, product: madeOnOrder })]);
+
+    expect(review.lines[0]).toMatchObject({ quantity: 6, maxQuantity: 99 });
+    expect(review.changes).toEqual([]);
+  });
+
   it("holds only one of a one-of-a-kind piece", () => {
     const review = reviewBasket([line({ quantity: 2, product: product({ oneOfAKind: true }) })]);
 
@@ -302,12 +319,15 @@ describe("roomFor", () => {
     expect(roomFor([line({ quantity: 3, product: shared })], { stored: PLAIN, product: shared })).toBe(2);
   });
 
-  it("is none for a one-of-a-kind piece already in the basket, and 99 for one made to order", () => {
+  it("is none for a one-of-a-kind piece already in the basket, and 99 for one made to order or on order", () => {
     const one = product({ oneOfAKind: true });
     expect(roomFor([line({ product: one })], { stored: PLAIN, product: one })).toBe(0);
 
     const made = product({ madeToOrder: true, stock: 0 });
     expect(roomFor([], { stored: PLAIN, product: made })).toBe(99);
+
+    const madeOnOrder = product({ madeOnOrder: true, stock: 0 });
+    expect(roomFor([line({ quantity: 3, product: madeOnOrder })], { stored: PLAIN, product: madeOnOrder })).toBe(99);
   });
 
   it("counts packs against the cards in stock", () => {

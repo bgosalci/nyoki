@@ -5,6 +5,7 @@ const dress = (overrides: Partial<ClothingSource> = {}) =>
     colours: ["Lupin", "Gypsum"],
     sizes: ["3-4 years", "4-5 years"],
     madeToOrder: false,
+    madeOnOrder: false,
     variants: [
       { colour: "Lupin", size: "3-4 years", stock: 2 },
       { colour: "Lupin", size: "4-5 years", stock: 0 },
@@ -16,7 +17,7 @@ const dress = (overrides: Partial<ClothingSource> = {}) =>
 
 describe("toClothingOffer", () => {
   it("offers nothing to choose for a piece with no colours and no sizes", () => {
-    expect(toClothingOffer({ colours: [], sizes: [], madeToOrder: false, variants: [] })).toBeNull();
+    expect(toClothingOffer({ colours: [], sizes: [], madeToOrder: false, madeOnOrder: false, variants: [] })).toBeNull();
   });
 
   it("keeps the colours and sizes in the order they were set", () => {
@@ -28,6 +29,7 @@ describe("toClothingOffer", () => {
       colours: ["Lupin"],
       sizes: [],
       madeToOrder: false,
+      madeOnOrder: false,
       variants: [
         { colour: "Lupin", size: null, stock: 1 },
         { colour: "Gone", size: null, stock: 5 },
@@ -66,6 +68,7 @@ describe("inStock", () => {
       colours: [],
       sizes: ["S", "M"],
       madeToOrder: false,
+      madeOnOrder: false,
       variants: [
         { colour: null, size: "S", stock: 1 },
         { colour: null, size: "M", stock: 0 },
@@ -74,7 +77,7 @@ describe("inStock", () => {
     expect(inStock(sized, null, "S")).toBe(true);
     expect(inStock(sized, null, "M")).toBe(false);
 
-    const coloured = toClothingOffer({ colours: ["Red"], sizes: [], madeToOrder: false, variants: [{ colour: "Red", size: null, stock: 3 }] })!;
+    const coloured = toClothingOffer({ colours: ["Red"], sizes: [], madeToOrder: false, madeOnOrder: false, variants: [{ colour: "Red", size: null, stock: 3 }] })!;
     expect(inStock(coloured, "Red", null)).toBe(true);
   });
 
@@ -83,6 +86,18 @@ describe("inStock", () => {
 
     expect(inStock(offer, "Gypsum", "4-5 years")).toBe(true);
     expect(soldOut(offer)).toBe(false);
+  });
+
+  it("never has a piece made on order out of stock, since more is made when it runs out", () => {
+    const offer = dress({ madeOnOrder: true });
+
+    expect(offer.unlimited).toBe(true);
+    expect(inStock(offer, "Gypsum", "4-5 years")).toBe(true);
+    expect(soldOut(dress({ madeOnOrder: true, variants: [] }))).toBe(false);
+  });
+
+  it("holds an ordinary piece to its stock", () => {
+    expect(dress().unlimited).toBe(false);
   });
 });
 

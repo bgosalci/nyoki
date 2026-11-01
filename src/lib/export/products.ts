@@ -16,6 +16,7 @@ export interface ExportProduct {
   vatRate: number;
   stock: number;
   madeToOrder: boolean;
+  madeOnOrder: boolean;
   description: string | null;
   materials: string | null;
   dimensions: string | null;
@@ -52,6 +53,7 @@ const HEADER = [
   "NOTHS profit",
   "Stock",
   "Made to order",
+  "Made on order",
   "Cost lines",
   "Web address",
   "Description",
@@ -85,6 +87,7 @@ export interface ExportRecord {
   vatRate: number;
   stock: number;
   madeToOrder: boolean;
+  madeOnOrder: boolean;
   costLines: { what: string; costEach: string; howMany: number }[];
   webAddress: string;
   description: string | null;
@@ -136,6 +139,7 @@ function toRecord(product: ExportProduct, origin: string): ExportRecord {
     vatRate: product.vatRate,
     stock: product.stock,
     madeToOrder: product.madeToOrder,
+    madeOnOrder: product.madeOnOrder,
     costLines: product.lines.map((line) => ({
       what: line.label,
       costEach: money(line.unitPence),
@@ -192,6 +196,7 @@ function row(product: ExportProduct, origin: string): Cell[] {
     number(figures.nothsProfit),
     number(record.stock),
     yesNo(record.madeToOrder),
+    yesNo(record.madeOnOrder),
     record.costLines.map((line) => `${line.what} ${line.costEach} × ${line.howMany}`).join("; "),
     record.webAddress,
     record.description,

@@ -105,6 +105,11 @@ model Product {
   madeToOrder  Boolean @default(false) @map("made_to_order")
   leadTimeDays Int?    @map("lead_time_days")
 
+  // Made on order: held in stock, often only a little, and made again when it
+  // runs out - so 0 is not out of stock, and any number can be ordered. Unlike
+  // made to order, shoppers are told nothing of it.
+  madeOnOrder Boolean @default(false) @map("made_on_order")
+
   // VAT charged on this product, as a whole percent. Per product, not per
   // shop: cards carry the standard 20%, children's clothing is zero-rated.
   vatRate Int @default(20) @map("vat_rate")

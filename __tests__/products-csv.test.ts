@@ -12,6 +12,7 @@ const christening: ExportProduct = {
   vatRate: 20,
   stock: 4,
   madeToOrder: false,
+  madeOnOrder: false,
   description: "A card for a christening.",
   materials: "Card and satin ribbon",
   dimensions: "15cm square",
@@ -61,6 +62,7 @@ describe("productsCsv", () => {
       "NOTHS profit",
       "Stock",
       "Made to order",
+      "Made on order",
       "Cost lines",
       "Web address",
       "Description",
@@ -98,6 +100,7 @@ describe("productsCsv", () => {
       "NOTHS profit": "2.72",
       Stock: "4",
       "Made to order": "No",
+      "Made on order": "No",
       "Cost lines": "Card & envelope 0.80 × 1; Bag 0.09 × 1; Ink 0.25 × 1; Post & packaging 1.06 × 1; Making cost 2.00 × 1",
       "Web address": "christening-card",
       Description: "A card for a christening.",
@@ -141,6 +144,12 @@ describe("productsCsv", () => {
 
     expect(row["Made to order"]).toBe("Yes");
     expect(row["Cost lines"]).toBe("Bamboo yarn 4.50 × 2.5");
+  });
+
+  it("says a piece made on order is made on order", () => {
+    const [row] = table(productsCsv([{ ...christening, stock: 0, madeOnOrder: true }], { origin: ORIGIN }));
+
+    expect(row).toMatchObject({ Stock: "0", "Made to order": "No", "Made on order": "Yes" });
   });
 });
 

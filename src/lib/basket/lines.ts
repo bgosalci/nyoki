@@ -109,7 +109,7 @@ export function toChoices(offer: Offer, stored: StoredChoices, variants: readonl
  * say, in its own words.
  */
 export function ignoringStock(offer: Offer): Offer {
-  return offer.clothing ? { ...offer, clothing: { ...offer.clothing, madeToOrder: true } } : offer;
+  return offer.clothing ? { ...offer, clothing: { ...offer.clothing, unlimited: true } } : offer;
 }
 
 /**

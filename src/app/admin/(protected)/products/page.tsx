@@ -113,6 +113,7 @@ export default async function ProductsPage({
             pricePence: product.pricePence,
             stock: product.stock,
             madeToOrder: product.madeToOrder,
+            madeOnOrder: product.madeOnOrder,
             oneOfAKind: product.oneOfAKind,
             image: product.images[0] ?? null,
             categories: pathsOf(product.categories.map((link) => link.categoryId), paths),

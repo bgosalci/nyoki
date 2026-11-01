@@ -111,6 +111,20 @@ describe("validateProductInput", () => {
     expect(result.ok && result.data.leadTimeDays).toBe(14);
   });
 
+  it("reads whether a piece is made on order, off unless switched on", () => {
+    const on = validateProductInput(form({ madeOnOrder: "on" }));
+    const off = validateProductInput(form({}));
+
+    expect(on.ok && on.data.madeOnOrder).toBe(true);
+    expect(off.ok && off.data.madeOnOrder).toBe(false);
+  });
+
+  it("needs no lead time for a piece made on order, which shoppers are not told about", () => {
+    const result = validateProductInput(form({ madeOnOrder: "on", stock: "0" }));
+
+    expect(result.ok && result.data).toMatchObject({ madeOnOrder: true, madeToOrder: false, stock: 0, leadTimeDays: null });
+  });
+
   it("forces stock to one for a one-of-a-kind piece", () => {
     const result = validateProductInput(
       form({ oneOfAKind: "on", stock: "5" }),

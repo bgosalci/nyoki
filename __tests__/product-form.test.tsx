@@ -31,6 +31,7 @@ const mug = {
   careInstructions: null,
   oneOfAKind: false,
   madeToOrder: false,
+  madeOnOrder: false,
   leadTimeDays: null,
   categoryIds: ["cat_mugs"],
 };
@@ -336,6 +337,61 @@ describe("ProductForm, when a save goes through", () => {
 
     await user.click(screen.getAllByRole("button", { name: /save/i })[0]);
     expect(action.mock.calls[1][1].get("parcelSize")).toBe("LARGE_LETTER");
+  });
+});
+
+describe("ProductForm, made on order", () => {
+  it("offers it as a switch beside Status, off to begin with", () => {
+    render(<ProductForm action={noopAction} />);
+
+    const toggle = screen.getByRole("switch", { name: "Made on order" });
+    expect(toggle).not.toBeChecked();
+    expect(toggle).toHaveAccessibleDescription(/0 in stock/i);
+
+    // The next thing after Status, in the same row of fields.
+    const status = screen.getByLabelText(/status/i);
+    expect(toggle.closest("section")).toBe(status.closest("section"));
+    expect(status.compareDocumentPosition(toggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("is switched on for a piece made on order", () => {
+    render(<ProductForm action={noopAction} product={{ ...mug, madeOnOrder: true }} categories={categories} />);
+
+    expect(screen.getByRole("switch", { name: "Made on order" })).toBeChecked();
+  });
+
+  it("is told apart from made to order, which shoppers do see", () => {
+    render(<ProductForm action={noopAction} />);
+
+    expect(screen.getByRole("checkbox", { name: /made to order/i })).toHaveAccessibleName(/shoppers see/i);
+  });
+
+  it("posts the switch, and shows it as saved so the next save keeps it", async () => {
+    const action = jest.fn(async (_state: unknown, _data: FormData) => ({ errors: {} }));
+    const { rerender } = render(<ProductForm action={action} product={mug} categories={categories} />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("switch", { name: "Made on order" }));
+    await user.click(screen.getAllByRole("button", { name: /save/i })[0]);
+    expect(action.mock.calls[0][1].get("madeOnOrder")).toBe("on");
+
+    rerender(<ProductForm action={action} product={{ ...mug, madeOnOrder: true }} categories={categories} />);
+    await act(async () => {});
+    expect(screen.getByRole("switch", { name: "Made on order" })).toBeChecked();
+
+    await user.click(screen.getAllByRole("button", { name: /save/i })[0]);
+    expect(action.mock.calls[1][1].get("madeOnOrder")).toBe("on");
+  });
+
+  it("posts nothing for it when it is off", async () => {
+    const action = jest.fn(async (_state: unknown, _data: FormData) => ({ errors: {} }));
+    render(<ProductForm action={action} product={{ ...mug, madeOnOrder: true }} categories={categories} />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("switch", { name: "Made on order" }));
+    await user.click(screen.getAllByRole("button", { name: /save/i })[0]);
+
+    expect(action.mock.calls[0][1].get("madeOnOrder")).toBeNull();
   });
 });
 

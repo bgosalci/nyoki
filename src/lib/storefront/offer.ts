@@ -18,6 +18,7 @@ export interface OfferSource {
   colours: readonly string[];
   sizes: readonly string[];
   madeToOrder: boolean;
+  madeOnOrder: boolean;
   variants: readonly StockRow[];
   customisation: CustomisationRow | null;
   personalisationFields: readonly (PersonalisationFieldOffer & { position: number })[];

@@ -126,7 +126,7 @@ describe("offersAnything", () => {
 });
 
 describe("a piece of clothing's offer", () => {
-  const clothing = { colours: ["Lupin"], sizes: ["S"], stock: [{ colour: "Lupin", size: "S", stock: 1 }], madeToOrder: false };
+  const clothing = { colours: ["Lupin"], sizes: ["S"], stock: [{ colour: "Lupin", size: "S", stock: 1 }], unlimited: false };
 
   it("carries its colours and sizes, and nothing for anything else", () => {
     const base = { product, customisation: null, fields: [], packs: [], sales: [], noun: card, now };

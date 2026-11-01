@@ -71,6 +71,12 @@ export const ui = {
   // The browser draws the box itself (see color-scheme in globals.css); this
   // is only the fill of the tick.
   checkbox: "accent-nyoki-navy",
+  // The colours of a switch: its track, and the knob drawn by ::after. The
+  // input is the peer before it. Off is navy faded only so far, so the track
+  // still stands 3:1 off the page, as a control must; in the dark, the knob
+  // turns night on the beige track so the two states read apart.
+  toggle:
+    "bg-nyoki-navy/70 peer-checked:bg-nyoki-navy after:bg-nyoki-white peer-focus-visible:outline-nyoki-navy dark:bg-nyoki-night-rule dark:after:bg-nyoki-blue-grey dark:peer-checked:bg-nyoki-beige dark:peer-checked:after:bg-nyoki-night dark:peer-focus-visible:outline-nyoki-beige",
   // --- storefront. Deliberately light-only: the shop commits to one warm
   // look, where the admin is a tool that follows the viewer's theme. Radii
   // come from the theme board: cards 8px, buttons 4px, tags 3px, bands 6px.

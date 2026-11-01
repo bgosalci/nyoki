@@ -362,6 +362,7 @@ const dress: Offer = {
     colours: ["Lupin", "Gypsum", "Pepper"],
     sizes: ["S", "M"],
     madeToOrder: false,
+    madeOnOrder: false,
     variants: [
       { colour: "Lupin", size: "S", stock: 2 },
       { colour: "Lupin", size: "M", stock: 0 },

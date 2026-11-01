@@ -47,6 +47,7 @@ export async function GET(request: NextRequest) {
       vatRate: product.vatRate,
       stock: product.stock,
       madeToOrder: product.madeToOrder,
+      madeOnOrder: product.madeOnOrder,
       description: product.description,
       materials: product.materials,
       dimensions: product.dimensions,

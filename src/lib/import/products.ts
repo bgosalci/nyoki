@@ -39,6 +39,7 @@ export interface ExistingProduct {
   vatRate: number;
   stock: number;
   madeToOrder: boolean;
+  madeOnOrder: boolean;
   description: string | null;
   materials: string | null;
   dimensions: string | null;
@@ -110,6 +111,7 @@ const IMPORTED: [names: string[], field: Field][] = [
   [["VAT %", "vatRate"], "vatRate"],
   [["Stock"], "stock"],
   [["Made to order"], "madeToOrder"],
+  [["Made on order"], "madeOnOrder"],
   [["Cost lines"], "lines"],
   [["Web address", "slug"], "slug"],
   [["Description"], "description"],
@@ -138,6 +140,7 @@ const LABEL: Partial<Record<Field, string>> = {
   vatRate: "VAT",
   stock: "Stock",
   madeToOrder: "Made to order",
+  madeOnOrder: "Made on order",
   lines: "Costs",
   description: "Description",
   materials: "Materials",
@@ -161,6 +164,7 @@ const NEW_PRODUCT: ImportValues = {
   vatRate: 20,
   stock: 0,
   madeToOrder: false,
+  madeOnOrder: false,
   description: null,
   materials: null,
   dimensions: null,
@@ -233,6 +237,7 @@ function shown(field: Field, values: ImportValues, categoryName: (id: string) =>
       return count > 0 ? `${count} ${count === 1 ? "line" : "lines"}, ${formatPence(productionCostPence(values.lines))}` : none;
     }
     case "madeToOrder":
+    case "madeOnOrder":
     case "oneOfAKind":
     case "featured":
       return values[field] ? "Yes" : "No";
@@ -444,7 +449,12 @@ export function planImport(
     const lead = read("leadTimeDays", optionalWhole, "Lead time (days): write a whole number of days.");
     if (lead !== undefined) values.leadTimeDays = lead.n;
 
-    for (const [field, heading] of [["madeToOrder", "Made to order"], ["oneOfAKind", "One of a kind"], ["featured", "Featured"]] as const) {
+    for (const [field, heading] of [
+      ["madeToOrder", "Made to order"],
+      ["madeOnOrder", "Made on order"],
+      ["oneOfAKind", "One of a kind"],
+      ["featured", "Featured"],
+    ] as const) {
       const flag = read(field, (value) => (YES.has(value.toLowerCase()) ? true : NO.has(value.toLowerCase()) ? false : null), `${heading}: say Yes or No.`);
       if (flag !== undefined) values[field] = flag;
     }

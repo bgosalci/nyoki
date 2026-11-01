@@ -24,6 +24,8 @@ export interface ProductInput {
   oneOfAKind: boolean;
   madeToOrder: boolean;
   leadTimeDays: number | null;
+  /** Kept selling at 0 stock, since more is made when it is ordered. Shoppers are not told. */
+  madeOnOrder: boolean;
   categoryIds: string[];
 }
 
@@ -51,6 +53,7 @@ export type ProductField =
   | "oneOfAKind"
   | "madeToOrder"
   | "leadTimeDays"
+  | "madeOnOrder"
   | "categoryIds"
   // Read apart, by parseAlsoLikeIds and parseClothing; here so their problems
   // show on the form.
@@ -175,6 +178,7 @@ export function validateProductInput(form: FormData): ProductValidation {
       oneOfAKind,
       madeToOrder,
       leadTimeDays: leadParsed ?? null,
+      madeOnOrder: checked(form, "madeOnOrder"),
       categoryIds: postedCategoryIds(form),
     },
   };

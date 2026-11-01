@@ -6,6 +6,8 @@
  * handed to the page. Pure, so the basket can check by the same rules.
  */
 
+import { neverRunsOut } from "@/lib/products/stock-limit";
+
 /** The stock of one colour in one size; null where the piece has no colours, or no sizes. */
 export interface StockRow {
   colour: string | null;
@@ -18,14 +20,15 @@ export interface ClothingOffer {
   sizes: string[];
   /** The stock of each colour in each size. A combination not listed has none. */
   stock: StockRow[];
-  /** Made to order: not held in stock, so never out of it. */
-  madeToOrder: boolean;
+  /** Never out of stock: made to order, or made on order. */
+  unlimited: boolean;
 }
 
 export interface ClothingSource {
   colours: readonly string[];
   sizes: readonly string[];
   madeToOrder: boolean;
+  madeOnOrder: boolean;
   variants: readonly StockRow[];
 }
 
@@ -43,7 +46,7 @@ export function toClothingOffer(source: ClothingSource): ClothingOffer | null {
     stock: source.variants
       .filter((row) => fits(row.colour, colours) && fits(row.size, sizes))
       .map(({ colour, size, stock }) => ({ colour, size, stock })),
-    madeToOrder: source.madeToOrder,
+    unlimited: neverRunsOut(source),
   };
 }
 
@@ -53,7 +56,7 @@ export function toClothingOffer(source: ClothingSource): ClothingOffer | null {
  * and a size while it is in any colour.
  */
 export function inStock(offer: ClothingOffer, colour: string | null, size: string | null): boolean {
-  if (offer.madeToOrder) return true;
+  if (offer.unlimited) return true;
   return offer.stock.some((row) => row.stock > 0 && (colour === null || row.colour === colour) && (size === null || row.size === size));
 }
 

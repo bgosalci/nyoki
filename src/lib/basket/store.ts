@@ -78,6 +78,7 @@ export function toReviewProduct(row: BasketProductRow, categories: readonly Bask
     image: row.images[0]?.url ?? null,
     stock: row.stock,
     madeToOrder: row.madeToOrder,
+    madeOnOrder: row.madeOnOrder,
     leadTimeDays: row.leadTimeDays,
     oneOfAKind: row.oneOfAKind,
     vatRate: row.vatRate,

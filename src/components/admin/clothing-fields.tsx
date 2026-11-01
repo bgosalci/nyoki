@@ -207,7 +207,7 @@ function StockGrid({ editor, onChange, error }: { editor: ClothingEditor; onChan
         {heading}
       </h3>
       <p className={`text-xs ${ui.mutedOnPage}`}>
-        One with none in stock shows as out of stock on the shop, unless the piece is made to order.
+        One with none in stock shows as out of stock on the shop, unless the piece is made to order or made on order.
       </p>
 
       <div className="overflow-x-auto">

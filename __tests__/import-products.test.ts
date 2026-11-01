@@ -18,6 +18,8 @@ const snowflake: ExistingProduct = {
   vatRate: 20,
   stock: 3,
   madeToOrder: false,
+  // Kept topped up, and made again whenever it runs out.
+  madeOnOrder: true,
   description: "A card, with a snowflake.\nHand made.",
   materials: null,
   dimensions: "15cm square",
@@ -46,6 +48,7 @@ const cardigan: ExistingProduct = {
   vatRate: 0,
   stock: 0,
   madeToOrder: true,
+  madeOnOrder: false,
   leadTimeDays: 14,
   featured: false,
   categoryIds: ["clothes"],
@@ -164,6 +167,18 @@ describe("planImport, changing products", () => {
     const row = only([["Web address", "Featured", "One of a kind"], ["snowflake-card", "no", "YES"]]);
 
     expect(row.values).toMatchObject({ featured: false, oneOfAKind: true, stock: 1 });
+  });
+
+  it("reads whether a piece is made on order, and says when it changes", () => {
+    const row = only([["Web address", "Made on order"], ["snowflake-card", "No"]]);
+
+    expect(row.changes).toEqual([{ label: "Made on order", from: "Yes", to: "No" }]);
+    expect(row.values).toMatchObject({ madeOnOrder: false, stock: 3 });
+    expect(only([["Web address", "Made on order"], ["bamboo-cardigan", "y"]]).values).toMatchObject({ madeOnOrder: true });
+  });
+
+  it("asks for yes or no about made on order, as for the other flags", () => {
+    expect(only([["Web address", "Made on order"], ["snowflake-card", "sometimes"]]).problems).toEqual(["Made on order: say Yes or No."]);
   });
 
   it("takes back the apostrophe the export puts before text a spreadsheet would run", () => {

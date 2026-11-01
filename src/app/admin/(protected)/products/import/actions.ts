@@ -36,6 +36,7 @@ async function planFor(csv: string): Promise<ImportPlan> {
     vatRate: product.vatRate,
     stock: product.stock,
     madeToOrder: product.madeToOrder,
+    madeOnOrder: product.madeOnOrder,
     description: product.description,
     materials: product.materials,
     dimensions: product.dimensions,

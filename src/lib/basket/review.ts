@@ -3,6 +3,7 @@ import { QUANTITY_MAX, unitPricePence, type SummaryRow } from "@/lib/customisati
 import type { Offer } from "@/lib/customisation/offer";
 import type { PostageFacts } from "@/lib/delivery/parcel";
 import { formatPence } from "@/lib/money";
+import { neverRunsOut } from "@/lib/products/stock-limit";
 
 /**
  * The basket, priced and checked afresh: what each line costs today, and
@@ -24,6 +25,8 @@ export interface ReviewProduct {
   image: string | null;
   stock: number;
   madeToOrder: boolean;
+  /** Made again when it runs out, so never out of stock - and nothing the shopper is told. */
+  madeOnOrder: boolean;
   leadTimeDays: number | null;
   oneOfAKind: boolean;
   vatRate: number;
@@ -92,7 +95,7 @@ export interface BasketReview {
 /** Where a line's stock is counted, and how much there is; null for no limit. */
 function stockOf(line: Pick<ReviewLine, "stored" | "product">): { key: string; available: number | null } {
   const { product, stored } = line;
-  if (product.madeToOrder) return { key: `product:${product.id}`, available: null };
+  if (neverRunsOut(product)) return { key: `product:${product.id}`, available: null };
   if (stored.variantId !== null) {
     const variant = product.variants.find((row) => row.id === stored.variantId);
     return { key: `variant:${stored.variantId}`, available: variant?.stock ?? 0 };

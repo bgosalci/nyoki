@@ -13,6 +13,7 @@ import { Field, inputClass } from "@/components/admin/field";
 import { PostageFields, postageText } from "@/components/admin/postage-fields";
 import { PostageSummary, type PostageContext } from "@/components/admin/postage-summary";
 import { TopSaveButton } from "@/components/admin/save-slot";
+import { Toggle } from "@/components/admin/toggle";
 import { UnsavedChanges } from "@/components/admin/unsaved-changes";
 import { formatPence } from "@/lib/money";
 import type { ProductErrors, ProductInput } from "@/lib/products/validate";
@@ -239,6 +240,12 @@ export function ProductForm({
           )}
         </Field>
 
+        <Toggle
+          label="Made on order"
+          name="madeOnOrder"
+          defaultChecked={product?.madeOnOrder ?? false}
+          hint="Sells on at 0 in stock: more is made when it is ordered. Shoppers are not told."
+        />
       </section>
 
       <section aria-labelledby="postage-heading" className="flex flex-col gap-4">
@@ -321,7 +328,7 @@ export function ProductForm({
             defaultChecked={product?.madeToOrder ?? false}
             className={`size-4 ${ui.checkbox}`}
           />
-          Made to order
+          Made to order — none kept; shoppers see the lead time
         </label>
 
         <Field

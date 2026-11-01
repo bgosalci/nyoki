@@ -822,6 +822,26 @@ TypeScript, deployed to Vercel.
   choose keeps the phone's `BuyBar`, and `/basket`, `/checkout` and their
   actions answer not found or refuse.
 
+## Made on order
+
+- **Made on order** is a switch beside Status on a product's Details tab
+  (`Product.madeOnOrder`). The piece keeps a stock count, often low, of
+  things quick to make, and goes on selling when it reaches 0: more is made
+  once it is ordered. Any quantity can be ordered, in any colour and size.
+- **Shoppers are told nothing of it**: no tag, no lead time, no "sent
+  together" note, and never "Out of stock". That is what sets it apart from
+  **made to order**, which keeps no stock and shows its lead time on the
+  card, the page and the basket. Its checkbox says so ("none kept; shoppers
+  see the lead time"), since the two names are close.
+- One rule for both, `neverRunsOut` (`src/lib/products/stock-limit.ts`):
+  the product page's quantity limit, the basket's share-out of stock
+  (`stockOf` in review.ts) and clothing's offer (`unlimited`, from
+  `toClothingOffer`) all ask it. One of a kind still wins: one in all.
+- The products list shows its stock with "made on order" beneath; the
+  export and import carry a "Made on order" column (Yes/No).
+- When payment takes stock off, a made-on-order piece must stop at 0
+  rather than go below it.
+
 ## Basket
 
 - **Every piece is bought the same way** once ordering is open: its choices,

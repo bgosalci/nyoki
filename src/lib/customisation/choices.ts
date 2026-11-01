@@ -270,7 +270,7 @@ export function clampQuantity(raw: string | number, most: number = QUANTITY_MAX)
  * would let them have: the stock of the colour in the size chosen - or, until
  * both are, the most of any still possible - shared out by the cards in the
  * pack chosen. `stock` is the piece's own, for anything not clothing (whose
- * stock is in its offer); null is made to order, which never runs out. Never
+ * stock is in its offer); null is made to order or on order, which never runs out. Never
  * more than the box takes.
  *
  * What is already in the basket is not counted: adding puts in what there is
@@ -280,7 +280,7 @@ export function mostAvailable(offer: Offer, choices: Pick<Choices, "unit" | "col
   const clothing = offer.clothing;
   const held = !clothing
     ? stock
-    : clothing.madeToOrder
+    : clothing.unlimited
       ? null
       : Math.max(
           0,

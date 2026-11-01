@@ -17,12 +17,13 @@ const rows: ProductRow[] = [
     pricePence: 600,
     stock: 3,
     madeToOrder: false,
+    madeOnOrder: false,
     oneOfAKind: false,
     image: null,
     categories: ["Cards › Christmas Cards", "Gifts"],
   },
-  { id: "p2", name: "Stocking Card", status: "DRAFT", pricePence: 500, stock: 0, madeToOrder: false, oneOfAKind: true, image: null, categories: [] },
-  { id: "p3", name: "Bud Vase", status: "ARCHIVED", pricePence: 1800, stock: 1, madeToOrder: true, oneOfAKind: false, image: null, categories: ["Home"] },
+  { id: "p2", name: "Stocking Card", status: "DRAFT", pricePence: 500, stock: 0, madeToOrder: false, madeOnOrder: false, oneOfAKind: true, image: null, categories: [] },
+  { id: "p3", name: "Bud Vase", status: "ARCHIVED", pricePence: 1800, stock: 1, madeToOrder: true, madeOnOrder: false, oneOfAKind: false, image: null, categories: ["Home"] },
 ];
 
 /** The page's own notices: not the region dragging announces itself through. */
@@ -67,6 +68,22 @@ describe("ProductTable", () => {
     expect(within(snowflake).getAllByRole("listitem").map((item) => item.textContent)).toEqual(["Cards › Christmas Cards", "Gifts"]);
     const vase = screen.getByRole("list", { name: "Categories of Bud Vase" });
     expect(within(vase).getAllByRole("listitem").map((item) => item.textContent)).toEqual(["Home"]);
+  });
+
+  it("shows the stock of a piece made on order, and that more is made when it runs out", () => {
+    setup({ rows: [{ ...rows[0], id: "p4", name: "Holly Card", stock: 0, madeOnOrder: true }] });
+
+    const row = screen.getByRole("link", { name: "Holly Card" }).closest("tr")!;
+    const stock = row.querySelectorAll("td")[row.querySelectorAll("td").length - 1];
+    expect(stock).toHaveTextContent(/^0\s*made on order$/);
+  });
+
+  it("shows made to order in place of the stock, since none is kept", () => {
+    setup();
+
+    const row = screen.getByRole("link", { name: "Bud Vase" }).closest("tr")!;
+    const cells = row.querySelectorAll("td");
+    expect(cells[cells.length - 1]).toHaveTextContent(/^made to order$/);
   });
 
   it("says when a piece is in no category, since the shop's category pages will not show it", () => {

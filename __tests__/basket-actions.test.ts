@@ -64,6 +64,7 @@ function cardRow(overrides: Partial<BasketProductRow> = {}): BasketProductRow {
     colours: [],
     sizes: [],
     madeToOrder: false,
+    madeOnOrder: false,
     weightGrams: null,
     parcelSize: null,
     thicknessMm: null,
@@ -207,6 +208,15 @@ describe("addToBasket", () => {
     findFirst.mockResolvedValue(cardRow({ stock: 0 }));
 
     expect(await addToBasket("card", printedPack)).toEqual({ ok: false, message: "Sorry, this is out of stock." });
+  });
+
+  it("puts in as many as asked of a piece made on order, with none left, and says nothing of it", async () => {
+    findFirst.mockResolvedValue(cardRow({ stock: 0, madeOnOrder: true }));
+
+    const result = await addToBasket("card", { ...printedPack, quantity: 5 });
+
+    expect(upsert).toHaveBeenCalledWith(expect.objectContaining({ update: { quantity: { increment: 5 } } }));
+    expect(result).toMatchObject({ ok: true, added: { quantity: 5 }, note: null });
   });
 
   it("says a one-of-a-kind piece is already in the basket", async () => {

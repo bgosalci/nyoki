@@ -55,6 +55,17 @@ describe("CMS class recipes", () => {
     expect(ui.checkbox).toMatch(/\baccent-nyoki-navy\b/);
   });
 
+  it("draws a switch in navy when on, and in the night neutrals in the dark", () => {
+    expect(ui.toggle).toMatch(/(?:^|\s)peer-checked:bg-nyoki-navy\b/);
+    expect(ui.toggle).toMatch(/(?:^|\s)after:bg-nyoki-white\b/);
+    // Off, it must still be seen against the page: navy at a strength a
+    // control needs (3:1 on white), not the faint slate of a divider.
+    expect(ui.toggle).toMatch(/(?:^|\s)bg-nyoki-navy\/(?:[6-9]\d)\b/);
+    expect(ui.toggle).toMatch(/\bdark:bg-nyoki-night-rule\b/);
+    expect(ui.toggle).toMatch(/\bdark:peer-checked:bg-nyoki-beige\b/);
+    expect(ui.toggle).not.toMatch(/nyoki-ink/);
+  });
+
   it("dims the page behind a modal with a neutral scrim, never a brand tint", () => {
     // Ink is #0b063c - a saturated blue-purple. At any opacity it lays a blue
     // wash over whatever is behind it, which is why the scrim is plain black.

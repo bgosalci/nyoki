@@ -12,6 +12,7 @@ const christening: ExportProduct = {
   vatRate: 20,
   stock: 4,
   madeToOrder: false,
+  madeOnOrder: false,
   description: "A card for a christening.\nHand made.",
   materials: null,
   dimensions: "15cm square",
@@ -47,6 +48,7 @@ describe("exportProducts, JSON", () => {
       vatRate: 20,
       stock: 4,
       madeToOrder: false,
+      madeOnOrder: false,
       costLines: [
         { what: "Card & envelope", costEach: "0.80", howMany: 1 },
         { what: "Bamboo yarn", costEach: "4.50", howMany: 2.5 },

@@ -17,6 +17,7 @@ function source(overrides: Partial<OfferSource> = {}): OfferSource {
     colours: [],
     sizes: [],
     madeToOrder: false,
+    madeOnOrder: false,
     variants: [],
     customisation: null,
     personalisationFields: [],
@@ -71,6 +72,17 @@ describe("productOffer", () => {
     expect(clothes).toBe(true);
     expect(offer.clothing?.sizes).toEqual(["2-3 years", "3-4 years"]);
     expect(offer.clothing?.stock).toHaveLength(2);
+    expect(offer.clothing?.unlimited).toBe(false);
+  });
+
+  it("never runs clothing made on order out of stock", () => {
+    const { offer } = productOffer(
+      source({ categoryIds: ["coats"], sizes: ["2-3 years"], madeOnOrder: true, variants: [{ colour: null, size: "2-3 years", stock: 0 }] }),
+      categories,
+      now,
+    );
+
+    expect(offer.clothing?.unlimited).toBe(true);
   });
 
   it("offers nothing to choose for anything else, at its price in a live sale", () => {

@@ -34,6 +34,7 @@ export interface ProductRow {
   pricePence: number;
   stock: number;
   madeToOrder: boolean;
+  madeOnOrder: boolean;
   oneOfAKind: boolean;
   image: { url: string; alt: string | null } | null;
   /** Its categories by their places in the tree - "Cards › Christmas Cards" - as its Details tab shows them. */
@@ -412,7 +413,16 @@ export function ProductTable({
                     </td>
                     <td className={`py-3 pr-4 ${ui.mutedOnPage}`}>{STATUS_LABEL[row.status]}</td>
                     <td className="py-3 pr-4 text-right tabular-nums">{formatPence(row.pricePence)}</td>
-                    <td className="py-3 pr-4 text-right tabular-nums">{row.madeToOrder ? "made to order" : row.stock}</td>
+                    <td className="py-3 pr-4 text-right tabular-nums">
+                      {row.madeToOrder ? (
+                        "made to order"
+                      ) : (
+                        <>
+                          {row.stock}
+                          {row.madeOnOrder ? <span className={`block text-xs ${ui.mutedOnPage}`}>made on order</span> : null}
+                        </>
+                      )}
+                    </td>
                   </SortableRow>
                 ))}
               </SortableContext>

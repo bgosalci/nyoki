@@ -26,6 +26,7 @@ const piece = (categoryIds: string[]) => ({
   careInstructions: null,
   oneOfAKind: false,
   madeToOrder: false,
+  madeOnOrder: false,
   leadTimeDays: null,
   categoryIds,
 });

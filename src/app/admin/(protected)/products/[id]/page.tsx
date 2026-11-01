@@ -81,6 +81,7 @@ export default async function EditProductPage({
     oneOfAKind: product.oneOfAKind,
     madeToOrder: product.madeToOrder,
     leadTimeDays: product.leadTimeDays,
+    madeOnOrder: product.madeOnOrder,
     categoryIds: product.categories.map((link) => link.categoryId),
   };
 

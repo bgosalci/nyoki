@@ -10,6 +10,7 @@ const row = (id: string, name: string, status: ProductRow["status"]): ProductRow
   pricePence: 500,
   stock: 1,
   madeToOrder: false,
+  madeOnOrder: false,
   oneOfAKind: false,
   image: null,
   categories: [],

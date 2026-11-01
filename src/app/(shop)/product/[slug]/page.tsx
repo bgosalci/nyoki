@@ -12,6 +12,7 @@ import { currentCustomer } from "@/lib/account/dal";
 import { formatPence } from "@/lib/money";
 import { effectivePricePence } from "@/lib/pricing";
 import { chainTo } from "@/lib/products/category-pills";
+import { neverRunsOut } from "@/lib/products/stock-limit";
 import { addToBasket } from "@/app/(shop)/basket/actions";
 import { BuyBar } from "@/components/shop/buy-bar";
 import { CustomiserBar, CustomiserPanels, CustomiserProvider } from "@/components/shop/customiser";
@@ -245,8 +246,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       productId={product.id}
       add={ordering ? addToBasket : undefined}
       // How many there are of anything that is not clothing - clothing's stock
-      // is in its offer. Made to order never runs out.
-      stock={product.madeToOrder ? null : product.stock}
+      // is in its offer. Made to order, or on order, never runs out.
+      stock={neverRunsOut(product) ? null : product.stock}
       oneOfAKind={product.oneOfAKind}
     >
       {page}

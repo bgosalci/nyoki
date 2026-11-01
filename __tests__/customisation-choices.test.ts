@@ -304,6 +304,7 @@ const dress: Offer = {
     colours: ["Lupin", "Gypsum"],
     sizes: ["S", "M"],
     madeToOrder: false,
+    madeOnOrder: false,
     variants: [
       { colour: "Lupin", size: "S", stock: 2 },
       { colour: "Lupin", size: "M", stock: 0 },
@@ -343,7 +344,7 @@ describe("mostAvailable", () => {
   });
 
   it("goes by clothing's own colours and sizes, unless it is made to order", () => {
-    const madeToOrder: Offer = { ...dress, clothing: { ...dress.clothing!, madeToOrder: true } };
+    const madeToOrder: Offer = { ...dress, clothing: { ...dress.clothing!, unlimited: true } };
     expect(mostAvailable(madeToOrder, { ...EMPTY_CHOICES, colour: "Gypsum", size: "M" }, 0)).toBe(99);
   });
 });
@@ -405,6 +406,7 @@ describe("initialChoices", () => {
         colours: ["Tuberose"],
         sizes: ["S", "M"],
         madeToOrder: false,
+        madeOnOrder: false,
         variants: [{ colour: "Tuberose", size: "S", stock: 1 }],
       }),
     };
