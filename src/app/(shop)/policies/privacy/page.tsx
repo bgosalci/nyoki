@@ -203,7 +203,7 @@ const SECTIONS: PolicySection[] = [
     heading: "Cookies",
     body: (
       <p>
-        The shop uses three small cookies it can&apos;t work without, and nothing that tracks you. Our{" "}
+        The shop uses two small cookies it can&apos;t work without, and nothing that tracks you. Our{" "}
         <PolicyLink href="/policies/cookies">Cookies</PolicyLink> page lists them.
       </p>
     ),

@@ -1,7 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import type { ReactElement } from "react";
 
-import { ADMIN_SESSION_DAYS, SESSION_COOKIE } from "@/lib/auth/cookie";
 import { CUSTOMER_SESSION_COOKIE, CUSTOMER_SESSION_DAYS } from "@/lib/account/cookie";
 import { BASKET_COOKIE, BASKET_COOKIE_DAYS } from "@/lib/basket/cookie";
 import { POLICIES, POLICIES_UPDATED, policyHref } from "@/lib/policies/pages";
@@ -94,6 +93,12 @@ describe.each(PAGES)("the $slug page", ({ slug, render: page }) => {
     );
   });
 
+  it("says nothing of the shop's admin, which is no shopper's business", async () => {
+    const { container } = render(await page());
+
+    expect(container).not.toHaveTextContent(/admin|our (own )?team|staff|dark mode/i);
+  });
+
   it("names the business behind the shop", async () => {
     render(await page());
 
@@ -109,6 +114,7 @@ describe("the policies page", () => {
     render(<PoliciesPage />);
 
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Policies");
+    expect(document.body).not.toHaveTextContent(/admin|our (own )?team|staff|three small cookies/i);
     for (const policy of POLICIES) {
       const link = screen.getByRole("link", { name: policy.title });
       expect(link).toHaveAttribute("href", policyHref(policy));
@@ -325,7 +331,6 @@ describe("cookies", () => {
     expect(rows.map((row) => [within(row).getAllByRole("cell")[0].textContent, within(row).getAllByRole("cell")[2].textContent])).toEqual([
       [BASKET_COOKIE, `${BASKET_COOKIE_DAYS} days`],
       [CUSTOMER_SESSION_COOKIE, `${CUSTOMER_SESSION_DAYS} days`],
-      [SESSION_COOKIE, `${ADMIN_SESSION_DAYS} days`],
     ]);
   });
 
@@ -333,6 +338,7 @@ describe("cookies", () => {
     render(<CookiesPage />);
 
     const text = section("The cookies we use");
+    expect(text).toHaveTextContent(/We use only two/);
     expect(text).toHaveTextContent(/no advertising cookies/);
     expect(text).toHaveTextContent(/no cookie banner/);
   });

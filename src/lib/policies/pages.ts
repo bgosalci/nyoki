@@ -44,7 +44,7 @@ export const POLICIES: readonly Policy[] = [
     slug: "cookies",
     title: "Cookies",
     short: "Cookies",
-    summary: "The three small cookies the shop needs to work, and why there is no cookie banner.",
+    summary: "The two small cookies the shop needs to work, and why there is no cookie banner.",
   },
 ];
 

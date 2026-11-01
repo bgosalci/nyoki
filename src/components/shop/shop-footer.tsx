@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { ui } from "@/lib/brand/ui";
-import { BUSINESS, addressLine, legalLine } from "@/lib/policies/business";
+import { BUSINESS, legalLine } from "@/lib/policies/business";
 import { POLICIES, policyHref } from "@/lib/policies/pages";
 
 const LINK = `text-sm hover:underline hover:underline-offset-4 ${ui.shopMuted}`;
@@ -9,12 +9,11 @@ const HEADING = `text-sm font-medium tracking-[0.12em] uppercase ${ui.shopHeadin
 
 /**
  * The shop's footer: about us, the departments, help and the policies, our
- * promise - and, at the foot, whose shop it is, which a company's website
- * must say on every page.
+ * promise - and, at the foot, whose shop it is, in one sentence. The
+ * registered office and the address to write to are at the foot of every
+ * policy instead (BusinessDetails); in every footer they were too much.
  */
 export function ShopFooter({ groups }: { groups: readonly { slug: string; name: string }[] }) {
-  const contact = [BUSINESS.address && addressLine(BUSINESS.address), BUSINESS.email].filter(Boolean);
-
   return (
     <footer className={`mt-20 border-t ${ui.shopRule} ${ui.shopSurface}`}>
       <div className="mx-auto grid max-w-shop gap-10 px-4 py-14 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
@@ -66,16 +65,8 @@ export function ShopFooter({ groups }: { groups: readonly { slug: string; name: 
           </ul>
         </div>
       </div>
-      <div className={`flex flex-col gap-1.5 border-t px-4 py-5 text-center text-xs sm:px-6 ${ui.shopRule} ${ui.shopMuted}`}>
-        <p>© {new Date().getFullYear()} Nyoki Handmade</p>
+      <div className={`border-t px-4 py-5 text-center text-xs sm:px-6 ${ui.shopRule} ${ui.shopMuted}`}>
         <p>{legalLine(BUSINESS)}</p>
-        {contact.length > 0 ? (
-          <ul className="flex flex-wrap justify-center gap-x-3">
-            {contact.map((line) => (
-              <li key={line}>{line}</li>
-            ))}
-          </ul>
-        ) : null}
       </div>
     </footer>
   );

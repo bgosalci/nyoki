@@ -3,14 +3,13 @@ import "server-only";
 import { cookies } from "next/headers";
 
 import {
-  ADMIN_SESSION_DAYS,
   SESSION_COOKIE,
   createSessionToken,
   verifySessionToken,
   type SessionPayload,
 } from "@/lib/auth/session";
 
-const SESSION_DURATION_MS = ADMIN_SESSION_DAYS * 24 * 60 * 60 * 1000;
+const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
  * Read the signing secret, failing loudly if it is missing.

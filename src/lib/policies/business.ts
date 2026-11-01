@@ -51,11 +51,15 @@ export function addressLine(lines: readonly string[]): string {
   return `${lines.slice(0, -1).join(", ")} ${lines[lines.length - 1]}`;
 }
 
-/** The sentence every page carries: whose shop this is. */
+/** The sentence every page's footer carries: whose shop this is. */
 export function legalLine(business: BusinessDetails): string {
   return (
     `${business.tradingName} is the trading name of ${business.legalName}, registered in ${business.registeredIn}, ` +
-    `company number ${business.companyNumber}. VAT number ${formatVatNumber(business.vatNumber)}. ` +
-    `Registered office: ${addressLine(business.registeredOffice)}.`
+    `company number ${business.companyNumber}. VAT number ${formatVatNumber(business.vatNumber)}.`
   );
+}
+
+/** Given with the business details at the foot of every policy, rather than in every footer. */
+export function registeredOfficeLine(business: BusinessDetails): string {
+  return `Registered office: ${addressLine(business.registeredOffice)}.`;
 }

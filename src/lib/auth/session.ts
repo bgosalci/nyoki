@@ -1,7 +1,5 @@
 import { SignJWT, jwtVerify } from "jose";
 
-import { ADMIN_SESSION_DAYS, SESSION_COOKIE } from "@/lib/auth/cookie";
-
 /**
  * CMS session tokens.
  *
@@ -19,10 +17,10 @@ export interface SessionPayload {
   role: AdminRole;
 }
 
-export { ADMIN_SESSION_DAYS, SESSION_COOKIE };
+export const SESSION_COOKIE = "nyoki_admin_session";
 
 const ALGORITHM = "HS256";
-const SESSION_DURATION = `${ADMIN_SESSION_DAYS}d`;
+const SESSION_DURATION = "7d";
 
 // HS256 keys shorter than the 256-bit hash buy no extra security and signal a
 // placeholder secret that escaped into a real environment.

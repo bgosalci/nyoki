@@ -1066,19 +1066,25 @@ TypeScript, deployed to Vercel.
   law, and wear is a deduction, never a refusal.
 - **Whose shop it is** comes from `BUSINESS` (`src/lib/policies/business.ts`):
   Nyoki Limited, company 06758218, registered in England and Wales, VAT
-  GB 979 8673 25, and its registered office (82 Containerville, from
-  Companies House, shown because a company's website must show it), on
-  every page's footer and every policy. The address shoppers write to and
-  send returns to is the trading address, Unit 302, 3A Howick Place - not
-  the registered office, and never a home: it is on every page. The
+  GB 979 8673 25. **Every page's footer ends with that one sentence and
+  nothing more** (`legalLine`) - the copyright line, the registered office
+  and the address were taken out of it as too much. The registered office
+  (82 Containerville, from Companies House; a company's website must show
+  it) and the address shoppers write to and send returns to - the trading
+  address, Unit 302, 3A Howick Place, never a home - are in full at the foot
+  of every policy (`BusinessDetails`) and in the terms. The
   `email` is still null, and the pages send people to Contact meanwhile;
   **it is needed before ordering opens**, since the regulations ask for an
   email address, not just a form.
-- The cookies page lists `SITE_COOKIES`, built from the constants that set
-  each cookie (`basket/cookie.ts`, `account/cookie.ts`, `auth/cookie.ts` -
-  apart from the jose code, which jsdom cannot load), so it cannot fall
-  behind. Every cookie is strictly necessary, so there is no banner (PECR
-  Schedule A1). A cookie for anything else needs this page first.
+- The cookies page lists `SITE_COOKIES`, every cookie a shopper can be
+  given, built from the constants that set each one (`basket/cookie.ts`,
+  `account/cookie.ts` - apart from the jose code, which jsdom cannot load),
+  so it cannot fall behind. Every one is strictly necessary, so there is no
+  banner (PECR Schedule A1). A cookie for anything else needs this page
+  first.
+- **The public pages say nothing of the admin.** The team's own sign-in
+  cookie is set only on their browsers and is not listed; a test fails on
+  any policy that mentions the admin, the team or staff.
 - The delivery page's table is the options checkout offers
   (`deliveryOptions`, from `rateSources`), so it cannot promise a price
   checkout does not charge.

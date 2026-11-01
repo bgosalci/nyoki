@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { PolicyLink, PolicyList, PolicyPage, type PolicySection } from "@/components/shop/policy-page";
-import { BUSINESS, addressLine, legalLine } from "@/lib/policies/business";
+import { BUSINESS, addressLine, legalLine, registeredOfficeLine } from "@/lib/policies/business";
 
 export const metadata: Metadata = {
   title: "Terms and conditions",
@@ -43,7 +43,9 @@ const SECTIONS: PolicySection[] = [
     heading: "About us",
     body: (
       <>
-        <p>{legalLine(BUSINESS)}</p>
+        <p>
+          {legalLine(BUSINESS)} {registeredOfficeLine(BUSINESS)}
+        </p>
         <p>
           &quot;We&quot; and &quot;us&quot; mean {BUSINESS.legalName}. To reach us, use our{" "}
           <PolicyLink href="/contact">Contact page</PolicyLink>

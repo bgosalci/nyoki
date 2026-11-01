@@ -6,11 +6,11 @@ import { SITE_COOKIES, lasts } from "@/lib/policies/cookies";
 
 export const metadata: Metadata = {
   title: "Cookies",
-  description: "The three small cookies the Nyoki Handmade shop needs to work, and why there is no cookie banner.",
+  description: "The two small cookies the Nyoki Handmade shop needs to work, and why there is no cookie banner.",
 };
 
 /**
- * The cookies page. Every cookie the site sets is strictly necessary, which
+ * The cookies page. Every cookie a shopper is given is strictly necessary, which
  * PECR exempts from consent (Schedule A1, from 5 February 2026), so there is
  * no banner; the page still names each one, what it does and how long it
  * lasts, from the constants that set it.
@@ -19,7 +19,7 @@ export default function CookiesPage() {
   return (
     <PolicyPage
       slug="cookies"
-      intro={<p>The short version: three small cookies the shop needs to work, and nothing that follows you around.</p>}
+      intro={<p>The short version: two small cookies the shop needs to work, and nothing that follows you around.</p>}
       sections={SECTIONS}
     />
   );
@@ -32,8 +32,8 @@ const SECTIONS: PolicySection[] = [
     body: (
       <>
         <p>
-          A cookie is a small file a website keeps in your browser. We use only three, and only because the shop
-          can&apos;t work without them: one remembers your basket, one keeps you signed in, and one is for our own team.
+          A cookie is a small file a website keeps in your browser. We use only two, and only because the shop
+          can&apos;t work without them: one remembers your basket, and one keeps you signed in.
         </p>
         <p>
           There are no advertising cookies, no tracking and no analytics. The law doesn&apos;t ask for your consent to
@@ -72,7 +72,7 @@ const SECTIONS: PolicySection[] = [
           </tbody>
         </table>
         <p>
-          All three are our own, sent only to nyoki.co.uk, and can&apos;t be read by scripts on the page. Signing out
+          Both are our own, sent only to nyoki.co.uk, and can&apos;t be read by scripts on the page. Signing out
           removes the sign-in cookie straight away.
         </p>
       </>
@@ -95,8 +95,7 @@ const SECTIONS: PolicySection[] = [
     body: (
       <p>
         Our fonts come from our own site, not from Google or anyone else, so loading a page tells no one else that you
-        visited. There are no social media buttons or embedded videos setting cookies of their own. Our team&apos;s admin
-        pages remember a few settings, such as dark mode, in their own browsers; that never applies to shoppers.
+        visited. There are no social media buttons or embedded videos setting cookies of their own.
       </p>
     ),
   },

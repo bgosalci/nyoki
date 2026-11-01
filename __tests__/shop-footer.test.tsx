@@ -26,18 +26,23 @@ describe("the shop's footer", () => {
     ]);
   });
 
-  it("says whose shop it is, as a company's website must", () => {
+  it("ends with whose shop it is, and nothing more", () => {
     render(<ShopFooter groups={groups} />);
 
     const legal = screen.getByText(/trading name of Nyoki Limited/);
-    expect(legal).toHaveTextContent(/registered in England and Wales, company number 06758218/);
-    expect(legal).toHaveTextContent(/VAT number GB 979 8673 25/);
-    expect(legal).toHaveTextContent(/Registered office: 82 Containerville, 1 Emma Street, London E2 9FP/);
+    expect(legal).toHaveTextContent(
+      "Nyoki Handmade is the trading name of Nyoki Limited, registered in England and Wales, company number 06758218. VAT number GB 979 8673 25.",
+    );
+    expect(legal.parentElement!.children).toHaveLength(1);
   });
 
-  it("gives the address to write to on every page, as the law asks of a page selling anything", () => {
+  it("leaves the registered office, the address and the copyright line to the policies", () => {
+    // Every policy ends with them in full (BusinessDetails), which is where a
+    // company's website shows its registered office.
     render(<ShopFooter groups={groups} />);
 
-    expect(screen.getByText("Unit 302, 3A Howick Place, London SW1P 1WG")).toBeInTheDocument();
+    expect(screen.queryByText(/Registered office/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Howick Place/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/©/)).not.toBeInTheDocument();
   });
 });
