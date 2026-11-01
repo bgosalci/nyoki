@@ -72,13 +72,13 @@ export const ui = {
   // is only the fill of the tick.
   checkbox: "accent-nyoki-navy",
   // The colours of a switch: its track, and the knob drawn by ::after. The
-  // input is the peer before it. On is green - the logo's sage, deepened so
-  // the track stands 5:1 off the page and the white knob off it; off is navy
-  // faded only so far that the track still stands 3:1 off the page. In the
-  // dark, sage itself is the green that shows on the night ground, under a
-  // night knob.
+  // input is the peer before it. On is a vivid green, standing 3:1 off the
+  // page and from the white knob, so on cannot be mistaken for off; off is
+  // navy faded only so far that the track still stands 3:1 off the page. In
+  // the dark the same green stands 5:1 off the night ground, under a night
+  // knob.
   toggle:
-    "bg-nyoki-navy/70 peer-checked:bg-nyoki-sage-deep after:bg-nyoki-white peer-focus-visible:outline-nyoki-navy dark:bg-nyoki-night-rule dark:after:bg-nyoki-blue-grey dark:peer-checked:bg-nyoki-sage dark:peer-checked:after:bg-nyoki-night dark:peer-focus-visible:outline-nyoki-beige",
+    "bg-nyoki-navy/70 peer-checked:bg-nyoki-green after:bg-nyoki-white peer-focus-visible:outline-nyoki-navy dark:bg-nyoki-night-rule dark:after:bg-nyoki-blue-grey dark:peer-checked:bg-nyoki-green dark:peer-checked:after:bg-nyoki-night dark:peer-focus-visible:outline-nyoki-beige",
   // --- storefront. Deliberately light-only: the shop commits to one warm
   // look, where the admin is a tool that follows the viewer's theme. Radii
   // come from the theme board: cards 8px, buttons 4px, tags 3px, bands 6px.

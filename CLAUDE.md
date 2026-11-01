@@ -920,11 +920,15 @@ TypeScript, deployed to Vercel.
   (`Product.madeOnOrder`). The piece keeps a stock count, often low, of
   things quick to make, and goes on selling when it reaches 0: more is made
   once it is ordered. Any quantity can be ordered, in any colour and size.
-- The switch (`Toggle`, `src/components/admin/toggle.tsx`) is **green when
-  on**: `ui.toggle` draws the track in sage deep (5:1 on the white page, and
-  under the white knob), sage itself on the dark admin's night ground; off is
-  navy faded to 70%, still 3:1 off the page. It was navy when on, and green
-  was wanted.
+- The switch (`Toggle`, `src/components/admin/toggle.tsx`) is **a vivid
+  green when on** (`nyoki-green`, #00a846), in both themes: 3:1 off the
+  white page and under the white knob, 5:1 off the night ground. Off is navy
+  faded to 70%, still 3:1 off the page. It was navy when on, then sage deep,
+  and beside the faded navy on and off could hardly be told apart.
+- **The green is the palette's one colour not from the brand files**: an
+  emerald (hue 145), fully saturated, at the lightest shade a control can
+  take on white, worked out by a test as the red is. A control colour only,
+  never words (`DECORATIVE`), and used nowhere but the switch.
 - **Shoppers are told nothing of it**: no tag, no lead time, no "sent
   together" note, and never "Out of stock". That is what sets it apart from
   **made to order**, which keeps no stock and shows its lead time on the

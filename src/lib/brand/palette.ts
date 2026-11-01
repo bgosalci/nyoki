@@ -31,6 +31,13 @@ export const brand = {
    * weighs the same as a navy name beside it.
    */
   red: "#85302c",
+  /**
+   * A switch that is on: an emerald, fully saturated, at the lightest shade
+   * that stands 3:1 off the white page and from the white knob on it. Not
+   * from the logo - sage deep was, and beside the faded navy of a switch
+   * that is off, on and off could hardly be told apart.
+   */
+  green: "#00a846",
 } as const;
 
 export const neutral = {
@@ -75,6 +82,7 @@ export const palette: readonly PaletteEntry[] = [
   { name: "Ink", token: "nyoki-ink", hex: brand.ink, role: "text", source: "moth-svg", note: "The moth. The one text colour that reads on sage." },
   { name: "Sage deep", token: "nyoki-sage-deep", hex: brand.sageDeep, role: "text", source: "derived", note: "Sage, deepened just enough to read. Small accent headings on the page, such as Need to know." },
   { name: "Red", token: "nyoki-red", hex: brand.red, role: "text", source: "derived", note: "Sage's complement, half saturated, as dark as navy. A department's name in the header, where one should stand out." },
+  { name: "Green", token: "nyoki-green", hex: brand.green, role: "decorative", source: "derived", note: "A switch that is on, in both themes. Vivid, so on cannot be mistaken for off. Never text: 3:1 is enough for a control, not for words." },
   { name: "Beige", token: "nyoki-beige", hex: neutral.beige, role: "surface", source: "colour-palette.css", note: "Page background." },
   { name: "Accent beige", token: "nyoki-accent-beige", hex: neutral.accentBeige, role: "surface", source: "colour-palette.css", note: "Cards and panels on the beige page." },
   { name: "Soft ash", token: "nyoki-soft-ash", hex: neutral.softAsh, role: "surface", source: "colour-palette.css", note: "Image placeholders, quiet fills." },
@@ -88,7 +96,7 @@ export const palette: readonly PaletteEntry[] = [
 ];
 
 /** Colours that may decorate but never carry text. */
-export const DECORATIVE: readonly string[] = [brand.sageLight];
+export const DECORATIVE: readonly string[] = [brand.sageLight, brand.green];
 
 export interface Pairing {
   text: string;

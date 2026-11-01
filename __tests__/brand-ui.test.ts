@@ -55,12 +55,14 @@ describe("CMS class recipes", () => {
     expect(ui.checkbox).toMatch(/\baccent-nyoki-navy\b/);
   });
 
-  it("draws a switch green when on - the logo's sage, deep enough to see - and faded navy when off", () => {
+  it("draws a switch a vivid green when on, in both themes, and faded navy when off", () => {
+    // It was the logo's sage, deepened: a grey-green beside a grey-blue, and
+    // on and off could hardly be told apart.
     const on = /(?:^|\s)peer-checked:bg-(nyoki-[a-z-]+)/.exec(ui.toggle)?.[1];
     const darkOn = /\bdark:peer-checked:bg-(nyoki-[a-z-]+)/.exec(ui.toggle)?.[1];
     const darkKnobOn = /\bdark:peer-checked:after:bg-(nyoki-[a-z-]+)/.exec(ui.toggle)?.[1];
 
-    expect({ on, darkOn }).toEqual({ on: "nyoki-sage-deep", darkOn: "nyoki-sage" });
+    expect({ on, darkOn }).toEqual({ on: "nyoki-green", darkOn: "nyoki-green" });
     expect(ui.toggle).toMatch(/(?:^|\s)after:bg-nyoki-white\b/);
 
     // Switched on, the track stands 3:1 off the page and the knob off the

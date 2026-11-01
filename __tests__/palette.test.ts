@@ -91,6 +91,29 @@ describe("brand colours come from the logo files, not a guess", () => {
     expect(brand.red).toBe("#85302c");
   });
 
+  it("makes the switch's green as vivid as a green can be and still be seen as a control", () => {
+    // Fully saturated, at the lightest shade that stands 3:1 off the white
+    // page and from the white knob on it. Hue 145 is an emerald: pure green
+    // (120) reads as a warning light.
+    const fromHsl = (hue: number, saturation: number, lightness: number) => {
+      const c = (1 - Math.abs(2 * lightness - 1)) * saturation;
+      const x = c * (1 - Math.abs(((hue / 60) % 2) - 1));
+      const m = lightness - c / 2;
+      const [r, g, b] = hue < 120 ? [x, c, 0] : [0, c, x];
+      return `#${[r, g, b].map((v) => Math.round((v + m) * 255).toString(16).padStart(2, "0")).join("")}`;
+    };
+    const percents = Array.from({ length: 50 }, (_, i) => (50 - i) / 100);
+    const lightestSeen = percents.map((l) => fromHsl(145, 1, l)).find((hex) => contrastRatio(hex, neutral.white) >= AA_LARGE_TEXT);
+
+    expect(brand.green).toBe(lightestSeen);
+    expect(brand.green).toBe("#00a846");
+    expect(contrastRatio(brand.green, night.ground)).toBeGreaterThanOrEqual(AA_LARGE_TEXT);
+  });
+
+  it("never sets words in the switch's green: 3:1 is enough for a control, not for text", () => {
+    expect(DECORATIVE).toContain(brand.green);
+  });
+
   it("records where every colour came from", () => {
     for (const entry of palette) {
       expect(entry.source).toMatch(/^(logo-svg|logo-pixels|moth-svg|colour-palette\.css|theme-board|derived)$/);
