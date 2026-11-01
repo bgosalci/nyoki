@@ -8,6 +8,8 @@ export interface CategoryInput {
   parentId: string | null;
   /** The colour of its name in the shop's header, a brand token. */
   labelColour: string;
+  /** On the shop. Off, it and everything inside it are taken off. */
+  active: boolean;
 }
 
 export type CategoryField = keyof CategoryInput;
@@ -51,6 +53,8 @@ export function validateCategoryInput(form: FormData): CategoryValidation {
       description: description.length > 0 ? description : null,
       parentId: parentId.length > 0 ? parentId : null,
       labelColour,
+      // A switch posts "on", or nothing at all when it is off.
+      active: form.get("active") === "on",
     },
   };
 }

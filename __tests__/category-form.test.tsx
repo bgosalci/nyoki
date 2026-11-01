@@ -39,7 +39,7 @@ describe("CategoryForm", () => {
         action={noopAction}
         categories={categories}
         excludeId="mugs"
-        category={{ name: "Mugs", slug: "mugs", description: null, parentId: "tableware", labelColour: "nyoki-navy" }}
+        category={{ name: "Mugs", slug: "mugs", description: null, parentId: "tableware", labelColour: "nyoki-navy", active: true }}
       />,
     );
 
@@ -57,7 +57,7 @@ describe("CategoryForm", () => {
         action={noopAction}
         categories={categories}
         excludeId="mugs"
-        category={{ name: "Mugs", slug: "mugs", description: null, parentId: "tableware", labelColour: "nyoki-navy" }}
+        category={{ name: "Mugs", slug: "mugs", description: null, parentId: "tableware", labelColour: "nyoki-navy", active: true }}
       />,
     );
 
@@ -96,7 +96,7 @@ describe("CategoryForm, when a save is rejected", () => {
 });
 
 describe("CategoryForm, when a save goes through", () => {
-  const mugs = { name: "Mugs", slug: "mugs", description: null, parentId: "tableware", labelColour: "nyoki-navy" };
+  const mugs = { name: "Mugs", slug: "mugs", description: null, parentId: "tableware", labelColour: "nyoki-navy", active: true };
 
   it.each([
     ["Vases", "vases"],
@@ -121,7 +121,7 @@ describe("CategoryForm, when a save goes through", () => {
 describe("CategoryForm, as React draws it", () => {
   it("raises no warning about keys", () => {
     const errors = jest.spyOn(console, "error").mockImplementation(() => {});
-    render(<CategoryForm action={noopAction} categories={categories} category={{ name: "Mugs", slug: "mugs", description: null, parentId: "tableware", labelColour: "nyoki-navy" }} excludeId="mugs" />);
+    render(<CategoryForm action={noopAction} categories={categories} category={{ name: "Mugs", slug: "mugs", description: null, parentId: "tableware", labelColour: "nyoki-navy", active: true }} excludeId="mugs" />);
 
     expect(errors.mock.calls.filter(([message]) => String(message).includes('unique "key"'))).toEqual([]);
     errors.mockRestore();
@@ -134,7 +134,7 @@ describe("CategoryForm, the colour of its name", () => {
       <CategoryForm
         action={noopAction}
         categories={categories}
-        category={{ name: "CHRISTMAS", slug: "christmas", description: null, parentId: null, labelColour: "nyoki-ink" }}
+        category={{ name: "CHRISTMAS", slug: "christmas", description: null, parentId: null, labelColour: "nyoki-ink", active: true }}
       />,
     );
 
@@ -160,10 +160,52 @@ describe("CategoryForm, the colour of its name", () => {
       <CategoryForm
         action={noopAction}
         categories={categories}
-        category={{ name: "CHRISTMAS", slug: "christmas", description: null, parentId: null, labelColour: "nyoki-sage-deep" }}
+        category={{ name: "CHRISTMAS", slug: "christmas", description: null, parentId: null, labelColour: "nyoki-sage-deep", active: true }}
       />,
     );
 
     expect(screen.getByText("CHRISTMAS", { selector: "p" })).toHaveStyle({ color: "#637273" });
+  });
+});
+
+describe("CategoryForm, its status", () => {
+  const mugs = { name: "Mugs", slug: "mugs", description: null, parentId: "tableware", labelColour: "nyoki-navy", active: true };
+
+  it("offers it as an Active switch, on for a new category, saying what switching it off does", () => {
+    render(<CategoryForm action={noopAction} categories={categories} />);
+
+    const toggle = screen.getByRole("switch", { name: "Active" });
+    expect(toggle).toBeChecked();
+    expect(toggle).toHaveAccessibleDescription(/everything inside it/i);
+  });
+
+  it("is off for an inactive category", () => {
+    render(<CategoryForm action={noopAction} categories={categories} category={{ ...mugs, active: false }} excludeId="mugs" />);
+
+    expect(screen.getByRole("switch", { name: "Active" })).not.toBeChecked();
+  });
+
+  it("posts the switch, and shows it as saved so the next save keeps it", async () => {
+    const action = jest.fn(async (_state: unknown, _data: FormData) => ({ errors: {} }));
+    const { rerender } = render(<CategoryForm action={action} categories={categories} category={mugs} excludeId="mugs" />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("switch", { name: "Active" }));
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    expect(action.mock.calls[0][1].get("active")).toBeNull();
+
+    rerender(<CategoryForm action={action} categories={categories} category={{ ...mugs, active: false }} excludeId="mugs" />);
+    await act(async () => {});
+    expect(screen.getByRole("switch", { name: "Active" })).not.toBeChecked();
+
+    await user.click(screen.getByRole("switch", { name: "Active" }));
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    expect(action.mock.calls[1][1].get("active")).toBe("on");
+  });
+
+  it("says when an inactive category above keeps it off the shop, however its own switch is set", () => {
+    render(<CategoryForm action={noopAction} categories={categories} category={mugs} excludeId="mugs" offShopWith="Tableware" />);
+
+    expect(screen.getByRole("switch", { name: "Active" })).toHaveAccessibleDescription(/Tableware is inactive/);
   });
 });

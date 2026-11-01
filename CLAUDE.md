@@ -238,6 +238,36 @@ TypeScript, deployed to Vercel.
   name and colour. Only the header takes the colour: the footer's list and
   every page's tiles keep their own.
 
+## A category's status
+
+- **A category is active or inactive** (`Category.active`), set by the
+  Active switch on its own page - the green `Toggle`, on for a new one and
+  for every category there was when it landed. Inactive takes it off the
+  shop without deleting it, so it can go back exactly as it was.
+- **It takes everything inside it along**: an inactive department hides
+  every type in it, whatever their own switches say, and switching it back
+  on brings each back as it was set. The rule is `offShopBecause`/`onShop`
+  (`src/lib/categories/visibility.ts`), which names what keeps each one
+  off - itself, or the nearest inactive category above it.
+- **Off the shop** means: out of the header and footer (`departments()`),
+  no page (it answers not found), no tile on a page above it, and no part
+  in that page's pieces - `shopCategories()` hands the pages only the
+  categories on the shop, so a piece filed only in an inactive type no
+  longer shows under its department, nor lights that department up. A home
+  page tile or button leading to one goes to the whole shop until it is
+  back (`slugsOnShop`), keeping its photo; a piece's breadcrumb goes
+  through its first category still on the shop (`shopTrail`), or stops at
+  Shop.
+- **The pieces stay on sale.** A piece is taken off by its own status;
+  one in an inactive category is still on Everything, on its own page, and
+  under any other category it is filed in. What a piece is - a card, a
+  bookmark, clothing - is still told by its categories, inactive or not.
+- The categories list marks an inactive one "Inactive" and says of each
+  inside it which inactive category keeps it off ("Off the shop: Christmas
+  Cards is inactive"); its own page says so under its switch. The admin
+  everywhere else - filters, choosers, the home page's editor - still
+  offers every category.
+
 ## Category order
 
 - **The categories list is dragged into the shop's order**, as the products

@@ -294,6 +294,11 @@ model Category {
   /// text on the page's beige (src/lib/categories/label-colour.ts).
   labelColour String @default("nyoki-navy") @map("label_colour")
 
+  /// Whether it is on the shop. An inactive category takes everything inside
+  /// it off the shop too - the header, the footer, tiles and pages - while
+  /// the pieces in it stay on sale. See src/lib/categories/visibility.ts.
+  active Boolean @default(true)
+
   // Self-relation for sub-categories.
   parentId String?    @map("parent_id")
   parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)

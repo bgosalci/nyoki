@@ -9,6 +9,7 @@ const row = (id: string, name: string, parentId: string | null = null): Category
   name,
   slug: id,
   productCount: 1,
+  active: true,
 });
 
 // As the page sends them, in the shop's order: Cards (Birthday and

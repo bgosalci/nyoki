@@ -22,6 +22,7 @@ import { PINNED_BLOCK_CLASS, Th } from "@/components/admin/th";
 import { ui } from "@/lib/brand/ui";
 import { visibleBranches, type VisibleBranch } from "@/lib/categories/collapse";
 import { categoryLanding } from "@/lib/categories/ordering";
+import { offShopBecause } from "@/lib/categories/visibility";
 import { flattenTree } from "@/lib/categories/tree";
 import { moveInList, type Place } from "@/lib/products/ordering";
 
@@ -36,6 +37,8 @@ export interface CategoryTableRow {
   name: string;
   slug: string;
   productCount: number;
+  /** Switched on; it is on the shop only if every category above it is too. */
+  active: boolean;
 }
 
 /**
@@ -142,6 +145,7 @@ export function CategoryTable({
   }, [arranged, lifted]);
 
   const branches = useMemo(() => flattenTree(arranged), [arranged]);
+  const offShop = useMemo(() => offShopBecause(arranged), [arranged]);
 
   const parents = useMemo(
     () => visibleBranches(branches, new Set()).filter((branch) => branch.hasChildren).map((branch) => branch.row.id),
@@ -305,6 +309,7 @@ export function CategoryTable({
           <tbody>
             <CategoryRows
               shownWith={shownWith}
+              offShop={offShop}
               collapsed={collapsed}
               lifted={lifted?.id ?? null}
               onToggle={toggle}
@@ -331,12 +336,15 @@ export function CategoryTable({
  */
 function CategoryRows({
   shownWith,
+  offShop,
   collapsed,
   lifted,
   onToggle,
   onHandleKey,
 }: {
   shownWith: (also: UniqueIdentifier | null) => VisibleBranch<CategoryTableRow>[];
+  /** What keeps each category off the shop, by id: itself, or an inactive category above it. */
+  offShop: ReadonlyMap<string, CategoryTableRow>;
   collapsed: ReadonlySet<string>;
   /** The category picked up from the keyboard. */
   lifted: string | null;
@@ -353,6 +361,7 @@ function CategoryRows({
         const shut = collapsed.has(row.id);
         // Shut, or folded for the length of its own drag.
         const folded = hasChildren && (shut || dragging === row.id);
+        const offBecause = offShop.get(row.id);
 
         return (
           <SortableRow
@@ -384,6 +393,12 @@ function CategoryRows({
                 <Link href={`/admin/categories/${row.id}`} className="font-medium underline-offset-4 hover:underline">
                   {row.name}
                 </Link>
+
+                {offBecause?.id === row.id ? (
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs ${ui.badgeQuiet}`}>Inactive</span>
+                ) : offBecause ? (
+                  <span className={`text-xs ${ui.mutedOnPage}`}>Off the shop: {offBecause.name} is inactive</span>
+                ) : null}
 
                 {folded ? <span className={`text-xs ${ui.mutedOnPage}`}>{childCount} hidden</span> : null}
               </span>

@@ -46,10 +46,10 @@ describe("the shop's order", () => {
 describe("the categories' order", () => {
   it("lists the departments, and the types in each, in the order set by dragging them in the admin", async () => {
     findCategories.mockResolvedValue([
-      { id: "cards", slug: "cards", name: "Cards", labelColour: "nyoki-navy", parentId: null },
-      { id: "clothing", slug: "clothing", name: "Clothing", labelColour: "nyoki-navy", parentId: null },
-      { id: "valentine", slug: "valentine", name: "Valentine", labelColour: "nyoki-navy", parentId: "cards" },
-      { id: "birthday", slug: "birthday", name: "Birthday", labelColour: "nyoki-navy", parentId: "cards" },
+      { id: "cards", slug: "cards", name: "Cards", labelColour: "nyoki-navy", parentId: null, active: true },
+      { id: "clothing", slug: "clothing", name: "Clothing", labelColour: "nyoki-navy", parentId: null, active: true },
+      { id: "valentine", slug: "valentine", name: "Valentine", labelColour: "nyoki-navy", parentId: "cards", active: true },
+      { id: "birthday", slug: "birthday", name: "Birthday", labelColour: "nyoki-navy", parentId: "cards", active: true },
     ]);
     findLinks.mockResolvedValue([{ categoryId: "birthday" }, { categoryId: "valentine" }, { categoryId: "clothing" }]);
 
@@ -57,7 +57,7 @@ describe("the categories' order", () => {
 
     expect(findCategories).toHaveBeenCalledWith({
       orderBy: CATEGORY_ORDER,
-      select: { id: true, slug: true, name: true, labelColour: true, parentId: true },
+      select: { id: true, slug: true, name: true, labelColour: true, parentId: true, active: true },
     });
     expect(groups.map((group) => [group.slug, group.children.map((child) => child.slug)])).toEqual([
       ["cards", ["valentine", "birthday"]],
@@ -67,10 +67,10 @@ describe("the categories' order", () => {
 
   it("shows only the departments and types with a piece on the shop in them", async () => {
     findCategories.mockResolvedValue([
-      { id: "cards", slug: "cards", name: "Cards", labelColour: "nyoki-navy", parentId: null },
-      { id: "easter", slug: "easter", name: "Easter", labelColour: "nyoki-navy", parentId: "cards" },
-      { id: "birthday", slug: "birthday", name: "Birthday", labelColour: "nyoki-navy", parentId: "cards" },
-      { id: "tableware", slug: "tableware", name: "Tableware", labelColour: "nyoki-navy", parentId: null },
+      { id: "cards", slug: "cards", name: "Cards", labelColour: "nyoki-navy", parentId: null, active: true },
+      { id: "easter", slug: "easter", name: "Easter", labelColour: "nyoki-navy", parentId: "cards", active: true },
+      { id: "birthday", slug: "birthday", name: "Birthday", labelColour: "nyoki-navy", parentId: "cards", active: true },
+      { id: "tableware", slug: "tableware", name: "Tableware", labelColour: "nyoki-navy", parentId: null, active: true },
     ]);
     findLinks.mockResolvedValue([{ categoryId: "birthday" }]);
 
@@ -89,9 +89,9 @@ describe("the categories' order", () => {
 
   it("takes the first few types of each in that order, where only a few are shown", async () => {
     findCategories.mockResolvedValue([
-      { id: "cards", slug: "cards", name: "Cards", labelColour: "nyoki-navy", parentId: null },
-      { id: "easter", slug: "easter", name: "Easter", labelColour: "nyoki-navy", parentId: "cards" },
-      { id: "birthday", slug: "birthday", name: "Birthday", labelColour: "nyoki-navy", parentId: "cards" },
+      { id: "cards", slug: "cards", name: "Cards", labelColour: "nyoki-navy", parentId: null, active: true },
+      { id: "easter", slug: "easter", name: "Easter", labelColour: "nyoki-navy", parentId: "cards", active: true },
+      { id: "birthday", slug: "birthday", name: "Birthday", labelColour: "nyoki-navy", parentId: "cards", active: true },
     ]);
     findLinks.mockResolvedValue([{ categoryId: "easter" }, { categoryId: "birthday" }]);
 
@@ -104,5 +104,39 @@ describe("the categories' order", () => {
     await shopCategories();
 
     expect(findCategories).toHaveBeenCalledWith(expect.objectContaining({ orderBy: CATEGORY_ORDER }));
+  });
+});
+
+describe("a category's status", () => {
+  const tree = [
+    { id: "cards", slug: "cards", name: "Cards", labelColour: "nyoki-navy", parentId: null, description: null, active: true },
+    { id: "christmas", slug: "christmas", name: "Christmas", labelColour: "nyoki-navy", parentId: "cards", description: null, active: false },
+    { id: "packs", slug: "christmas-packs", name: "Christmas Packs", labelColour: "nyoki-navy", parentId: "christmas", description: null, active: true },
+    { id: "birthday", slug: "birthday", name: "Birthday", labelColour: "nyoki-navy", parentId: "cards", description: null, active: true },
+  ];
+
+  it("leaves an inactive category, and everything inside it, out of the header and footer, pieces or not", async () => {
+    findCategories.mockResolvedValue(tree);
+    findLinks.mockResolvedValue([{ categoryId: "christmas" }, { categoryId: "packs" }, { categoryId: "birthday" }]);
+
+    const groups = await departments();
+
+    expect(groups.map((group) => [group.slug, group.children.map((child) => child.slug)])).toEqual([["cards", ["birthday"]]]);
+  });
+
+  it("does not light a department up for pieces filed only in an inactive type beneath it", async () => {
+    findCategories.mockResolvedValue(tree);
+    findLinks.mockResolvedValue([{ categoryId: "packs" }]);
+
+    expect(await departments()).toEqual([]);
+  });
+
+  it("gives the shop's pages only the categories on the shop, so an inactive one has no page and no tile", async () => {
+    findCategories.mockResolvedValue(tree);
+
+    const shown = await shopCategories();
+
+    expect(findCategories).toHaveBeenCalledWith(expect.objectContaining({ select: expect.objectContaining({ active: true }) }));
+    expect(shown.map((category) => category.slug)).toEqual(["cards", "birthday"]);
   });
 });

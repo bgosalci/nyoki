@@ -8,6 +8,7 @@ import { EditCategoryForm } from "@/components/admin/edit-category-form";
 import { requireAdmin } from "@/lib/auth/dal";
 import { ui } from "@/lib/brand/ui";
 import type { CategoryInput } from "@/lib/categories/validate";
+import { offShopBecause } from "@/lib/categories/visibility";
 import { db } from "@/lib/db";
 import { postageCategories } from "@/lib/delivery/store";
 import { usualFor } from "@/lib/delivery/usual";
@@ -21,7 +22,7 @@ export default async function EditCategoryPage({ params }: { params: Promise<{ i
 
   const [category, categories, postage, live] = await Promise.all([
     db.category.findUnique({ where: { id }, include: { costLines: { orderBy: { position: "asc" } } } }),
-    db.category.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, parentId: true } }),
+    db.category.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, parentId: true, active: true } }),
     postageCategories(),
     db.product.findMany({ where: { status: "ACTIVE" }, select: { weightGrams: true, categories: { select: { categoryId: true } } } }),
   ]);
@@ -38,7 +39,11 @@ export default async function EditCategoryPage({ params }: { params: Promise<{ i
     description: category.description,
     parentId: category.parentId,
     labelColour: category.labelColour,
+    active: category.active,
   };
+
+  // An inactive category above keeps this one off the shop whatever its own switch says.
+  const offShopWith = category.parentId ? offShopBecause(categories).get(category.parentId)?.name : undefined;
 
   return (
     <>
@@ -47,7 +52,7 @@ export default async function EditCategoryPage({ params }: { params: Promise<{ i
         <h1 className="text-xl font-semibold tracking-tight">{category.name}</h1>
       </div>
       <div className="mt-6">
-        <EditCategoryForm id={category.id} category={initial} categories={categories} />
+        <EditCategoryForm id={category.id} category={initial} categories={categories} offShopWith={offShopWith} />
       </div>
       <div className={`mt-12 border-t pt-8 ${ui.ruleOnPage}`}>
         <CategoryPostageForm

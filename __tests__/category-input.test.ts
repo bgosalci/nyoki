@@ -15,8 +15,13 @@ describe("validateCategoryInput", () => {
 
     expect(result).toEqual({
       ok: true,
-      data: { name: "Mugs", slug: "mugs", description: null, parentId: null, labelColour: "nyoki-navy" },
+      data: { name: "Mugs", slug: "mugs", description: null, parentId: null, labelColour: "nyoki-navy", active: false },
     });
+  });
+
+  it("reads its status from the Active switch: on when ticked, off when left off", () => {
+    expect(validateCategoryInput(form({ active: "on" }))).toMatchObject({ ok: true, data: { active: true } });
+    expect(validateCategoryInput(form())).toMatchObject({ ok: true, data: { active: false } });
   });
 
   it("derives the slug from the name unless one is given", () => {

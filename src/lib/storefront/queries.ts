@@ -1,4 +1,5 @@
 import { CATEGORY_ORDER } from "@/lib/categories/ordering";
+import { onShop } from "@/lib/categories/visibility";
 import { db } from "@/lib/db";
 import { ALSO_LIKE_LIMIT } from "@/lib/products/also-like";
 import { toCardProduct, type CardProduct, type CardSource } from "@/lib/storefront/card";
@@ -42,15 +43,16 @@ export async function activeProducts(where = {}, take?: number) {
 /**
  * The departments and the types in each, in the order set by dragging them
  * on the admin's categories page: the header's menu and the footer read
- * this. Only those with a piece on the shop in them, or anywhere beneath
- * them, are listed (`stockedDepartments`). `take` caps the types per
- * department, first first.
+ * this. Only those on the shop (`onShop`) with a piece on the shop in them,
+ * or anywhere beneath them, are listed (`stockedDepartments`); a piece
+ * filed only in an inactive type fills nothing above it. `take` caps the
+ * types per department, first first.
  */
 export async function departments(take?: number) {
   const [categories, links] = await Promise.all([
     db.category.findMany({
       orderBy: CATEGORY_ORDER,
-      select: { id: true, slug: true, name: true, labelColour: true, parentId: true },
+      select: { id: true, slug: true, name: true, labelColour: true, parentId: true, active: true },
     }),
     // Which categories a piece on the shop is filed in directly; the tree
     // above them is filled in from `categories`, however deep it goes.
@@ -61,15 +63,20 @@ export async function departments(take?: number) {
     }),
   ]);
 
-  return stockedDepartments(categories, links.map((link) => link.categoryId), take);
+  return stockedDepartments(onShop(categories), links.map((link) => link.categoryId), take);
 }
 
-/** Every category in that same order, so the tiles a page builds from them follow it. */
+/**
+ * Every category on the shop in that same order, so the tiles a page builds
+ * from them follow it. An inactive one, and everything inside it, is not
+ * among them: it has no page, no tile, and no part in a page above it.
+ */
 export async function shopCategories() {
-  return db.category.findMany({
+  const categories = await db.category.findMany({
     orderBy: CATEGORY_ORDER,
-    select: { id: true, slug: true, name: true, parentId: true, description: true },
+    select: { id: true, slug: true, name: true, parentId: true, description: true, active: true },
   });
+  return onShop(categories);
 }
 
 /**

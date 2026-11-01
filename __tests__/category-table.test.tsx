@@ -4,10 +4,10 @@ import userEvent from "@testing-library/user-event";
 import { CategoryTable } from "@/components/admin/category-table";
 
 const categories = [
-  { id: "cards", parentId: null, name: "Cards", slug: "cards", productCount: 102 },
-  { id: "birthday", parentId: "cards", name: "Birthday Card", slug: "birthday-card", productCount: 20 },
-  { id: "christmas", parentId: "cards", name: "Christmas Cards", slug: "christmas-cards", productCount: 30 },
-  { id: "clothes", parentId: null, name: "Clothes", slug: "clothes", productCount: 73 },
+  { id: "cards", parentId: null, name: "Cards", slug: "cards", productCount: 102, active: true },
+  { id: "birthday", parentId: "cards", name: "Birthday Card", slug: "birthday-card", productCount: 20, active: true },
+  { id: "christmas", parentId: "cards", name: "Christmas Cards", slug: "christmas-cards", productCount: 30, active: true },
+  { id: "clothes", parentId: null, name: "Clothes", slug: "clothes", productCount: 73, active: true },
 ];
 
 function setup() {
@@ -85,5 +85,24 @@ describe("CategoryTable", () => {
     const again = render(<CategoryTable categories={categories} move={jest.fn(async () => ({ ok: true }))} />);
 
     expect(again.queryByRole("link", { name: "Birthday Card" })).not.toBeInTheDocument();
+  });
+});
+
+describe("CategoryTable, each category's status", () => {
+  const withStatus = [
+    { id: "cards", parentId: null, name: "Cards", slug: "cards", productCount: 102, active: true },
+    { id: "christmas", parentId: "cards", name: "Christmas Cards", slug: "christmas-cards", productCount: 30, active: false },
+    { id: "packs", parentId: "christmas", name: "Christmas Packs", slug: "christmas-packs", productCount: 4, active: true },
+    { id: "birthday", parentId: "cards", name: "Birthday Card", slug: "birthday-card", productCount: 20, active: true },
+  ];
+  const row = (name: string) => screen.getByRole("link", { name }).closest("tr")!;
+
+  it("marks an inactive category, and says what keeps the ones inside it off the shop", () => {
+    render(<CategoryTable categories={withStatus} move={jest.fn(async () => ({ ok: true }))} />);
+
+    expect(row("Christmas Cards")).toHaveTextContent("Inactive");
+    expect(row("Christmas Packs")).toHaveTextContent("Off the shop: Christmas Cards is inactive");
+    expect(row("Cards")).not.toHaveTextContent(/inactive|off the shop/i);
+    expect(row("Birthday Card")).not.toHaveTextContent(/inactive|off the shop/i);
   });
 });

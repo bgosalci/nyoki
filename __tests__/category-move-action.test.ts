@@ -130,6 +130,17 @@ describe("a category given another parent", () => {
     expect(written().acc).toEqual(expect.objectContaining({ labelColour: "nyoki-sage-deep" }));
     expect(revalidatePath).toHaveBeenCalledWith("/", "layout");
   });
+
+  it("saves its status, and redraws the whole shop, every page of which leaves an inactive one out", async () => {
+    findUnique.mockResolvedValue({ parentId: null });
+
+    await updateCategory("acc", { errors: {} }, form({ name: "Accessories" }));
+    expect(written().acc).toEqual(expect.objectContaining({ active: false }));
+
+    await updateCategory("acc", { errors: {} }, form({ name: "Accessories", active: "on" }));
+    expect(written().acc).toEqual(expect.objectContaining({ active: true }));
+    expect(revalidatePath).toHaveBeenCalledWith("/", "layout");
+  });
 });
 
 describe("deleteCategory", () => {

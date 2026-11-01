@@ -13,10 +13,12 @@ export function EditCategoryForm({
   id,
   category,
   categories,
+  offShopWith,
 }: {
   id: string;
   category: CategoryInput;
   categories: CategoryOption[];
+  offShopWith?: string;
 }) {
   const [confirming, setConfirming] = useState(false);
   const deleteForm = useRef<HTMLFormElement>(null);
@@ -28,6 +30,7 @@ export function EditCategoryForm({
         category={category}
         categories={categories}
         excludeId={id}
+        offShopWith={offShopWith}
         submitLabel="Save changes"
       />
 

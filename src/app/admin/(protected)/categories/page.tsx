@@ -56,6 +56,7 @@ export default async function CategoriesPage() {
         name: c.name,
         slug: c.slug,
         productCount: c._count.products,
+        active: c.active,
       }))}
       move={moveCategory}
     />

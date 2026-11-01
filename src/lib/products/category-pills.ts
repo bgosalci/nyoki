@@ -15,11 +15,11 @@ export interface PillRow {
 }
 
 /** From the top-level group down to the selected category; empty if nothing usable is selected. */
-export function chainTo(categories: readonly PillCategory[], slug: string | null): PillCategory[] {
+export function chainTo<T extends PillCategory>(categories: readonly T[], slug: string | null): T[] {
   if (!slug) return [];
   const byId = new Map(categories.map((c) => [c.id, c]));
   let current = categories.find((c) => c.slug === slug) ?? null;
-  const chain: PillCategory[] = [];
+  const chain: T[] = [];
   const seen = new Set<string>();
 
   while (current && !seen.has(current.id)) {

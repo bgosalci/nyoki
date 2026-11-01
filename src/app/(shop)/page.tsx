@@ -10,6 +10,7 @@ import { db } from "@/lib/db";
 import { bannerStyle } from "@/lib/home/colours";
 import { hrefFor } from "@/lib/home/links";
 import { loadHome } from "@/lib/home/load";
+import { slugsOnShop } from "@/lib/categories/visibility";
 import { shownTiles } from "@/lib/home/tiles";
 import { activeProducts, savedProductIds, tileProducts, toCards } from "@/lib/storefront/queries";
 import { leadPhotos } from "@/lib/storefront/tiles";
@@ -21,11 +22,13 @@ export default async function HomePage() {
 
   const [{ page, tiles }, categories, savedIds] = await Promise.all([
     loadHome(),
-    db.category.findMany({ select: { id: true, slug: true, name: true, parentId: true } }),
+    db.category.findMany({ select: { id: true, slug: true, name: true, parentId: true, active: true } }),
     savedProductIds(shopper?.id ?? null),
   ]);
 
-  const categorySlugs = new Map(categories.map((category) => [category.id, category.slug]));
+  // A tile or the button leading to a category off the shop goes to the
+  // whole shop until it is back; the tile keeps its photo meanwhile.
+  const categorySlugs = slugsOnShop(categories);
 
   // Only a tile with no photo of its own needs its category's first piece.
   const lending = tiles.flatMap((tile) => (tile.link.kind === "category" && !tile.photoUrl ? [tile.link.categoryId] : []));

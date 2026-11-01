@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { Field, inputClass } from "@/components/admin/field";
 import { SwatchField } from "@/components/admin/swatch-field";
+import { Toggle } from "@/components/admin/toggle";
 import { DEFAULT_LABEL_COLOUR, LABEL_COLOURS, labelColourHex } from "@/lib/categories/label-colour";
 import { descendantIds } from "@/lib/categories/validate";
 import type { CategoryErrors, CategoryInput } from "@/lib/categories/validate";
@@ -33,6 +34,7 @@ export function CategoryForm({
   categories,
   category,
   excludeId,
+  offShopWith,
   initialState = EMPTY,
   submitLabel = "Save category",
 }: {
@@ -41,6 +43,8 @@ export function CategoryForm({
   category?: CategoryInput;
   /** When editing: the category itself, so it and its descendants are not offered as parents. */
   excludeId?: string;
+  /** The inactive category above this one, which keeps it off the shop whatever its own switch says. */
+  offShopWith?: string;
   initialState?: CategoryFormState;
   submitLabel?: string;
 }) {
@@ -105,6 +109,17 @@ export function CategoryForm({
           </select>
         )}
       </Field>
+
+      <Toggle
+        label="Active"
+        name="active"
+        defaultChecked={category?.active ?? true}
+        hint={
+          offShopWith
+            ? `Off the shop while ${offShopWith} is inactive, since this sits inside it.`
+            : "On the shop. Switched off, it and everything inside it leave the header, the footer, the tiles and their pages; the pieces in it stay on sale."
+        }
+      />
 
       <div className="flex flex-col gap-3">
         <SwatchField

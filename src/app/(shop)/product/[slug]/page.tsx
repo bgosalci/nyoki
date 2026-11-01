@@ -11,7 +11,7 @@ import { FavouriteButton } from "@/components/shop/favourite-button";
 import { currentCustomer } from "@/lib/account/dal";
 import { formatPence } from "@/lib/money";
 import { effectivePricePence } from "@/lib/pricing";
-import { chainTo } from "@/lib/products/category-pills";
+import { shopTrail } from "@/lib/categories/visibility";
 import { neverRunsOut } from "@/lib/products/stock-limit";
 import { addToBasket } from "@/app/(shop)/basket/actions";
 import { BuyBar } from "@/components/shop/buy-bar";
@@ -70,7 +70,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
   const categoryIds = product.categories.map((link) => link.categoryId);
   const [categories, chosen, automatic] = await Promise.all([
-    db.category.findMany({ select: { id: true, slug: true, name: true, parentId: true } }),
+    db.category.findMany({ select: { id: true, slug: true, name: true, parentId: true, active: true } }),
     // Njomza's own choices, in her order; one taken off the shop is skipped.
     db.alsoLike.findMany({
       where: { productId: product.id, piece: { status: "ACTIVE" } },
@@ -98,8 +98,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   // before are out of sight in the admin, so they stay off the page too.
   const facts = productFacts({ ...product, dimensions: clothes ? null : product.dimensions });
 
-  const own = categories.find((c) => c.id === categoryIds[0]);
-  const trail = own ? chainTo(categories, own.slug) : [];
+  // Through its first category on the shop: one taken off has no page to lead to.
+  const trail = shopTrail(categories, categoryIds);
   const wasPence = price.sale ? product.pricePence : product.compareAtPence;
 
   const [mainImage, ...moreImages] = product.images;
