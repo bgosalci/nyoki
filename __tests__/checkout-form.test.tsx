@@ -150,6 +150,17 @@ describe("checkout", () => {
     });
   });
 
+  describe("what continuing agrees to", () => {
+    it("says so before the button, with the way to each policy it means", () => {
+      setup();
+
+      const line = screen.getByText(/by continuing, you agree to our/i);
+      expect(within(line).getByRole("link", { name: "terms and conditions" })).toHaveAttribute("href", "/policies/terms");
+      expect(within(line).getByRole("link", { name: "returns policy" })).toHaveAttribute("href", "/policies/returns");
+      expect(within(line).getByRole("link", { name: "privacy notice" })).toHaveAttribute("href", "/policies/privacy");
+    });
+  });
+
   describe("a promo code", () => {
     it("takes a code off the total, and sends it with the order", async () => {
       const { user, props } = setup();

@@ -4,14 +4,13 @@ import { cookies } from "next/headers";
 
 import {
   CUSTOMER_SESSION_COOKIE,
+  CUSTOMER_SESSION_DAYS,
   createCustomerToken,
   verifyCustomerToken,
   type CustomerSession,
 } from "@/lib/account/session";
 
-// Longer than the CMS's week: a shopper comes back occasionally, and being
-// signed out between visits is the friction that stops them.
-const SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
+const SESSION_DURATION_MS = CUSTOMER_SESSION_DAYS * 24 * 60 * 60 * 1000;
 
 /**
  * Read the signing secret, failing loudly if it is missing.

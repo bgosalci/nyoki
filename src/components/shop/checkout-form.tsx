@@ -364,6 +364,22 @@ export function CheckoutForm({
           </p>
         ) : null}
 
+        <p className={`text-sm leading-relaxed ${ui.shopMuted}`}>
+          By continuing, you agree to our{" "}
+          <Link href="/policies/terms" className="underline underline-offset-4">
+            terms and conditions
+          </Link>{" "}
+          and{" "}
+          <Link href="/policies/returns" className="underline underline-offset-4">
+            returns policy
+          </Link>
+          . Our{" "}
+          <Link href="/policies/privacy" className="underline underline-offset-4">
+            privacy notice
+          </Link>{" "}
+          says how we use your details.
+        </p>
+
         <div className="hidden flex-col gap-2 md:flex">
           <button
             type="submit"

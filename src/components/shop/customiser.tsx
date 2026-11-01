@@ -429,6 +429,7 @@ function MessagePanel() {
               />
             )}
           </ShopField>
+          <MadeForYouNote first="We print exactly what you type, so please check the spelling." />
         </Reveal>
       ) : null}
     </Panel>
@@ -477,6 +478,7 @@ function PersonalisationPanel() {
           {personalisation.fields.map((field) => (
             <PersonalisationInput key={field.id} field={field} />
           ))}
+          <MadeForYouNote first="We make it exactly as you tell us, so please check the spelling." />
         </div>
       ) : null}
     </Panel>
@@ -827,6 +829,23 @@ function Price({ pricePence, wasPence, saving = null }: { pricePence: number; wa
 }
 
 /** What a choice opens, beneath a rule. */
+/**
+ * Said beside the words, before the order, as the law asks: a personalised
+ * piece has no right to cancel for a change of mind, and the shopper must
+ * be told so before buying, not only in the returns policy.
+ */
+function MadeForYouNote({ first }: { first: string }) {
+  return (
+    <p className={`mt-3 text-sm leading-relaxed ${ui.shopMuted}`}>
+      {first} It&apos;s made just for you, so it can&apos;t be returned unless something is wrong with it (see our{" "}
+      <Link href="/policies/returns#personalised" className="underline underline-offset-4">
+        returns policy
+      </Link>
+      ).
+    </p>
+  );
+}
+
 function Reveal({ children }: { children: React.ReactNode }) {
   return <div className={`mt-5 flex flex-col gap-4 border-t pt-5 ${ui.shopRule}`}>{children}</div>;
 }

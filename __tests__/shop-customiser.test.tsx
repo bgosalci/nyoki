@@ -160,6 +160,19 @@ describe("the customiser", () => {
 
       expect(screen.queryByLabelText("Your message")).not.toBeInTheDocument();
     });
+
+    it("says, with the box, that the words are printed as typed and the card cannot then be returned", async () => {
+      // The law asks for this before the order: a personalised piece has no
+      // right to cancel, and the shopper must be told so.
+      const { user } = setup();
+
+      expect(within(panel(/message inside/i)).queryByText(/made just for you/i)).not.toBeInTheDocument();
+      await user.click(screen.getByRole("radio", { name: /add a printed message/i }));
+
+      const note = within(panel(/message inside/i)).getByText(/we print exactly what you type/i);
+      expect(note).toHaveTextContent(/made just for you, so it can't be returned unless something is wrong with it/i);
+      expect(within(note).getByRole("link", { name: "returns policy" })).toHaveAttribute("href", "/policies/returns#personalised");
+    });
   });
 
   describe("optional personalisation", () => {
@@ -181,6 +194,15 @@ describe("the customiser", () => {
       const signs = within(screen.getByLabelText("Zodiac sign")).getAllByRole("option").map((option) => option.textContent);
       expect(signs).toEqual(["Choose…", "♈ Aries", "♌ Leo"]);
     });
+
+    it("says it cannot then be returned only once switched on", async () => {
+      const { user } = setup();
+
+      expect(within(panel(/personalisation/i)).queryByText(/made just for you/i)).not.toBeInTheDocument();
+      await user.click(screen.getByRole("switch", { name: /personalise it/i }));
+
+      expect(within(panel(/personalisation/i)).getByText(/made just for you/i)).toBeInTheDocument();
+    });
   });
 
   describe("required personalisation", () => {
@@ -192,6 +214,12 @@ describe("the customiser", () => {
       expect(screen.queryByRole("switch")).not.toBeInTheDocument();
       expect(screen.getByLabelText("Name")).toBeInTheDocument();
       expect(within(panel(/personalisation/i)).getByText("Required")).toBeInTheDocument();
+    });
+
+    it("says straight away that it cannot be returned", () => {
+      setup(required);
+
+      expect(within(panel(/personalisation/i)).getByText(/made just for you/i)).toBeInTheDocument();
     });
 
     it("says what it adds, when it adds anything", () => {

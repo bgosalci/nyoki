@@ -99,6 +99,16 @@ describe("parseCheckout", () => {
     expect(!result.ok && result.errors.giftNote).toBe(`Keep the note to ${GIFT_NOTE_MAX} characters.`);
   });
 
+  it("refuses the Channel Islands, which the shop cannot send to yet", () => {
+    // Outside the UK for VAT and customs, so each parcel needs a customs form
+    // and its price no VAT. The Isle of Man is inside both, and goes as the UK does.
+    for (const postcode of ["JE2 3AB", "gy1 1aa"]) {
+      const result = parseCheckout(form({ ...guest, postcode }), { shopperEmail: null });
+      expect(!result.ok && result.errors.postcode).toBe("We can't send to the Channel Islands yet, sorry.");
+    }
+    expect(parseCheckout(form({ ...guest, postcode: "IM1 1AA" }), { shopperEmail: null }).ok).toBe(true);
+  });
+
   it("reads a typed promo code as the shop stores codes", () => {
     const result = parseCheckout(form({ ...guest, code: " winter 10 " }), { shopperEmail: null });
 

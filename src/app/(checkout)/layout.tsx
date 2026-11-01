@@ -3,6 +3,8 @@ import Link from "next/link";
 
 import { LOGO } from "@/lib/brand/logo";
 import { ui } from "@/lib/brand/ui";
+import { BUSINESS, legalLine } from "@/lib/policies/business";
+import { POLICIES, policyHref } from "@/lib/policies/pages";
 
 /**
  * Checkout's own chrome: the way back to the basket, the logo, and nothing
@@ -35,11 +37,24 @@ export default function CheckoutLayout({ children }: { children: React.ReactNode
 
       <main className="flex-1">{children}</main>
 
-      <footer className={`mt-16 border-t px-4 py-6 text-center text-xs sm:px-6 ${ui.shopRule} ${ui.shopMuted}`}>
-        © {new Date().getFullYear()} Nyoki Handmade ·{" "}
-        <Link href="/contact" className="underline underline-offset-4">
-          Contact us
-        </Link>
+      {/* The policies stay a link away, as the law asks of the page an order is placed on. */}
+      <footer className={`mt-16 flex flex-col gap-2 border-t px-4 py-6 text-center text-xs sm:px-6 ${ui.shopRule} ${ui.shopMuted}`}>
+        <ul className="flex flex-wrap justify-center gap-x-4 gap-y-1">
+          <li>© {new Date().getFullYear()} Nyoki Handmade</li>
+          <li>
+            <Link href="/contact" className="underline underline-offset-4">
+              Contact us
+            </Link>
+          </li>
+          {POLICIES.map((policy) => (
+            <li key={policy.slug}>
+              <Link href={policyHref(policy)} className="underline underline-offset-4">
+                {policy.short}
+              </Link>
+            </li>
+          ))}
+        </ul>
+        <p>{legalLine(BUSINESS)}</p>
       </footer>
     </div>
   );

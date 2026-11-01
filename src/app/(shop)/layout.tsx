@@ -1,8 +1,7 @@
-import Link from "next/link";
-
 import { BasketAddedProvider } from "@/components/shop/basket-added";
 import { DepartmentNav } from "@/components/shop/department-nav";
 import { HeaderIcons } from "@/components/shop/header-icons";
+import { ShopFooter } from "@/components/shop/shop-footer";
 import { ShopLogo } from "@/components/shop/shop-logo";
 import { TopNav } from "@/components/shop/top-nav";
 import { currentCustomer } from "@/lib/account/dal";
@@ -53,46 +52,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
 
         <main className="flex-1">{children}</main>
 
-        <footer className={`mt-20 border-t ${ui.shopRule} ${ui.shopSurface}`}>
-          <div className="mx-auto grid max-w-shop gap-10 px-4 py-14 sm:px-6 md:grid-cols-3">
-            <div className="flex flex-col gap-3">
-              <p className={`text-sm font-medium tracking-[0.12em] uppercase ${ui.shopHeading}`}>Nyoki Handmade</p>
-              <p className={`max-w-prose text-sm leading-relaxed ${ui.shopMuted}`}>
-                Where tradition meets modern, the kind way. Handmade in the UK from UK-sourced materials,
-                with biodegradable packaging and water-based, solvent-free adhesives.
-              </p>
-              <Link href="/about" className={`text-sm hover:underline hover:underline-offset-4 ${ui.shopMuted}`}>
-                More about us
-              </Link>
-              <Link href="/contact" className={`text-sm hover:underline hover:underline-offset-4 ${ui.shopMuted}`}>
-                Contact us
-              </Link>
-            </div>
-            <div className="flex flex-col gap-3">
-              <p className={`text-sm font-medium tracking-[0.12em] uppercase ${ui.shopHeading}`}>Shop</p>
-              <ul className="flex flex-col gap-2">
-                {groups.map((group) => (
-                  <li key={group.slug}>
-                    <Link href={`/shop/${group.slug}`} className={`text-sm hover:underline hover:underline-offset-4 ${ui.shopMuted}`}>
-                      {group.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="flex flex-col gap-3">
-              <p className={`text-sm font-medium tracking-[0.12em] uppercase ${ui.shopHeading}`}>Our promise</p>
-              <ul className={`flex flex-col gap-2 text-sm ${ui.shopMuted}`}>
-                <li>Every piece touched by human hands</li>
-                <li>Eco-friendly, organic and recyclable materials</li>
-                <li>Materials sourced in the UK</li>
-              </ul>
-            </div>
-          </div>
-          <p className={`border-t px-4 py-5 text-center text-xs sm:px-6 ${ui.shopRule} ${ui.shopMuted}`}>
-            © {new Date().getFullYear()} Nyoki Handmade
-          </p>
-        </footer>
+        <ShopFooter groups={groups} />
       </div>
     </BasketAddedProvider>
   );

@@ -1035,6 +1035,56 @@ TypeScript, deployed to Vercel.
   order page says it, so the postage bought is the postage charged for. The
   basket says delivery is "from" the cheapest option for its parcel.
 
+## Policies
+
+- **Five policies under `/policies`**: Delivery, Returns and refunds, Terms
+  and conditions, Privacy notice, Cookies, and an index. One list,
+  `POLICIES` (`src/lib/policies/pages.ts`), names them for the footer's
+  Help column, checkout's footer and each page's "other policies"; each page
+  is a `PolicyPage`. Change `POLICIES_UPDATED` with the words.
+- Researched against NOTHS, Amazon and small UK makers on 1 November 2026
+  and kept to UK law as it then stood, but to what a small maker can honour:
+  the legal 14 days to change your mind (NOTHS gives 28), the shopper paying
+  for a change-of-mind return, the outbound delivery refunded only up to the
+  least expensive way (Tracked 48, free), a refund within 14 days of the
+  piece or proof of postage.
+- **Only a personalised piece is kept back from a change of mind** (printed
+  words, a name, anything chosen for it: CCR reg 28(1)(b)). A piece made to
+  order exactly as shown - a listed size, colour or pack - is not, and the
+  page says so; "made to order" must never read as "no returns". The
+  customiser says it beside the words too (`MadeForYouNote`), since the law
+  wants it said before the order. Faults are never time-barred short of the
+  law, and wear is a deduction, never a refusal.
+- **Whose shop it is** comes from `BUSINESS` (`src/lib/policies/business.ts`):
+  Nyoki Limited, company 06758218, registered in England and Wales, VAT
+  GB 979 8673 25, and its registered office (82 Containerville, from
+  Companies House, shown because a company's website must show it), on
+  every page's footer and every policy. The address shoppers write to and
+  send returns to is the trading address, Unit 302, 3A Howick Place - not
+  the registered office, and never a home: it is on every page. The
+  `email` is still null, and the pages send people to Contact meanwhile;
+  **it is needed before ordering opens**, since the regulations ask for an
+  email address, not just a form.
+- The cookies page lists `SITE_COOKIES`, built from the constants that set
+  each cookie (`basket/cookie.ts`, `account/cookie.ts`, `auth/cookie.ts` -
+  apart from the jose code, which jsdom cannot load), so it cannot fall
+  behind. Every cookie is strictly necessary, so there is no banner (PECR
+  Schedule A1). A cookie for anything else needs this page first.
+- The delivery page's table is the options checkout offers
+  (`deliveryOptions`, from `rateSources`), so it cannot promise a price
+  checkout does not charge.
+- **The Channel Islands are refused at checkout** (`isChannelIslands`):
+  outside the UK for VAT and customs. The Isle of Man goes as the UK does.
+- The regulator is the **Information Commission** (it replaced the ICO on 30
+  September 2026); a shopper complains to us first (DPA 2018 s.164A, from 19
+  June 2026). With no ADR scheme joined, the terms say nothing about ADR
+  (DMCC Act, from 6 April 2026).
+- **Promised, not yet built**: deleting unpaid orders after six months and
+  answered questions after a year (the privacy notice says so); a written
+  confirmation of each order by the time it arrives (CCR reg 16 - email, or
+  printed in the parcel); and a pay button that says paying, such as "Pay
+  now" (CCR reg 14(3)).
+
 ## Shoppers' questions
 
 - **Ask a question** is on every product page, a closed disclosure beneath
