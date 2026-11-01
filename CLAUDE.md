@@ -154,7 +154,10 @@ TypeScript, deployed to Vercel.
 - **Codes are words, and words can be guessed**: a code that does not work
   counts against the address it came from (`CODE_MISSES_PER_ADDRESS`, ten in
   a quarter of an hour), in Apply and in Continue to payment alike, and past
-  that the shop stops looking codes up for a while. See Security.
+  that the shop stops looking codes up for a while. A code that works is
+  taken back off the count, and so is one refused only for its minimum
+  spend (`shortOfMinimum`): its message already says the code exists, and
+  trying it again as the basket grows is shopping. See Security.
 
 ## Products list
 
@@ -363,7 +366,10 @@ TypeScript, deployed to Vercel.
   `status`, a live region), which the pinned header keeps in sight from
   either button; it said nothing at all, so a save turned down off-screen
   looked the same as one that went through. A new product leaves for its
-  page instead.
+  page instead. **It goes as soon as the form is edited again** - a change,
+  or a button that is not Save (taking a category off, choosing a piece by
+  photo, which change the form without a change event) - and comes back
+  with the next save: left up, it claimed the new edits were safe too.
 - The slot is found through `SaveSlotProvider` - it registers itself, in
   React state, when it is put on the page - **not by searching the page**.
   It first shipped with `document.getElementById`, and Njomza saw no Save on
@@ -543,7 +549,9 @@ TypeScript, deployed to Vercel.
 - **Text longer than its box takes is missing too** - the printed message
   and each personalised thing, counted without the spaces around it - so
   the basket refuses it as it does a blank: the box's `maxlength` stops only
-  the page, and the add action takes choices straight from a request.
+  the page, and the add action takes choices straight from a request. A
+  field with no limit stored (the column allows none) is held to the most
+  the Customise tab allows one, `TEXT_LENGTH_LIMIT`.
 - Pressed too soon, Add to basket shows what is missing and moves to the
   first of it. With everything chosen it puts the piece in (see Basket);
   while ordering is closed it is `aria-disabled` but never faded, and says
@@ -1029,7 +1037,10 @@ TypeScript, deployed to Vercel.
 - **The server caps every box**, since the browser's set no limit and what is
   posted is kept on the order and printed on its label: the name and each
   line of the address at 100 characters (`ADDRESS_LINE_MAX`), the phone at
-  30, the gift note at 300, the email at 254 (see Security).
+  30, the gift note at 300, the email at 254 (see Security). A signed-in
+  shopper's email is the account's, shown rather than asked for, so it is
+  not checked again: one registered before the address check tightened
+  ("jo&sam@...") would otherwise have no way to check out.
 - The total follows every choice live, by `checkoutTotals`
   (`src/lib/checkout/totals.ts`, pure), which the server uses again. Free
   delivery is per option and judged after the code. **VAT is shown, not
@@ -1229,10 +1240,17 @@ TypeScript, deployed to Vercel.
   (`QUESTIONS_PER_HOUR`), five per address they come from, whatever email
   they give (`QUESTIONS_PER_ADDRESS`), and sixty an hour from everyone
   together (`QUESTIONS_IN_ALL`), since each one chimes on every open admin
-  page. All three read alike. No puzzle to solve: it would stop shoppers too.
-- The Reply by email link encodes the shopper's address, all but its @: one
+  page. **Only questions kept count**: one turned away is taken back off,
+  so a flood cannot hold the ceiling shut with the very requests it was
+  turned away for. The email's own five say "You have sent several"; the
+  address's and the ceiling say "We can't take another question just now",
+  since the address can be a whole office's and the ceiling is everyone's.
+  No puzzle to solve: it would stop shoppers too.
+- The Reply by email link encodes only what in the shopper's address could
+  change who it goes to or what it says (`? & % # , ; < > "`, spaces): one
   sent before the form refused `?` and `&` could otherwise add a recipient
-  or replace the body (`?cc=...&body=...`).
+  or replace the body (`?cc=...&body=...`). An @ and a + go in as they are,
+  since not every mail program decodes an address.
 - What was typed survives a rejected send (`useActionForm`); once sent, a
   thank-you takes the form's place.
 - **Kept until deleted.** Each holds a shopper's email address, and the page
@@ -1530,8 +1548,11 @@ TypeScript, deployed to Vercel.
   account had been removed - still validly signed, for up to seven days -
   read every page by a client-side navigation: the orders list came back
   with every customer's email. `__tests__/admin-guards.test.ts` fails on any
-  page that does not call it. It is wrapped in React's `cache`, so a page
-  and its layouts look the account up once between them.
+  page, layout or route method whose **first statement** is not that call -
+  not merely somewhere in the file, where a check left in a comment, or made
+  after the queries start, would pass. It is wrapped in React's `cache`, so
+  a page and its layouts look the account up once between them, and it
+  reads the cookie once (`adminFor`).
 - **Changing or resetting a password ends every other session**:
   `AdminUser.sessionsValidFrom` is set to the moment, and a session whose
   token was signed in an earlier second is refused (`signedBefore`). The
@@ -1539,7 +1560,12 @@ TypeScript, deployed to Vercel.
   reset by an owner is signed out everywhere.
 - **Failed sign-ins are limited**: ten from one address in a quarter of an
   hour, twenty against one email in an hour, refused before the slow hash is
-  checked, in the same words for any email. See Security.
+  checked, in the same words for any email. A sign-in that works is taken
+  back off. **A browser that has signed in to the account before is let past
+  the email's limit** (`known-browser`, a cookie holding a keyed hash of the
+  email): counted from anywhere, it let a stranger keep Njomza out of the
+  CMS by failing twenty times an hour. The address's limit still holds for
+  it. See Security.
 
 - Settings lets anyone change their own password and lets an OWNER add, edit
   (name, role, password reset) or remove accounts. `removalBlockedBecause()` in `src/lib/admin/removal.ts` is
@@ -1595,8 +1621,9 @@ TypeScript, deployed to Vercel.
 - Changing the password ends every other session, as a CMS account's does
   (`Customer.sessionsValidFrom`); this one is signed afresh.
 - Failed sign-ins are limited as the CMS's are (ten from an address in a
-  quarter of an hour, thirty against an email in an hour), and registering
-  to ten an hour from one address.
+  quarter of an hour, thirty against an email in an hour, a known browser
+  let past the email's), and registering to ten an hour from one address.
+  The known-browser cookie is on the shop's Cookies page; the CMS's is not.
 - **Signing out ends a live session only from the shop's own pages** (or an
   address typed in): `/account/sign-out` and `/admin/sign-out` are links,
   and any website could otherwise link to them. A dead session is cleared
@@ -1614,9 +1641,10 @@ TypeScript, deployed to Vercel.
 ## CMS accounts
 
 `pnpm admin:create "<email>" "<name>" [OWNER|STAFF]` creates or updates an
-account. It upserts, so re-running resets the password - that is the password
-reset path until Settings grows account management. Pass `-C <project path>` to
-run it from another directory.
+account. It upserts, so re-running resets the password - the password reset
+path from the command line - and **a reset ends every session** signed in to
+the account, as one from Settings does (`adminUpsert`, `src/lib/admin/upsert.ts`).
+Pass `-C <project path>` to run it from another directory.
 
 ## Backups
 
@@ -1657,11 +1685,21 @@ run it from another directory.
   refuses the characters a mailto: link reads as more than an address.
 - **Rate limits** live in `src/lib/rate-limit.ts`: named limits, counted as
   `RateLimitHit` rows in the database (Vercel runs many instances, and a
-  counter in memory knows nothing of the others), by an email or by a keyed
-  hash of the visitor's address (`requestAddress`: the first
-  x-forwarded-for, which Vercel sets itself), never the address itself.
-  Rows older than a day are deleted as new ones are written. What a visitor
-  is told is `WAIT_A_WHILE`. Locally every request shares one key.
+  counter in memory knows nothing of the others), by a keyed hash of an
+  email (`emailKey`) or of the visitor's address (`requestAddress`: the
+  first x-forwarded-for, which Vercel sets itself) - never either itself.
+  The raw email was once the key, and a long random one broke the index:
+  a failed sign-in answered with a server error.
+- **`attempt()` writes first and counts after**, itself included, so
+  requests arriving together count each other; checked first and written
+  after, a burst of 200 sign-ins all read a count under the limit and all
+  had their password checked. An attempt that turns out not to be one the
+  limit is for - a sign-in that worked, a question not kept - is taken back
+  off with `forget()`. Rows older than a day are deleted as new ones are
+  written. What a visitor is told is `WAIT_A_WHILE`. Locally every request
+  shares one address key.
+- `AUTH_SECRET` is read in one place, `authSecret()` (`src/lib/auth/secret.ts`),
+  for the sessions, the basket cookie and the keyed hashes alike.
 - **Security headers** on every response (`next.config.ts`): no framing by
   other sites, no `<base>` or plugins, forms post only here, nosniff, a
   referrer policy, HSTS and a permissions policy that leaves payment alone.

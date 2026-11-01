@@ -14,10 +14,28 @@ import { validateAdminEdit, validateNewAdminInput, validatePasswordChange } from
 import { requireAdmin, requireOwner } from "@/lib/auth/dal";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { startSession } from "@/lib/auth/session-cookie";
+import type { Prisma } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { isSerializationFailure, isUniqueViolationOn } from "@/lib/db-errors";
 
 const RACED = "Someone else changed the team at the same moment. Please try again.";
+
+/**
+ * Checks a change to the team and makes it in one serializable transaction:
+ * `change` answers why it cannot be made, or null once it has made it. Read
+ * first and written after, two owners removing or demoting each other at once
+ * each saw two owners, both went through, and the shop was left with none;
+ * serialized, the second fails, and is asked to try again - when the check
+ * refuses it.
+ */
+async function changeTeam(change: (tx: Prisma.TransactionClient) => Promise<string | null>): Promise<string | null> {
+  try {
+    return await db.$transaction(change, { isolationLevel: "Serializable" });
+  } catch (error) {
+    if (isSerializationFailure(error)) return RACED;
+    throw error;
+  }
+}
 
 export async function changePassword(
   _state: ChangePasswordState,
@@ -79,25 +97,12 @@ export async function removeAdmin(
 ): Promise<RemoveAdminState> {
   const session = await requireOwner();
 
-  // Checked and removed in one serializable transaction. Read first and
-  // written after, two owners removing each other at once each saw two
-  // owners, both went through, and the shop was left with none; serialized,
-  // the second fails and is asked to try again, when the check refuses it.
-  let blocked: string | null;
-  try {
-    blocked = await db.$transaction(
-      async (tx) => {
-        const admins = await tx.adminUser.findMany({ select: { id: true, role: true } });
-        const reason = removalBlockedBecause(admins, { actorId: session.userId, targetId });
-        if (!reason) await tx.adminUser.delete({ where: { id: targetId } });
-        return reason;
-      },
-      { isolationLevel: "Serializable" },
-    );
-  } catch (error) {
-    if (isSerializationFailure(error)) return { error: RACED };
-    throw error;
-  }
+  const blocked = await changeTeam(async (tx) => {
+    const admins = await tx.adminUser.findMany({ select: { id: true, role: true } });
+    const reason = removalBlockedBecause(admins, { actorId: session.userId, targetId });
+    if (!reason) await tx.adminUser.delete({ where: { id: targetId } });
+    return reason;
+  });
   if (blocked) return { error: blocked };
 
   revalidatePath("/admin/settings");
@@ -114,23 +119,12 @@ export async function updateAdmin(
   const result = validateAdminEdit(formData);
   if (!result.ok) return { errors: result.errors, saved: false };
 
-  // Serialized for the same reason as removing: two owners demoting each
-  // other at once must not both go through.
-  let blocked: string | null;
-  try {
-    blocked = await db.$transaction(
-      async (tx) => {
-        const admins = await tx.adminUser.findMany({ select: { id: true, role: true } });
-        const reason = roleChangeBlockedBecause(admins, { actorId: session.userId, targetId, newRole: result.data.role });
-        if (!reason) await tx.adminUser.update({ where: { id: targetId }, data: result.data });
-        return reason;
-      },
-      { isolationLevel: "Serializable" },
-    );
-  } catch (error) {
-    if (isSerializationFailure(error)) return { errors: { role: RACED }, saved: false };
-    throw error;
-  }
+  const blocked = await changeTeam(async (tx) => {
+    const admins = await tx.adminUser.findMany({ select: { id: true, role: true } });
+    const reason = roleChangeBlockedBecause(admins, { actorId: session.userId, targetId, newRole: result.data.role });
+    if (!reason) await tx.adminUser.update({ where: { id: targetId }, data: result.data });
+    return reason;
+  });
   if (blocked) return { errors: { role: blocked }, saved: false };
 
   revalidatePath("/admin/settings");

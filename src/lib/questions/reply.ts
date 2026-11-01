@@ -23,10 +23,11 @@ export function replyLink(question: { name: string; email: string; message: stri
     ...quoted.split("\n").map((line) => `> ${line}`),
   ].join("\r\n");
 
-  // Everything in the address is encoded but its @, which not every mail
-  // program understands encoded. A question sent before the form refused ?
-  // and & keeps the address it came with, and written as it is, one ending
-  // "?cc=someone&body=..." would add a recipient and replace this body.
-  const to = encodeURIComponent(question.email).replace(/%40/g, "@");
+  // Only what could change who it goes to or what it says is encoded: a
+  // question sent before the form refused ? and & keeps the address it came
+  // with, and written as it is, one ending "?cc=someone&body=..." would add a
+  // recipient and replace this body. The rest - an @, a + - goes in as it is,
+  // since not every mail program decodes an address.
+  const to = question.email.replace(/[?&%#,;<>"\s]/g, (character) => encodeURIComponent(character));
   return `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }

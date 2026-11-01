@@ -3,6 +3,7 @@ import "server-only";
 import { cookies } from "next/headers";
 
 import { currentCustomer } from "@/lib/account/dal";
+import { authSecret } from "@/lib/auth/secret";
 import { BASKET_COOKIE, BASKET_COOKIE_DAYS } from "@/lib/basket/cookie";
 import { basketIdFrom, signBasketId } from "@/lib/basket/cookie-signature";
 import type { StoredChoices, VariantRow } from "@/lib/basket/lines";
@@ -93,17 +94,10 @@ export function categoryNodes(): Promise<BasketCategory[]> {
   return postageCategories();
 }
 
-/** The shop's secret, which signs a guest's basket cookie as it signs sessions. */
-function cookieSecret(): string {
-  const secret = process.env.AUTH_SECRET;
-  if (!secret) throw new Error("AUTH_SECRET is not set. Generate one with `openssl rand -base64 32`.");
-  return secret;
-}
-
-/** The basket a guest's cookie names - only if this shop signed it (see basket/cookie). */
+/** The basket a guest's cookie names - only if this shop signed it (see basket/cookie-signature). */
 async function readBasketCookie(): Promise<string | null> {
   const value = (await cookies()).get(BASKET_COOKIE)?.value;
-  return value ? basketIdFrom(value, cookieSecret()) : null;
+  return value ? basketIdFrom(value, authSecret()) : null;
 }
 
 /**
@@ -164,7 +158,7 @@ export async function basketIdForWriting(): Promise<string> {
   }
 
   const basket = await db.basket.create({ data: {}, select: { id: true } });
-  (await cookies()).set(BASKET_COOKIE, signBasketId(basket.id, cookieSecret()), {
+  (await cookies()).set(BASKET_COOKIE, signBasketId(basket.id, authSecret()), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",

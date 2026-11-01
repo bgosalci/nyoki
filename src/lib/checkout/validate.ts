@@ -77,8 +77,11 @@ const orNull = (value: string) => (value === "" ? null : value);
 export function parseCheckout(form: FormData, { shopperEmail }: { shopperEmail: string | null }): CheckoutValidation {
   const errors: CheckoutErrors = {};
 
+  // The account's email is shown, not asked for: nothing in the form could
+  // fix it, so it is not checked again - one registered before the address
+  // check tightened would otherwise leave its owner unable to check out.
   const email = shopperEmail ?? normaliseEmail(text(form, "email"));
-  if (!looksLikeEmail(email)) errors.email = "Enter an email address we can reach you at.";
+  if (shopperEmail === null && !looksLikeEmail(email)) errors.email = "Enter an email address we can reach you at.";
 
   const phone = orNull(text(form, "phone"));
   if (phone !== null && (phone.length > PHONE_MAX || !/^[0-9+()\-\s]+$/.test(phone) || phone.replace(/\D/g, "").length < 7)) {

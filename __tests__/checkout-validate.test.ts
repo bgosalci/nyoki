@@ -149,3 +149,21 @@ describe("parseCheckout's limits", () => {
     });
   });
 });
+
+describe("parseCheckout's email for a signed-in shopper", () => {
+  // The account's email is shown, not asked for, so nothing in the form could
+  // fix it. One registered before the address check tightened - "jo&sam@" -
+  // left its owner unable to check out at all.
+  it("takes the account's email as it is, without checking it again", () => {
+    const result = parseCheckout(form(guest), { shopperEmail: "jo&sam@example.com" });
+
+    expect(result.ok && result.data.email).toBe("jo&sam@example.com");
+  });
+
+  it("still checks an email a guest types", () => {
+    expect(parseCheckout(form({ ...guest, email: "jo&sam@example.com" }), { shopperEmail: null })).toMatchObject({
+      ok: false,
+      errors: { email: "Enter an email address we can reach you at." },
+    });
+  });
+});

@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 
 import { readSession } from "@/lib/auth/session-cookie";
-import { signedBefore, type SessionPayload } from "@/lib/auth/session";
+import { signedBefore, type SessionPayload, type VerifiedSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 
 /**
@@ -27,7 +27,7 @@ export const requireAdmin = cache(async (): Promise<SessionPayload> => {
   const session = await readSession();
   if (!session) redirect("/admin/login");
 
-  const admin = await currentAdmin();
+  const admin = await adminFor(session);
 
   // Cookies cannot be cleared while a page renders; the sign-out route can,
   // and going straight to login would bounce back here on the still-valid
@@ -44,8 +44,11 @@ export const requireAdmin = cache(async (): Promise<SessionPayload> => {
  */
 export async function currentAdmin(): Promise<SessionPayload | null> {
   const session = await readSession();
-  if (!session) return null;
+  return session ? adminFor(session) : null;
+}
 
+/** The live account behind a session already read, or null. */
+async function adminFor(session: VerifiedSession): Promise<SessionPayload | null> {
   const admin = await db.adminUser.findUnique({
     where: { id: session.userId },
     select: { id: true, email: true, role: true, sessionsValidFrom: true },

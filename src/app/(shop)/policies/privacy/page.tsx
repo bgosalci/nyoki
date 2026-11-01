@@ -84,8 +84,8 @@ const SECTIONS: PolicySection[] = [
             <strong className="font-medium text-nyoki-navy">Visiting the site</strong>: the company that hosts our
             website keeps a short record of visits, such as internet addresses and browsers, to keep the site running and
             safe. The shop itself also counts attempts to sign in, open an account, send a question or use a promo code,
-            by the email given or a scrambled form of your internet address that can&apos;t be turned back into it, so
-            that nobody can try again and again. That is our legitimate interest in a shop that works and can&apos;t be
+            by a scrambled form of the email given or of your internet address that can&apos;t be turned back into
+            either, so that nobody can try again and again. That is our legitimate interest in a shop that works and can&apos;t be
             attacked.
           </li>
         </PolicyList>

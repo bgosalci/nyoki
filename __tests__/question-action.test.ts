@@ -13,12 +13,11 @@ jest.mock("../src/lib/db", () => ({
   },
 }));
 jest.mock("next/cache", () => ({ revalidatePath: jest.fn() }));
-const isLimited = jest.fn();
-const recordAttempt = jest.fn();
+const attempt = jest.fn();
+const forget = jest.fn();
 jest.mock("../src/lib/rate-limit", () => ({
   ...jest.requireActual("../src/lib/rate-limit"),
-  isLimited: (...args: unknown[]) => isLimited(...args),
-  recordAttempt: (...args: unknown[]) => recordAttempt(...args),
+  attempt: (...args: unknown[]) => attempt(...args),
   requestAddress: async () => "address-hash",
 }));
 
@@ -39,8 +38,7 @@ beforeEach(() => {
   count.mockResolvedValue(0);
   create.mockResolvedValue({ id: "q1" });
   findFirst.mockResolvedValue({ id: "p1", name: "Girl’s Coat" });
-  isLimited.mockResolvedValue(false);
-  recordAttempt.mockResolvedValue(undefined);
+  attempt.mockResolvedValue({ over: false, forget });
 });
 
 describe("askQuestion", () => {
@@ -97,36 +95,57 @@ describe("askQuestion", () => {
 });
 
 describe("askQuestion's limits beyond the email", () => {
-  const wait = { errors: {}, notice: "You have sent several questions in the last hour. Please wait a little before sending another." };
+  // Said to someone who may have sent nothing at all - the address can be a
+  // whole office's, and the ceiling is everyone's - so it blames nobody.
+  const busy = { errors: {}, notice: "We can't take another question just now. Please try again a little later." };
 
   // The email's own five an hour is beaten by changing the email each time.
-  it("asks an address that has sent five questions in the hour to wait, whatever email it gives", async () => {
-    isLimited.mockImplementation(async (limit) => limit === QUESTIONS_PER_ADDRESS);
+  it("turns away a sixth question in the hour from one address, whatever email it gives", async () => {
+    attempt.mockImplementation(async (limit) => ({ over: limit === QUESTIONS_PER_ADDRESS, forget }));
 
-    await expect(askQuestion({ errors: {} }, form(asked))).resolves.toEqual(wait);
-    expect(isLimited).toHaveBeenCalledWith(QUESTIONS_PER_ADDRESS, "address-hash");
+    await expect(askQuestion({ errors: {} }, form(asked))).resolves.toEqual(busy);
+    expect(attempt).toHaveBeenCalledWith(QUESTIONS_PER_ADDRESS, "address-hash");
     expect(create).not.toHaveBeenCalled();
   });
 
   it("keeps no more once the shop has had its fill for the hour, from everyone together", async () => {
-    isLimited.mockImplementation(async (limit) => limit === QUESTIONS_IN_ALL);
+    attempt.mockImplementation(async (limit) => ({ over: limit === QUESTIONS_IN_ALL, forget }));
 
-    await expect(askQuestion({ errors: {} }, form(asked))).resolves.toEqual(wait);
-    expect(isLimited).toHaveBeenCalledWith(QUESTIONS_IN_ALL, EVERYONE);
+    await expect(askQuestion({ errors: {} }, form(asked))).resolves.toEqual(busy);
+    expect(attempt).toHaveBeenCalledWith(QUESTIONS_IN_ALL, EVERYONE);
     expect(create).not.toHaveBeenCalled();
+  });
+
+  // Only questions kept count, so a flood turned away cannot hold the
+  // hour's ceiling shut with the requests it was turned away for.
+  it("takes a question it turns away back off both counts", async () => {
+    attempt.mockImplementation(async (limit) => ({ over: limit === QUESTIONS_IN_ALL, forget }));
+
+    await askQuestion({ errors: {} }, form(asked));
+
+    expect(forget).toHaveBeenCalledTimes(2);
+  });
+
+  it("takes it back off when it is the email's five that turn it away, too", async () => {
+    count.mockResolvedValue(5);
+
+    await askQuestion({ errors: {} }, form(asked));
+
+    expect(forget).toHaveBeenCalledTimes(2);
   });
 
   it("counts a question kept against both", async () => {
     await askQuestion({ errors: {} }, form(asked));
 
-    expect(recordAttempt).toHaveBeenCalledWith(QUESTIONS_PER_ADDRESS, "address-hash");
-    expect(recordAttempt).toHaveBeenCalledWith(QUESTIONS_IN_ALL, EVERYONE);
+    expect(attempt).toHaveBeenCalledWith(QUESTIONS_PER_ADDRESS, "address-hash");
+    expect(attempt).toHaveBeenCalledWith(QUESTIONS_IN_ALL, EVERYONE);
+    expect(forget).not.toHaveBeenCalled();
   });
 
   it("counts nothing for a bot or a question sent back to be finished", async () => {
     await askQuestion({ errors: {} }, form({ ...asked, [HONEYPOT]: "x" }));
     await askQuestion({ errors: {} }, form({ ...asked, message: "" }));
 
-    expect(recordAttempt).not.toHaveBeenCalled();
+    expect(attempt).not.toHaveBeenCalled();
   });
 });

@@ -2,6 +2,7 @@ import "server-only";
 
 import { cookies } from "next/headers";
 
+import { authSecret } from "@/lib/auth/secret";
 import {
   CUSTOMER_SESSION_COOKIE,
   CUSTOMER_SESSION_DAYS,
@@ -13,24 +14,8 @@ import {
 
 const SESSION_DURATION_MS = CUSTOMER_SESSION_DAYS * 24 * 60 * 60 * 1000;
 
-/**
- * Read the signing secret, failing loudly if it is missing.
- *
- * Deliberately not defaulted: a fallback secret would let the shop boot in
- * production with sessions anyone could forge.
- */
-function requireSecret(): string {
-  const secret = process.env.AUTH_SECRET;
-
-  if (!secret) {
-    throw new Error("AUTH_SECRET is not set. Generate one with `openssl rand -base64 32`.");
-  }
-
-  return secret;
-}
-
 export async function startCustomerSession(session: CustomerSession): Promise<void> {
-  const token = await createCustomerToken(session, requireSecret());
+  const token = await createCustomerToken(session, authSecret());
   const cookieStore = await cookies();
 
   cookieStore.set(CUSTOMER_SESSION_COOKIE, token, {
@@ -50,7 +35,7 @@ export async function readCustomerSession(): Promise<VerifiedCustomerSession | n
 
   if (!token) return null;
 
-  return verifyCustomerToken(token, requireSecret());
+  return verifyCustomerToken(token, authSecret());
 }
 
 export async function destroyCustomerSession(): Promise<void> {

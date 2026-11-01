@@ -12,7 +12,7 @@ import { db } from "@/lib/db";
 import { codeRedeemability, normaliseCode } from "@/lib/discounts/validate";
 import { formatPence } from "@/lib/money";
 import { orderingOpen } from "@/lib/ordering";
-import { CODE_MISSES_PER_ADDRESS, WAIT_A_WHILE, isLimited, recordAttempt, requestAddress } from "@/lib/rate-limit";
+import { CODE_MISSES_PER_ADDRESS, WAIT_A_WHILE, attempt, requestAddress } from "@/lib/rate-limit";
 
 const CLOSED = "Online ordering opens soon.";
 const EMPTY = "Your basket is empty.";
@@ -28,6 +28,16 @@ export type CodeResult = { ok: true; code: string; discountPence: number; label:
 /** What a code is, in a few words: "10% off", "£5.00 off". */
 function describe(code: { type: string; value: number }): string {
   return code.type === "PERCENTAGE" ? `${code.value}% off` : `${formatPence(code.value)} off`;
+}
+
+/**
+ * Whether trying a code was a miss, for the limit on guessing at codes: no
+ * such code, or one not available. One that works is no miss, and nor is one
+ * refused for its minimum spend - its message already says it exists, and
+ * trying it again as the basket grows is shopping, not guessing.
+ */
+function isMiss(result: ReturnType<typeof codeRedeemability> | null): boolean {
+  return result === null || (!result.ok && !result.shortOfMinimum);
 }
 
 /**
@@ -49,15 +59,13 @@ export async function applyCode(raw: string): Promise<CodeResult> {
 
   // Codes are words, and words can be guessed: an address that has missed
   // too often is not looked up for a while.
-  const address = await requestAddress();
-  if (await isLimited(CODE_MISSES_PER_ADDRESS, address)) return { ok: false, message: WAIT_A_WHILE };
+  const guess = await attempt(CODE_MISSES_PER_ADDRESS, await requestAddress());
+  if (guess.over) return { ok: false, message: WAIT_A_WHILE };
 
   const row = await db.discountCode.findUnique({ where: { code } });
   const result = row ? codeRedeemability(row, { now: new Date(), subtotalPence }) : null;
-  if (!row || !result?.ok) {
-    await recordAttempt(CODE_MISSES_PER_ADDRESS, address);
-    return { ok: false, message: result && !result.ok ? result.reason : "That code is not available." };
-  }
+  if (!isMiss(result)) await guess.forget();
+  if (!row || !result?.ok) return { ok: false, message: result && !result.ok ? result.reason : "That code is not available." };
   return { ok: true, code, discountPence: result.discountPence, label: describe(row) };
 }
 
@@ -113,15 +121,13 @@ export async function continueToPayment(_state: CheckoutState, formData: FormDat
   let discount = { pence: 0, codeId: null as string | null };
   if (input.code) {
     // Held to the same limit as trying a code, or this would be the way round it.
-    const address = await requestAddress();
-    if (await isLimited(CODE_MISSES_PER_ADDRESS, address)) return { errors: { code: WAIT_A_WHILE } };
+    const guess = await attempt(CODE_MISSES_PER_ADDRESS, await requestAddress());
+    if (guess.over) return { errors: { code: WAIT_A_WHILE } };
 
     const row = await db.discountCode.findUnique({ where: { code: input.code } });
     const result = row ? codeRedeemability(row, { now: new Date(), subtotalPence: review.subtotalPence }) : null;
-    if (!row || !result?.ok) {
-      await recordAttempt(CODE_MISSES_PER_ADDRESS, address);
-      return { errors: { code: result && !result.ok ? result.reason : "That code is not available." } };
-    }
+    if (!isMiss(result)) await guess.forget();
+    if (!row || !result?.ok) return { errors: { code: result && !result.ok ? result.reason : "That code is not available." } };
     discount = { pence: result.discountPence, codeId: row.id };
   }
 

@@ -16,6 +16,7 @@ import {
   type Choices,
 } from "@/lib/customisation/choices";
 import type { Offer } from "@/lib/customisation/offer";
+import { TEXT_LENGTH_LIMIT } from "@/lib/customisation/settings";
 import { toClothingOffer } from "@/lib/clothes/stock";
 
 const name = { id: "f1", label: "Name", kind: "TEXT" as const, maxLength: 20, choices: [] };
@@ -470,5 +471,25 @@ describe("readyHint", () => {
 
   it("says it is ready when there was nothing to choose", () => {
     expect(readyHint(plain, EMPTY_CHOICES)).toBe("Ready to add");
+  });
+});
+
+describe("missingChoices for a text field with no limit of its own", () => {
+  // The column is nullable, and a field saved before the Customise tab
+  // insisted on a limit, or written some other way, had none - so the server
+  // took text of any length for it. It is held to the most the tab allows.
+  const unlimited = { ...name, maxLength: null };
+  const card: Offer = { ...offer, personalisation: { ...offer.personalisation!, fields: [unlimited] } };
+
+  it("refuses text longer than the most a field may be given", () => {
+    const missing = missingChoices(card, { ...complete, personalisation: { f1: "x".repeat(TEXT_LENGTH_LIMIT + 1) } });
+
+    expect(missing).toEqual([
+      { key: "field:f1", message: `Please keep “Name” to ${TEXT_LENGTH_LIMIT} characters.`, short: "Shorten “Name”" },
+    ]);
+  });
+
+  it("takes text up to it", () => {
+    expect(missingChoices(card, { ...complete, personalisation: { f1: "x".repeat(TEXT_LENGTH_LIMIT) } })).toEqual([]);
   });
 });

@@ -18,6 +18,7 @@ import {
   validateSignIn,
 } from "@/lib/account/validate";
 import { normaliseEmail } from "@/lib/auth/authenticate";
+import { isKnownBrowser, rememberBrowser } from "@/lib/auth/known-browser";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { isUniqueViolationOn } from "@/lib/db-errors";
 import { db } from "@/lib/db";
@@ -26,8 +27,8 @@ import {
   SIGN_IN_PER_ADDRESS,
   SIGN_IN_PER_EMAIL,
   WAIT_A_WHILE,
-  isLimited,
-  recordAttempt,
+  attempt,
+  emailKey,
   requestAddress,
 } from "@/lib/rate-limit";
 
@@ -57,9 +58,8 @@ export async function register(_state: RegisterState, formData: FormData): Promi
 
   // Each registration costs a deliberately slow hash, and a script making
   // accounts by the hundred is nobody shopping.
-  const address = await requestAddress();
-  if (await isLimited(REGISTER_PER_ADDRESS, address)) return { errors: { email: WAIT_A_WHILE }, values };
-  await recordAttempt(REGISTER_PER_ADDRESS, address);
+  const fromHere = await attempt(REGISTER_PER_ADDRESS, await requestAddress());
+  if (fromHere.over) return { errors: { email: WAIT_A_WHILE }, values };
 
   const { name, email, password } = result.data;
   const passwordHash = await hashPassword(password);
@@ -89,6 +89,7 @@ export async function register(_state: RegisterState, formData: FormData): Promi
   }
 
   await startCustomerSession({ customerId: id, email });
+  await rememberBrowser("shopper", email);
 
   // redirect() signals by throwing, so it must sit outside the try/catch.
   redirect("/account");
@@ -99,13 +100,17 @@ export async function signIn(_state: SignInState, formData: FormData): Promise<S
 
   const result = validateSignIn(formData);
 
-  // Refused before the account is looked up or its slow hash checked, with
-  // the same answer for any email, so it says nothing about which exist.
-  const address = await requestAddress();
+  // Counted before the account is looked up or its slow hash checked, with
+  // the same answer for any email, so it says nothing about which exist. A
+  // browser that has signed in to the account before is let past the email's
+  // limit (known-browser), or anyone could lock its owner out.
   const tried = normaliseEmail(email);
-  if ((await isLimited(SIGN_IN_PER_ADDRESS, address)) || (await isLimited(SIGN_IN_PER_EMAIL, tried))) {
-    return { error: WAIT_A_WHILE, email };
-  }
+  const [address, known] = await Promise.all([requestAddress(), isKnownBrowser("shopper", tried)]);
+  const [fromHere, forEmail] = await Promise.all([
+    attempt(SIGN_IN_PER_ADDRESS, address),
+    known ? null : attempt(SIGN_IN_PER_EMAIL, emailKey(tried)),
+  ]);
+  if (fromHere.over || forEmail?.over) return { error: WAIT_A_WHILE, email };
 
   const session = result.ok
     ? await authenticateCustomer(result.data.email, result.data.password, {
@@ -119,13 +124,12 @@ export async function signIn(_state: SignInState, formData: FormData): Promise<S
 
   // One message for every failure. Naming which half was wrong would confirm
   // that an address is registered.
-  if (!session) {
-    await recordAttempt(SIGN_IN_PER_ADDRESS, address);
-    await recordAttempt(SIGN_IN_PER_EMAIL, tried);
-    return { error: "Those details are not right. Please try again.", email };
-  }
+  if (!session) return { error: "Those details are not right. Please try again.", email };
 
+  // Only failures count: one that worked is taken back off.
+  await Promise.all([fromHere.forget(), forEmail?.forget()]);
   await startCustomerSession(session);
+  await rememberBrowser("shopper", session.email);
 
   // Back to checkout or the basket, when signing in was asked for there.
   const next = formData.get("next");

@@ -2,7 +2,8 @@
  * @jest-environment node
  */
 import { SESSION_COOKIE } from "@/lib/auth/session";
-import { CUSTOMER_SESSION_COOKIE, CUSTOMER_SESSION_DAYS } from "@/lib/account/cookie";
+import { CUSTOMER_SESSION_COOKIE, CUSTOMER_SESSION_DAYS, KNOWN_BROWSER_COOKIE, KNOWN_BROWSER_DAYS } from "@/lib/account/cookie";
+import { ADMIN_KNOWN_BROWSER_COOKIE } from "@/lib/auth/known-browser";
 import { BASKET_COOKIE, BASKET_COOKIE_DAYS } from "@/lib/basket/cookie";
 import { BUSINESS, formatVatNumber } from "@/lib/policies/business";
 import { SITE_COOKIES, lasts } from "@/lib/policies/cookies";
@@ -52,16 +53,17 @@ describe("the business", () => {
 
 describe("the cookies page", () => {
   it("lists every cookie a shopper can be given, by the name the code sets it under", () => {
-    expect(SITE_COOKIES.map((cookie) => cookie.name)).toEqual([BASKET_COOKIE, CUSTOMER_SESSION_COOKIE]);
+    expect(SITE_COOKIES.map((cookie) => cookie.name)).toEqual([BASKET_COOKIE, CUSTOMER_SESSION_COOKIE, KNOWN_BROWSER_COOKIE]);
   });
 
-  it("leaves out the team's own sign-in, which is never set for a shopper", () => {
+  it("leaves out the team's own cookies, which are never set for a shopper", () => {
     expect(SITE_COOKIES.map((cookie) => cookie.name)).not.toContain(SESSION_COOKIE);
+    expect(SITE_COOKIES.map((cookie) => cookie.name)).not.toContain(ADMIN_KNOWN_BROWSER_COOKIE);
   });
 
   it("says each lasts as long as the code makes it last", () => {
-    expect(SITE_COOKIES.map((cookie) => cookie.days)).toEqual([BASKET_COOKIE_DAYS, CUSTOMER_SESSION_DAYS]);
-    expect([BASKET_COOKIE_DAYS, CUSTOMER_SESSION_DAYS]).toEqual([60, 30]);
+    expect(SITE_COOKIES.map((cookie) => cookie.days)).toEqual([BASKET_COOKIE_DAYS, CUSTOMER_SESSION_DAYS, KNOWN_BROWSER_DAYS]);
+    expect([BASKET_COOKIE_DAYS, CUSTOMER_SESSION_DAYS, KNOWN_BROWSER_DAYS]).toEqual([60, 30, 365]);
   });
 
   it("says a cookie's life in words", () => {

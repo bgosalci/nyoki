@@ -13,6 +13,7 @@ import { randomBytes } from "node:crypto";
 import { PrismaPg } from "@prisma/adapter-pg";
 
 import { PrismaClient } from "../src/generated/prisma/client";
+import { adminUpsert } from "../src/lib/admin/upsert";
 import { hashPassword } from "../src/lib/auth/password";
 import { normaliseEmail } from "../src/lib/auth/authenticate";
 
@@ -45,11 +46,8 @@ async function main() {
   try {
     const passwordHash = await hashPassword(password);
 
-    const admin = await db.adminUser.upsert({
-      where: { email },
-      create: { email, name, role: rawRole, passwordHash },
-      update: { name, role: rawRole, passwordHash },
-    });
+    // An existing account is reset, and every session signed in to it ends.
+    const admin = await db.adminUser.upsert(adminUpsert({ email, name, role: rawRole, passwordHash }));
 
     console.log(`\n  ${admin.email}  (${admin.role})`);
     if (generated) {

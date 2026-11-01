@@ -451,6 +451,21 @@ describe("ProductForm, saving from the top of the page", () => {
     await waitFor(() => expect(slotStatus()).toHaveTextContent("Saved."));
   });
 
+  // Saved, then edited again: "Saved." beside Save would claim the new edits
+  // were safe, and leaving would lose them.
+  it("stops saying Saved once anything is changed again, and says it after the next save", async () => {
+    render(withSlot(<ProductForm action={noopAction} product={mug} categories={categories} submitLabel="Save changes" />));
+    const user = userEvent.setup();
+    await user.click(screen.getAllByRole("button", { name: "Save changes" })[1]);
+    await waitFor(() => expect(slotStatus()).toHaveTextContent("Saved."));
+
+    await user.type(screen.getByLabelText("Name"), " mug");
+    expect(slotStatus()).toBeEmptyDOMElement();
+
+    await user.click(screen.getAllByRole("button", { name: "Save changes" })[1]);
+    await waitFor(() => expect(slotStatus()).toHaveTextContent("Saved."));
+  });
+
   it("says nothing of the kind when the save was turned down", async () => {
     render(withSlot(<ProductForm action={async () => ({ errors: { name: "Give the product a name." } })} product={mug} categories={categories} />));
     const user = userEvent.setup();

@@ -6,7 +6,7 @@ import { SITE_COOKIES, lasts } from "@/lib/policies/cookies";
 
 export const metadata: Metadata = {
   title: "Cookies",
-  description: "The two small cookies the Nyoki Handmade shop needs to work, and why there is no cookie banner.",
+  description: "The three small cookies the Nyoki Handmade shop needs to work, and why there is no cookie banner.",
 };
 
 /**
@@ -19,7 +19,7 @@ export default function CookiesPage() {
   return (
     <PolicyPage
       slug="cookies"
-      intro={<p>The short version: two small cookies the shop needs to work, and nothing that follows you around.</p>}
+      intro={<p>The short version: three small cookies the shop needs to work, and nothing that follows you around.</p>}
       sections={SECTIONS}
     />
   );
@@ -32,8 +32,9 @@ const SECTIONS: PolicySection[] = [
     body: (
       <>
         <p>
-          A cookie is a small file a website keeps in your browser. We use only two, and only because the shop
-          can&apos;t work without them: one remembers your basket, and one keeps you signed in.
+          A cookie is a small file a website keeps in your browser. We use only three, and only because the shop
+          can&apos;t work without them: one remembers your basket, one keeps you signed in, and one recognises a
+          browser you&apos;ve signed in from, so nobody else can lock you out of your account.
         </p>
         <p>
           There are no advertising cookies, no tracking and no analytics. The law doesn&apos;t ask for your consent to
@@ -72,7 +73,7 @@ const SECTIONS: PolicySection[] = [
           </tbody>
         </table>
         <p>
-          Both are our own, sent only to nyoki.co.uk, and can&apos;t be read by scripts on the page. Signing out
+          All three are our own, sent only to nyoki.co.uk, and can&apos;t be read by scripts on the page. Signing out
           removes the sign-in cookie straight away.
         </p>
       </>

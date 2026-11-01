@@ -50,12 +50,11 @@ jest.mock("../src/lib/basket/store", () => ({
   ratesFor: (...args: unknown[]) => ratesFor(...args),
 }));
 
-const isLimited = jest.fn();
-const recordAttempt = jest.fn();
+const attempt = jest.fn();
+const forget = jest.fn();
 jest.mock("../src/lib/rate-limit", () => ({
   ...jest.requireActual("../src/lib/rate-limit"),
-  isLimited: (...args: unknown[]) => isLimited(...args),
-  recordAttempt: (...args: unknown[]) => recordAttempt(...args),
+  attempt: (...args: unknown[]) => attempt(...args),
   requestAddress: async () => "address-hash",
 }));
 
@@ -129,7 +128,7 @@ beforeEach(() => {
   addressCreate.mockResolvedValue({ id: "addr-new" });
   orderFindFirst.mockResolvedValue(null);
   orderCreate.mockResolvedValue({ id: "o1" });
-  isLimited.mockResolvedValue(false);
+  attempt.mockResolvedValue({ over: false, forget });
 });
 
 describe("continueToPayment", () => {
@@ -308,35 +307,49 @@ describe("guessing at promo codes", () => {
 
     await applyCode("NOPE");
 
-    expect(recordAttempt).toHaveBeenCalledWith(CODE_MISSES_PER_ADDRESS, "address-hash");
+    expect(attempt).toHaveBeenCalledWith(CODE_MISSES_PER_ADDRESS, "address-hash");
+    expect(forget).not.toHaveBeenCalled();
   });
 
-  it("counts nothing for a code that works", async () => {
+  it("takes a code that works back off the count", async () => {
     await applyCode("WINTER10");
 
-    expect(recordAttempt).not.toHaveBeenCalled();
+    expect(forget).toHaveBeenCalled();
+  });
+
+  // Its message already says the code exists, and trying it again as the
+  // basket grows is shopping, not guessing.
+  it("takes a code refused only for its minimum spend back off the count", async () => {
+    codeFindUnique.mockResolvedValue({ ...winter10, minSpendPence: 10000 });
+
+    await applyCode("WINTER10");
+
+    expect(forget).toHaveBeenCalled();
   });
 
   it("stops looking codes up for an address that has missed too often", async () => {
-    isLimited.mockResolvedValue(true);
+    attempt.mockResolvedValue({ over: true, forget });
 
     expect(await applyCode("WINTER10")).toEqual({ ok: false, message: WAIT_A_WHILE });
     expect(codeFindUnique).not.toHaveBeenCalled();
   });
 
   it("holds continuing to payment with a code to the same limit", async () => {
-    isLimited.mockResolvedValue(true);
+    attempt.mockResolvedValue({ over: true, forget });
 
     expect(await continueToPayment({ errors: {} }, form({ ...gift, code: "WINTER10" }))).toEqual({ errors: { code: WAIT_A_WHILE } });
     expect(codeFindUnique).not.toHaveBeenCalled();
     expect(orderCreate).not.toHaveBeenCalled();
   });
 
-  it("counts a code continuing to payment would not take", async () => {
+  it("counts a code continuing to payment would not take, and not one it would", async () => {
     codeFindUnique.mockResolvedValue(null);
-
     await continueToPayment({ errors: {} }, form({ ...gift, code: "NOPE" }));
+    expect(attempt).toHaveBeenCalledWith(CODE_MISSES_PER_ADDRESS, "address-hash");
+    expect(forget).not.toHaveBeenCalled();
 
-    expect(recordAttempt).toHaveBeenCalledWith(CODE_MISSES_PER_ADDRESS, "address-hash");
+    codeFindUnique.mockResolvedValue(winter10);
+    await expect(continueToPayment({ errors: {} }, form({ ...gift, code: "WINTER10" }))).rejects.toThrow("NEXT_REDIRECT");
+    expect(forget).toHaveBeenCalled();
   });
 });

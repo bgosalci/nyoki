@@ -1,6 +1,7 @@
 import { inStock } from "@/lib/clothes/stock";
 import type { ItemNoun } from "@/lib/customisation/group";
 import type { Offer } from "@/lib/customisation/offer";
+import { TEXT_LENGTH_LIMIT } from "@/lib/customisation/settings";
 import { formatPence } from "@/lib/money";
 
 /**
@@ -191,8 +192,11 @@ export function missingChoices(offer: Offer, choices: Choices): MissingChoice[] 
       const key = `field:${field.id}` as const;
       if (field.kind === "TEXT" && blank(value)) {
         missing.push({ key, message: sentence(`Please fill in ${what}`), short: `Fill in ${what}` });
-      } else if (field.kind === "TEXT" && tooLong(value, field.maxLength)) {
-        missing.push({ key, message: `Please keep ${what} to ${characters(field.maxLength!)}.`, short: `Shorten ${what}` });
+      } else if (field.kind === "TEXT" && tooLong(value, field.maxLength ?? TEXT_LENGTH_LIMIT)) {
+        // A field with no limit of its own (the column allows none) is held
+        // to the most the Customise tab lets one be given.
+        const most = field.maxLength ?? TEXT_LENGTH_LIMIT;
+        missing.push({ key, message: `Please keep ${what} to ${characters(most)}.`, short: `Shorten ${what}` });
       } else if (field.kind === "CHOICE" && !field.choices.includes(value ?? "")) {
         missing.push({ key, message: sentence(`Please choose one for ${what}`), short: `Choose one for ${what}` });
       }
