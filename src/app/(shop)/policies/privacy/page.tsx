@@ -77,13 +77,20 @@ const SECTIONS: PolicySection[] = [
             yours.
           </li>
           <li>
+            <strong className="font-medium text-nyoki-navy">When you write a review</strong>: the stars and words you
+            give a piece, the name you choose to show with them, your account, and whether you bought the piece from us.
+            Once we&apos;ve read it, we publish the name, the stars, the words, the date and whether it&apos;s a verified
+            purchase - never your email address. That is our legitimate interest, and other shoppers&apos;: honest reviews
+            help people choose.
+          </li>
+          <li>
             <strong className="font-medium text-nyoki-navy">Records the law asks for</strong>: we keep order and payment
             records for our accounts and for tax, because the law requires it.
           </li>
           <li>
             <strong className="font-medium text-nyoki-navy">Visiting the site</strong>: the company that hosts our
             website keeps a short record of visits, such as internet addresses and browsers, to keep the site running and
-            safe. The shop itself also counts attempts to sign in, open an account, send a question or use a promo code,
+            safe. The shop itself also counts attempts to sign in, open an account, send a question, write a review or use a promo code,
             by a scrambled form of the email given or of your internet address that can&apos;t be turned back into
             either, so that nobody can try again and again. That is our legitimate interest in a shop that works and can&apos;t be
             attacked.
@@ -146,10 +153,11 @@ const SECTIONS: PolicySection[] = [
       <PolicyList>
         <li>Orders and payments: six years after the end of the financial year they belong to, as tax and company law require.</li>
         <li>An order you start but don&apos;t pay for: until it&apos;s clear you won&apos;t come back to it, and six months at most.</li>
-        <li>Your account: for as long as it&apos;s open. Ask us to close it and we delete your password, saved addresses, saved pieces and basket, keeping only your past orders, for the time above.</li>
+        <li>Your account: for as long as it&apos;s open. Ask us to close it and we delete your password, saved addresses, saved pieces, reviews and basket, keeping only your past orders, for the time above.</li>
         <li>Questions: until they&apos;re answered and no longer needed, and a year at most.</li>
+        <li>Reviews: until you delete yours, or ask us to.</li>
         <li>Visit records at our host: a few days.</li>
-        <li>Counts of attempts to sign in, open an account, send a question or use a code: a day.</li>
+        <li>Counts of attempts to sign in, open an account, send a question, write a review or use a code: a day.</li>
       </PolicyList>
     ),
   },

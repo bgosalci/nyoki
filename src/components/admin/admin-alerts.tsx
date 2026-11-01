@@ -4,21 +4,30 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
+import { questionArrival, reviewArrival, type WaitingSnapshot } from "@/lib/admin/waiting";
 import { ui } from "@/lib/brand/ui";
-import { arrivalMessage, type WaitingSnapshot } from "@/lib/questions/alerts";
 
-/** How often an open admin page asks whether questions have arrived. */
+/** How often an open admin page asks whether questions or reviews have arrived. */
 export const POLL_MS = 10_000;
 
 /** How long the toast saying so stays up. */
 const TOAST_MS = 12_000;
 
+// Named for questions, which had the chime first: renamed, it would switch
+// the sound back on for everyone who had switched it off.
 const SOUND_KEY = "nyoki-admin-question-sound";
 
-const WaitingContext = createContext(0);
+export interface WaitingCounts {
+  /** Questions not yet marked answered. */
+  questions: number;
+  /** Reviews waiting to be read. */
+  reviews: number;
+}
 
-/** Questions not yet marked answered, as last heard: none outside the provider. */
-export function useWaitingQuestions(): number {
+const WaitingContext = createContext<WaitingCounts>({ questions: 0, reviews: 0 });
+
+/** What waits, as last heard: nothing outside the provider. */
+export function useWaiting(): WaitingCounts {
   return useContext(WaitingContext);
 }
 
@@ -89,26 +98,35 @@ export function playChime(): void {
 }
 
 /**
- * Pages showing the questions, refreshed when one arrives. Any other is left
- * alone: a refresh in the middle of editing a product must not cost a thing.
+ * Pages showing what waits, refreshed when something arrives. Any other is
+ * left alone: a refresh in the middle of editing a product must not cost a
+ * thing.
  */
-const showsQuestions = (pathname: string) => pathname === "/admin" || pathname === "/admin/questions";
+const showsWaiting = (pathname: string) => pathname === "/admin" || pathname === "/admin/questions" || pathname === "/admin/reviews";
+
+interface Toast {
+  text: string;
+  href: string;
+  /** Said whole, for the Open link. */
+  open: string;
+}
 
 /**
- * Keeps every admin page told about shoppers' questions: the count waiting,
- * for the sidebar, and - when one arrives - a chime and a toast saying who
- * asked about what. It asks the waiting route every ten seconds while a page
- * is open, background tabs included, and at once when the tab is come back to.
- * Ten seconds is as instant as a page can be without a push service behind it.
+ * Keeps every admin page told about what waits on the shop: shoppers'
+ * questions and reviews. It holds the counts, for the sidebar, and - when one
+ * arrives - chimes and shows a toast saying who sent what about which piece.
+ * It asks the waiting route every ten seconds while a page is open, background
+ * tabs included, and at once when the tab is come back to. Ten seconds is as
+ * instant as a page can be without a push service behind it.
  */
-export function QuestionAlertsProvider({
+export function AdminAlertsProvider({
   initialWaiting,
   since,
   playSound = playChime,
   children,
 }: {
-  /** The count when the page was drawn. */
-  initialWaiting: number;
+  /** The counts when the page was drawn. */
+  initialWaiting: WaitingCounts;
   /** When the page was drawn, on the server's clock: the first ask counts from here. */
   since: string;
   playSound?: () => void;
@@ -117,7 +135,7 @@ export function QuestionAlertsProvider({
   const pathname = usePathname();
   const router = useRouter();
   const [waiting, setWaiting] = useState(initialWaiting);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toasts, setToasts] = useState<Toast[]>([]);
   const sinceRef = useRef(since);
   // What the asking reads, kept current without starting it over.
   const latest = useRef({ pathname, router, playSound });
@@ -125,9 +143,9 @@ export function QuestionAlertsProvider({
     latest.current = { pathname, router, playSound };
   });
 
-  // A fresher count from the server - after marking one answered - wins.
+  // Fresher counts from the server - after answering or publishing one - win.
   const [basis, setBasis] = useState(initialWaiting);
-  if (basis !== initialWaiting) {
+  if (basis.questions !== initialWaiting.questions || basis.reviews !== initialWaiting.reviews) {
     setBasis(initialWaiting);
     setWaiting(initialWaiting);
   }
@@ -140,16 +158,25 @@ export function QuestionAlertsProvider({
       if (asking) return;
       asking = true;
       try {
-        const response = await fetch(`/admin/questions/waiting?since=${encodeURIComponent(sinceRef.current)}`, { cache: "no-store" });
+        const response = await fetch(`/admin/waiting?since=${encodeURIComponent(sinceRef.current)}`, { cache: "no-store" });
         if (!response.ok) return;
-        const snapshot = (await response.json()) as WaitingSnapshot;
+        const { questions, reviews, checkedAt } = (await response.json()) as WaitingSnapshot;
         if (stopped) return;
-        sinceRef.current = snapshot.checkedAt;
-        setWaiting(snapshot.waiting);
-        if (snapshot.arrived > 0) {
+        sinceRef.current = checkedAt;
+        setWaiting({ questions: questions.waiting, reviews: reviews.waiting });
+
+        const arrived: Toast[] = [];
+        if (questions.arrived > 0) {
+          arrived.push({ text: questionArrival(questions.arrived, questions.newest), href: "/admin/questions", open: "Open questions" });
+        }
+        if (reviews.arrived > 0) {
+          arrived.push({ text: reviewArrival(reviews.arrived, reviews.newest), href: "/admin/reviews", open: "Open reviews" });
+        }
+        if (arrived.length > 0) {
+          // One chime, however much arrived at once.
           if (soundOn()) latest.current.playSound();
-          setToast(arrivalMessage(snapshot.arrived, snapshot.newest));
-          if (showsQuestions(latest.current.pathname)) latest.current.router.refresh();
+          setToasts(arrived);
+          if (showsWaiting(latest.current.pathname)) latest.current.router.refresh();
         }
       } catch {
         // Offline, or signed out and sent to the sign-in page: next time.
@@ -177,22 +204,28 @@ export function QuestionAlertsProvider({
   }, []);
 
   useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(null), TOAST_MS);
+    if (toasts.length === 0) return;
+    const timer = setTimeout(() => setToasts([]), TOAST_MS);
     return () => clearTimeout(timer);
-  }, [toast]);
+  }, [toasts]);
 
   return (
     <WaitingContext.Provider value={waiting}>
       {children}
-      {toast ? (
+      {toasts.length > 0 ? (
         // Above the fixed footer, clear of the page's own Save buttons.
-        <div role="status" className={`fixed right-4 bottom-16 z-50 flex max-w-sm items-center gap-3 rounded-lg border px-4 py-3 text-sm shadow-lg ${ui.card} ${ui.rule}`}>
-          <p className="flex-1">{toast}</p>
-          <Link href="/admin/questions" aria-label="Open questions" onClick={() => setToast(null)} className={ui.link}>
-            Open
-          </Link>
-          <button type="button" aria-label="Dismiss" title="Dismiss" onClick={() => setToast(null)} className={`rounded px-1.5 ${ui.navItem}`}>
+        <div role="status" className={`fixed right-4 bottom-16 z-50 flex max-w-sm items-start gap-3 rounded-lg border px-4 py-3 text-sm shadow-lg ${ui.card} ${ui.rule}`}>
+          <ul className="flex flex-1 flex-col gap-2">
+            {toasts.map((toast) => (
+              <li key={toast.href} className="flex items-baseline gap-3">
+                <p className="flex-1">{toast.text}</p>
+                <Link href={toast.href} aria-label={toast.open} onClick={() => setToasts([])} className={ui.link}>
+                  Open
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <button type="button" aria-label="Dismiss" title="Dismiss" onClick={() => setToasts([])} className={`rounded px-1.5 ${ui.navItem}`}>
             ×
           </button>
         </div>
@@ -201,14 +234,14 @@ export function QuestionAlertsProvider({
   );
 }
 
-/** The switch for the chime, on the Questions page. */
-export function QuestionSoundToggle() {
+/** The switch for the chime, on the Questions and Reviews pages. */
+export function AlertSoundToggle() {
   const on = useSyncExternalStore(subscribeSound, soundOn, () => true);
 
   return (
     <label className="flex items-center gap-2.5 text-sm">
       <input type="checkbox" checked={on} onChange={(event) => setSound(event.target.checked)} className={`size-4 ${ui.checkbox}`} />
-      Play a sound when a question arrives
+      Play a sound when a question or review arrives
     </label>
   );
 }

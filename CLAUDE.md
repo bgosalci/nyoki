@@ -1148,8 +1148,9 @@ TypeScript, deployed to Vercel.
 
 ## Policies
 
-- **Five policies under `/policies`**: Delivery, Returns and refunds, Terms
-  and conditions, Privacy notice, Cookies, and an index. One list,
+- **Six policies under `/policies`**: Delivery, Returns and refunds, Terms
+  and conditions, Privacy notice, Cookies, Reviews (see Reviews), and an
+  index. One list,
   `POLICIES` (`src/lib/policies/pages.ts`), names them for the footer's
   Help column, checkout's footer and each page's "other policies"; each page
   is a `PolicyPage`. Change `POLICIES_UPDATED` with the words.
@@ -1218,19 +1219,22 @@ TypeScript, deployed to Vercel.
   titled and quoting the question (`replyLink`), and she marks it answered.
   An email service, which would also bring password reset and receipts, was
   offered as the next step and is not built.
-- **Every admin page hears about new questions** (`QuestionAlertsProvider`,
-  in the protected layout): it asks `/admin/questions/waiting` every ten
-  seconds - background tabs too - and at once when the tab is come back to.
-  The count waiting shows on Questions in the sidebar; a question arriving
-  chimes and shows a toast saying who asked about what. Only the Questions
-  page and the Overview refresh themselves then: a refresh anywhere else
-  could cost an unsaved edit.
+- **Every admin page hears about new questions and reviews**
+  (`AdminAlertsProvider`, in the protected layout): it asks `/admin/waiting`
+  every ten seconds - background tabs too - and at once when the tab is come
+  back to. The counts waiting show on Questions and Reviews in the sidebar,
+  and together on the phone's Menu button; a question or review arriving
+  chimes once and shows a toast line for each, saying who sent what about
+  which piece. Only the Questions and Reviews pages and the Overview refresh
+  themselves then: a refresh anywhere else could cost an unsaved edit.
 - The route counts what arrived after the time asked about **up to the
   moment it looked**, and the next ask starts there, so nothing is counted
   twice. Ten seconds is as instant as a page gets without a push service; a
   notification with the admin closed needs web push or email, not built.
 - The chime is made in the browser (Web Audio, no sound file), off with the
-  switch on the Questions page, remembered per browser. A browser plays
+  switch on the Questions and Reviews pages, remembered per browser (under
+  its old key, `nyoki-admin-question-sound`, so a chime switched off stayed
+  off when reviews joined). A browser plays
   sound only after a click or key press on the page, so the first chime
   needs one.
 - Each question shows when it was **sent** and when it was **answered**, day
@@ -1262,6 +1266,57 @@ TypeScript, deployed to Vercel.
 - Pieces imported from Not On The High Street pointed shoppers at its "Ask
   seller a question" button. The migration that made questions rewrote that
   to "'Ask a question' below", matching only the exact quoted wording.
+
+## Reviews
+
+- **A shopper reviews a piece signed in to their account, once** (`Review`,
+  unique by account and piece): one to five stars (a database check holds
+  it too), up to 2,000 characters, and the name shown with it, which starts
+  as the first name and last initial (`shownName`) and can be changed. The
+  email is never shown. Signed out, the piece's page offers "Sign in to write
+  a review", which comes back to `#reviews` (`afterSignIn` lets
+  `/product/<address>` through, by a pattern that admits no slash, dot or
+  colon). An account, not a typed email, is what makes a review trustworthy:
+  the shop sends no email, so nothing could prove a guest's address.
+- **Nothing goes on the shop until it is read**: a review starts `PENDING`,
+  and only `PUBLISHED` ones show - on the piece's page, newest first, under
+  the average of all of them, and as stars beneath the piece's name
+  (`RatingLink`). A changed review goes back to `PENDING`, off the page until
+  it is read again; the shop's reply stays.
+- **Kept off only for a reason the policy names**: `HIDDEN` always carries
+  one of `HIDDEN_REASONS` (`src/lib/reviews/moderation.ts`) - offensive,
+  personal details, advertising, not genuine - chosen from a list in the
+  admin, refused without one, and the same list writes the reviews policy's
+  "What we don't publish". **None is about being unfavourable**: the DMCC
+  Act 2024 (Schedule 20, from 6 April 2025) bans publishing reviews in a way
+  that misleads, and leaving out the bad ones is that. The admin page and
+  the reason picker both say so. The shopper sees the reason on the piece's
+  page, and can change the review and send it again.
+- **Verified purchase** (`purchaseOf`, `src/lib/reviews/purchase.ts`): an
+  order of the piece, paid for (`PAID`, `FULFILLED` or `REFUNDED` - a refund
+  does not undo having had it), **placed signed in to the reviewer's own
+  account** - a guest order joins whichever account holds its email, which
+  proves nothing, as `shopperOrders` already rules. Looked up when the review
+  is written and each time it is changed, and kept as the order's number
+  (`verifiedOrderNumber`), which the admin links to and the shop never shows:
+  the page is handed `verified` alone. With payment not built, no review can
+  be verified yet.
+- **The admin** (`/admin/reviews`): to read (oldest first), published and not
+  published, each with its stars, the name shown and the account's email,
+  the piece, the order behind a verified purchase, and Publish, Don't
+  publish / Take off the shop (with a reason), a public reply ("Reply from
+  Nyoki Handmade" beneath it on the shop) and Delete, which asks first.
+  "Reviews to read" is on the Overview.
+- **Limits**: ten reviews written or changed an hour per account (by
+  `emailKey`) and sixty from everyone together, since each chimes on every
+  open admin page (`REVIEWS_PER_SHOPPER`, `REVIEWS_IN_ALL`); only reviews
+  kept count.
+- The shopper changes or deletes their own on the piece's page
+  (`YourReview`; deleting asks first). Gone with the piece or the account
+  (both cascade). The privacy notice and `/policies/reviews` say what is kept
+  and shown; no review is ever paid for, rewarded or written by the shop.
+- Not built: photos in reviews, stars on the product cards, search engines'
+  review markup, and a "write a review" link from a shopper's orders.
 
 ## You may also like
 
@@ -1412,7 +1467,8 @@ TypeScript, deployed to Vercel.
 ## Overview
 
 - The Overview's figures come from `overviewStats` (`src/lib/admin/overview.ts`):
-  live products, drafts, orders to fulfil, running sales, live promo codes -
+  live products, drafts, orders to fulfil, questions waiting, reviews to
+  read, running sales, live promo codes -
   each a link to the page behind it (the label's link is stretched over its
   card, so the list stays a list).
 - **Sales and codes are counted by the rules the shop and checkout use**:

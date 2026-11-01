@@ -60,6 +60,15 @@ export const QUESTIONS_PER_ADDRESS: Limit = { bucket: "question:address", max: 5
 export const QUESTIONS_IN_ALL: Limit = { bucket: "question:all", max: 60, windowMs: HOUR };
 
 /**
+ * Reviews written or changed, by one account (by its email, as a keyed hash)
+ * and by everyone together. A review needs an account, and one account has
+ * one per piece; but each one written chimes on every open admin page, as a
+ * question does, so a flood of accounts is held back by the ceiling.
+ */
+export const REVIEWS_PER_SHOPPER: Limit = { bucket: "review:shopper", max: 10, windowMs: HOUR };
+export const REVIEWS_IN_ALL: Limit = { bucket: "review:all", max: 60, windowMs: HOUR };
+
+/**
  * Promo codes tried that did not work: codes are words, and words can be
  * guessed. One refused for its minimum spend is not a miss - the shopper can
  * act on it, and its message already says the code exists.

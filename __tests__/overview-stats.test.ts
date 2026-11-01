@@ -25,7 +25,7 @@ const code = (overrides: Partial<{ active: boolean; startsAt: Date; endsAt: Date
   ...overrides,
 });
 
-const counts = { live: 231, drafts: 6, toFulfil: 0, questions: 2 };
+const counts = { live: 231, drafts: 6, toFulfil: 0, questions: 2, reviews: 3 };
 const value = (stats: ReturnType<typeof overviewStats>, label: string) => stats.find((stat) => stat.label === label)?.value;
 
 describe("overviewStats", () => {
@@ -37,6 +37,7 @@ describe("overviewStats", () => {
       ["Drafts", 6],
       ["Orders to fulfil", 0],
       ["Questions waiting", 2],
+      ["Reviews to read", 3],
       ["Running sales", 0],
       ["Live promo codes", 0],
     ]);
@@ -101,6 +102,7 @@ describe("overviewStats", () => {
       Drafts: undefined,
       "Orders to fulfil": undefined,
       "Questions waiting": undefined,
+      "Reviews to read": undefined,
       "Running sales": "None scheduled",
       "Live promo codes": "None scheduled",
     });
@@ -114,6 +116,7 @@ describe("overviewStats", () => {
       Drafts: "/admin/products?status=DRAFT",
       "Orders to fulfil": "/admin/orders",
       "Questions waiting": "/admin/questions",
+      "Reviews to read": "/admin/reviews",
       "Running sales": "/admin/sales",
       "Live promo codes": "/admin/codes",
     });

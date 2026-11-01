@@ -4,8 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createContext, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
-import { useWaitingQuestions } from "@/components/admin/question-alerts";
+import { useWaiting } from "@/components/admin/admin-alerts";
 import { ADMIN_NAV, isCurrent } from "@/lib/admin/nav";
+import { waitingSummary } from "@/lib/admin/waiting";
 import { ui } from "@/lib/brand/ui";
 
 const STORAGE_KEY = "nyoki-admin-sidebar-collapsed";
@@ -49,6 +50,11 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M4.5 5.5h15v10h-9l-4 3.5v-3.5h-2v-10Z" strokeLinejoin="round" />
       <path d="M10.2 8.8a1.8 1.8 0 1 1 2.6 1.6c-.5.3-.8.6-.8 1.1" strokeLinecap="round" />
       <path d="M12 13.4h.01" strokeLinecap="round" />
+    </>
+  ),
+  "/admin/reviews": (
+    <>
+      <path d="m12 4 2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.6-4.8 2.6.9-5.4-3.9-3.8 5.4-.8L12 4Z" strokeLinejoin="round" />
     </>
   ),
   "/admin/orders": (
@@ -139,12 +145,15 @@ export function AdminMenuProvider({ children }: { children: React.ReactNode }) {
 /**
  * The top bar's way to the pages on a phone, where the sidebar laid out
  * above every page pushed the page itself halfway down the first screen.
- * It carries the count of questions waiting, since Questions is shut away
- * behind it. From md up the sidebar is always there, and this is not.
+ * It carries the count of questions and reviews waiting, since Questions and
+ * Reviews are shut away behind it. From md up the sidebar is always there,
+ * and this is not.
  */
 export function AdminMenuButton() {
   const menu = useContext(MenuContext);
-  const waiting = useWaitingQuestions();
+  const counts = useWaiting();
+  const waiting = counts.questions + counts.reviews;
+  const summary = waitingSummary(counts);
   const open = menu?.open ?? false;
 
   return (
@@ -153,8 +162,8 @@ export function AdminMenuButton() {
       type="button"
       aria-expanded={open}
       aria-controls={MENU_ID}
-      // Said whole, as the sidebar's Questions is.
-      aria-label={waiting > 0 ? `Menu, ${waiting} ${waiting === 1 ? "question" : "questions"} waiting` : undefined}
+      // Said whole, as the sidebar's Questions and Reviews are.
+      aria-label={summary ? `Menu, ${summary}` : undefined}
       onClick={() => menu?.setOpen(!open)}
       className={`flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1.5 text-sm md:hidden ${open ? ui.navActive : ui.navItem}`}
     >
@@ -188,7 +197,7 @@ export function AdminMenuButton() {
 export function AdminSidebar() {
   const pathname = usePathname();
   const collapsed = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const waiting = useWaitingQuestions();
+  const waiting = useWaiting();
   const menu = useContext(MenuContext);
   const open = menu?.open ?? false;
   const aside = useRef<HTMLElement>(null);
@@ -226,8 +235,8 @@ export function AdminSidebar() {
         <nav aria-label="Shop admin" className="flex flex-col gap-0.5">
           {ADMIN_NAV.map((item) => {
             const current = isCurrent(pathname, item.href);
-            // Shoppers' questions not yet answered, counted live.
-            const count = item.href === "/admin/questions" ? waiting : 0;
+            // Shoppers' questions not yet answered, and reviews not yet read, counted live.
+            const count = item.href === "/admin/questions" ? waiting.questions : item.href === "/admin/reviews" ? waiting.reviews : 0;
 
             return (
               <Link

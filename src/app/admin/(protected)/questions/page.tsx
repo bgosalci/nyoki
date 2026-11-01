@@ -1,6 +1,6 @@
 import { deleteQuestion, setQuestionAnswered } from "@/app/admin/(protected)/questions/actions";
 import { PinnedHeight } from "@/components/admin/pinned-height";
-import { QuestionSoundToggle } from "@/components/admin/question-alerts";
+import { AlertSoundToggle } from "@/components/admin/admin-alerts";
 import { QuestionList } from "@/components/admin/question-list";
 import { PINNED_BLOCK_CLASS } from "@/components/admin/th";
 import { requireAdmin } from "@/lib/auth/dal";
@@ -31,7 +31,7 @@ export default async function QuestionsPage() {
           question holds a shopper&apos;s email address, so delete it once you no longer need it.
         </p>
         <div className="mt-3">
-          <QuestionSoundToggle />
+          <AlertSoundToggle />
         </div>
       </PinnedHeight>
 

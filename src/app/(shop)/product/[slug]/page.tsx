@@ -29,6 +29,12 @@ import { productOffer } from "@/lib/storefront/offer";
 import { summaryOf } from "@/lib/rich-text/parse";
 import { alsoLike } from "@/lib/products/also-like";
 import { automaticAlsoLike, CARD_SELECT, toCards } from "@/lib/storefront/queries";
+import { deleteOwnReview, writeReview } from "@/app/(shop)/product/[slug]/actions";
+import { RatingLink, ReviewList, ReviewsSummary } from "@/components/shop/reviews";
+import { ReviewForm } from "@/components/shop/review-form";
+import { YourReview } from "@/components/shop/your-review";
+import { ratingSummary } from "@/lib/reviews/summary";
+import { shownName } from "@/lib/reviews/validate";
 
 async function findProduct(slug: string) {
   return db.product.findFirst({
@@ -69,7 +75,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const price = effectivePricePence(product.pricePence, sales, new Date());
 
   const categoryIds = product.categories.map((link) => link.categoryId);
-  const [categories, chosen, automatic] = await Promise.all([
+  const [categories, chosen, automatic, published, own] = await Promise.all([
     db.category.findMany({ select: { id: true, slug: true, name: true, parentId: true, active: true } }),
     // Njomza's own choices, in her order; one taken off the shop is skipped.
     db.alsoLike.findMany({
@@ -79,8 +85,29 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     }),
     // Pieces from the same categories, to fill whatever she has not chosen.
     automaticAlsoLike(product.id, categoryIds),
+    // Every review on the shop, newest first: the average is of them all.
+    db.review.findMany({
+      where: { productId: product.id, status: "PUBLISHED" },
+      orderBy: { submittedAt: "desc" },
+      select: { id: true, name: true, rating: true, body: true, verifiedOrderNumber: true, submittedAt: true, reply: true },
+    }),
+    // The shopper's own, whatever has become of it.
+    shopper
+      ? db.review.findUnique({
+          where: { customerId_productId: { customerId: shopper.id, productId: product.id } },
+          select: { id: true, rating: true, body: true, name: true, status: true, hiddenReason: true, verifiedOrderNumber: true, reply: true },
+        })
+      : null,
   ]);
   const related = alsoLike({ chosen: chosen.map((link) => link.piece), automatic });
+
+  // Whether a review is a verified purchase, never the order behind it.
+  const verify = <Review extends { verifiedOrderNumber: string | null }>({ verifiedOrderNumber, ...review }: Review) => ({
+    ...review,
+    verified: verifiedOrderNumber !== null,
+  });
+  const reviews = published.map(verify);
+  const rating = ratingSummary(reviews.map((review) => review.rating));
 
   // A card or bookmark with something to choose, or clothing in colours or
   // sizes, shows its choices. The basket prices a line by this same offer.
@@ -142,6 +169,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-3">
             <h1 className={`text-3xl leading-tight tracking-tight ${ui.shopHeading}`}>{product.name}</h1>
+            <RatingLink {...rating} />
             {/* On a phone the price is in the bar at the bottom of the screen. */}
             <p className="hidden items-baseline gap-3 text-xl tabular-nums md:flex">
               {formatPence(price.pricePence)}
@@ -225,6 +253,52 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           )}
         </div>
       </ProductLayout>
+
+      <section id="reviews" aria-labelledby="reviews-heading" className="mt-20 scroll-mt-60">
+        <h2 id="reviews-heading" className={`text-2xl tracking-tight ${ui.shopHeading}`}>
+          Reviews
+        </h2>
+        <div className="mt-6 grid gap-10 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+          <div className="flex flex-col gap-6">
+            <ReviewsSummary {...rating} />
+
+            {own ? (
+              <YourReview
+                review={verify(own)}
+                productId={product.id}
+                write={writeReview}
+                remove={deleteOwnReview}
+              />
+            ) : shopper ? (
+              <Disclosure title="Write a review" className={`border-t pt-4 ${ui.shopRule}`}>
+                <div className="mt-4">
+                  <ReviewForm action={writeReview} productId={product.id} defaults={{ rating: null, body: "", name: shownName(shopper.name) }} />
+                </div>
+              </Disclosure>
+            ) : (
+              <p className={`text-sm leading-relaxed ${ui.shopMuted}`}>
+                <Link
+                  href={`/account/sign-in?next=${encodeURIComponent(`/product/${product.slug}#reviews`)}`}
+                  className="underline underline-offset-4"
+                >
+                  Sign in to write a review
+                </Link>
+                . Reviews come from shoppers&apos; accounts, one each.
+              </p>
+            )}
+
+            <p className={`text-xs leading-relaxed ${ui.shopMuted}`}>
+              We read every review before it goes on the shop, and publish good and bad alike. A review marked Verified
+              purchase is from someone who bought the piece from us.{" "}
+              <Link href="/policies/reviews" className="underline underline-offset-4">
+                How we handle reviews
+              </Link>
+            </p>
+          </div>
+
+          {reviews.length > 0 ? <ReviewList reviews={reviews} /> : null}
+        </div>
+      </section>
 
       {related.length > 0 ? (
         <section className="mt-20">

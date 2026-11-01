@@ -33,6 +33,7 @@ export function overviewStats(
     drafts,
     toFulfil,
     questions,
+    reviews,
     sales,
     codes,
   }: {
@@ -41,6 +42,8 @@ export function overviewStats(
     toFulfil: number;
     /** Shoppers' questions not yet marked answered. */
     questions: number;
+    /** Shoppers' reviews waiting to be read. */
+    reviews: number;
     sales: readonly Pick<PricingSale, "active" | "startsAt" | "endsAt">[];
     codes: readonly Pick<RedeemableCode, "active" | "startsAt" | "endsAt" | "usageLimit" | "usedCount">[];
   },
@@ -51,6 +54,7 @@ export function overviewStats(
     { label: "Drafts", value: drafts, href: "/admin/products?status=DRAFT" },
     { label: "Orders to fulfil", value: toFulfil, href: "/admin/orders" },
     { label: "Questions waiting", value: questions, href: "/admin/questions" },
+    { label: "Reviews to read", value: reviews, href: "/admin/reviews" },
     {
       label: "Running sales",
       value: sales.filter((sale) => isSaleLive(sale, now)).length,

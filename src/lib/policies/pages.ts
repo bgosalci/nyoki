@@ -46,6 +46,12 @@ export const POLICIES: readonly Policy[] = [
     short: "Cookies",
     summary: "The two small cookies the shop needs to work, and why there is no cookie banner.",
   },
+  {
+    slug: "reviews",
+    title: "Reviews",
+    short: "Reviews",
+    summary: "Who can review a piece, what Verified purchase means, how we check every review and what we don't publish.",
+  },
 ];
 
 export function policyHref(policy: Pick<Policy, "slug">): string {

@@ -5,6 +5,7 @@ import { CUSTOMER_SESSION_COOKIE, CUSTOMER_SESSION_DAYS, KNOWN_BROWSER_COOKIE, K
 import { BASKET_COOKIE, BASKET_COOKIE_DAYS } from "@/lib/basket/cookie";
 import { POLICIES, POLICIES_UPDATED, policyHref } from "@/lib/policies/pages";
 import type { RateSource } from "@/lib/delivery/parcel";
+import { HIDDEN_REASONS } from "@/lib/reviews/moderation";
 
 const rateSources = jest.fn();
 
@@ -17,6 +18,7 @@ import DeliveryPage from "@/app/(shop)/policies/delivery/page";
 import PoliciesPage from "@/app/(shop)/policies/page";
 import PrivacyPage from "@/app/(shop)/policies/privacy/page";
 import ReturnsPage from "@/app/(shop)/policies/returns/page";
+import ReviewsPage from "@/app/(shop)/policies/reviews/page";
 import TermsPage from "@/app/(shop)/policies/terms/page";
 
 const tracked48: RateSource = {
@@ -58,6 +60,7 @@ const PAGES: { slug: string; render: () => ReactElement | Promise<ReactElement> 
   { slug: "terms", render: () => TermsPage() },
   { slug: "privacy", render: () => PrivacyPage() },
   { slug: "cookies", render: () => CookiesPage() },
+  { slug: "reviews", render: () => ReviewsPage() },
 ];
 
 describe.each(PAGES)("the $slug page", ({ slug, render: page }) => {
@@ -351,6 +354,59 @@ describe("cookies", () => {
   });
 });
 
+describe("reviews", () => {
+  // The DMCC Act 2024 bans fake reviews and publishing reviews in a way that
+  // misleads, and the CMA's guidance asks a shop that publishes them to say
+  // how it handles them.
+  it("reads every review before it goes on, and publishes good and bad alike", () => {
+    render(ReviewsPage());
+
+    const text = section("How we check them");
+    expect(text).toHaveTextContent(/read every review before it goes on the shop/i);
+    expect(text).toHaveTextContent(/good and bad alike/i);
+    expect(text).toHaveTextContent(/never change/i);
+  });
+
+  it("names every reason a review is left out, and says being unfavourable is not one", () => {
+    render(ReviewsPage());
+
+    const text = section("What we don't publish");
+    for (const reason of HIDDEN_REASONS) expect(text).toHaveTextContent(reason.says);
+    expect(text).toHaveTextContent(/never leave out a review for being critical/i);
+  });
+
+  it("says what Verified purchase means", () => {
+    render(ReviewsPage());
+
+    expect(section("Verified purchase")).toHaveTextContent(/bought the piece from us, signed in to the account/i);
+  });
+
+  it("never pays for reviews, nor writes its own", () => {
+    render(ReviewsPage());
+
+    const text = section("How we check them");
+    expect(text).toHaveTextContent(/never pay/i);
+    expect(text).toHaveTextContent(/never write reviews ourselves/i);
+  });
+
+  it("says how to change or delete a review, and how to tell us about one", () => {
+    render(ReviewsPage());
+
+    expect(section("Changing or deleting yours")).toHaveTextContent(/change it or delete it/i);
+    expect(within(section("Telling us about a review")).getByRole("link", { name: "Contact page" })).toHaveAttribute("href", "/contact");
+  });
+});
+
+describe("privacy, on reviews", () => {
+  it("says what a review keeps, what is shown, and for how long", () => {
+    render(PrivacyPage());
+
+    expect(screen.getByText(/When you write a review/)).toBeInTheDocument();
+    expect(screen.getByText(/never your email address/i)).toBeInTheDocument();
+    expect(screen.getByText(/^Reviews: /)).toBeInTheDocument();
+  });
+});
+
 describe("privacy, on what the shop counts to stop attacks", () => {
   // The shop keeps its own record of sign-ins that failed, accounts made,
   // questions sent and promo codes that did not work - by email, or a
@@ -360,6 +416,7 @@ describe("privacy, on what the shop counts to stop attacks", () => {
     render(PrivacyPage());
 
     expect(screen.getByText(/counts attempts to sign in/i)).toBeInTheDocument();
+    expect(screen.getByText(/counts attempts to sign in, .*write a review/i)).toBeInTheDocument();
     expect(screen.getByText(/scrambled form of the email given or of your internet address/i)).toBeInTheDocument();
     expect(screen.getByText(/Counts of attempts .*: a day\./)).toBeInTheDocument();
   });

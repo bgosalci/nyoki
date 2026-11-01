@@ -2,7 +2,7 @@ import { isValidElement, type ReactNode } from "react";
 
 // jest.mock() does not go through the @/ alias, so these are relative.
 jest.mock("../src/lib/auth/dal", () => ({ requireAdmin: async () => ({ email: "njomza@nyoki.co.uk", role: "OWNER" }) }));
-jest.mock("../src/lib/db", () => ({ db: { question: { count: async () => 0 } } }));
+jest.mock("../src/lib/db", () => ({ db: { question: { count: async () => 0 }, review: { count: async () => 0 } } }));
 jest.mock("../src/app/admin/(protected)/actions", () => ({ signOut: async () => {} }));
 
 import AdminLayout from "@/app/admin/(protected)/layout";

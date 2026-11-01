@@ -126,6 +126,7 @@ model Product {
   sales          SaleProduct[]
   orderItems     OrderItem[]
   questions      Question[]
+  reviews        Review[]
   basketLines    BasketLine[]
 
   // "You may also like": the pieces Njomza chose for this one, and the
@@ -453,6 +454,70 @@ model Question {
   @@map("questions")
 }
 
+enum ReviewStatus {
+  PENDING // waiting to be read: not on the shop yet
+  PUBLISHED // on the piece's page
+  HIDDEN // not published, or taken off the shop, for a reason the reviews policy names
+}
+
+// The only reasons a review is kept off the shop - each one named in the
+// reviews policy, so none can be kept off for being unfavourable.
+enum ReviewHiddenReason {
+  OFFENSIVE
+  PERSONAL_DETAILS
+  ADVERTISING
+  NOT_GENUINE
+}
+
+/**
+ * A shopper's review of a piece: stars and words, written signed in, one per
+ * account and piece. Read before it goes on the shop (src/lib/reviews).
+ */
+model Review {
+  id String @id @default(cuid())
+
+  // A review has no page without its piece, and belongs to its account.
+  productId  String   @map("product_id")
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  customerId String   @map("customer_id")
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  // One to five stars (checked by the database too), the words, and the
+  // name shown with them, which the shopper chooses.
+  rating Int
+  body   String
+  name   String
+
+  // The order, placed signed in to this account and paid for, that showed
+  // the shopper had bought the piece when they wrote or last changed the
+  // review; null when none did. The shop says "Verified purchase", never the
+  // number.
+  verifiedOrderNumber String? @map("verified_order_number")
+
+  status       ReviewStatus        @default(PENDING)
+  hiddenReason ReviewHiddenReason? @map("hidden_reason")
+  // When it was last published or kept off; null while it waits.
+  moderatedAt  DateTime?           @map("moderated_at")
+
+  // The shop's public reply, shown beneath it.
+  reply     String?
+  repliedAt DateTime? @map("replied_at")
+
+  // When the shopper wrote it, or last changed it: the date the shop shows,
+  // and what the admin's open pages hear about. A changed review goes back
+  // to wait to be read.
+  submittedAt DateTime @default(now()) @map("submitted_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([customerId, productId])
+  // A piece's published reviews, newest first; what waits; what arrived.
+  @@index([productId, status, submittedAt])
+  @@index([status, submittedAt])
+  @@index([submittedAt])
+  @@map("reviews")
+}
+
 model HomePage {
   id String @id @default("home")
 
@@ -637,6 +702,7 @@ model Customer {
   orders     Order[]
   addresses  Address[]
   favourites Favourite[]
+  reviews    Review[]
   basket     Basket?
 
   createdAt DateTime @default(now()) @map("created_at")

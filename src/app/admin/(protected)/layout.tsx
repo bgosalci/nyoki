@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { AdminFooter } from "@/components/admin/admin-footer";
 import { AdminMenuProvider, AdminSidebar } from "@/components/admin/admin-sidebar";
 import { AdminTopBar } from "@/components/admin/admin-top-bar";
-import { QuestionAlertsProvider } from "@/components/admin/question-alerts";
+import { AdminAlertsProvider } from "@/components/admin/admin-alerts";
 import { requireAdmin } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
 import { signOut } from "@/app/admin/(protected)/actions";
@@ -16,11 +16,14 @@ export const metadata: Metadata = {
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   // The real guard. The proxy redirect is only an optimistic convenience.
   const session = await requireAdmin();
-  // For the sidebar's count, kept live by asking again every few seconds.
-  const waiting = await db.question.count({ where: { answeredAt: null } });
+  // For the sidebar's counts, kept live by asking again every few seconds.
+  const [questions, reviews] = await Promise.all([
+    db.question.count({ where: { answeredAt: null } }),
+    db.review.count({ where: { status: "PENDING" } }),
+  ]);
 
   return (
-    <QuestionAlertsProvider initialWaiting={waiting} since={new Date().toISOString()}>
+    <AdminAlertsProvider initialWaiting={{ questions, reviews }} since={new Date().toISOString()}>
       {/* A chosen theme is set before the first paint by the root layout's
           script (THEME_BOOTSTRAP), not one here: React never runs a script
           it renders on a client-side arrival, and warned that it would not. */}
@@ -39,6 +42,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
         <AdminFooter email={session.email} role={session.role} signOut={signOut} />
       </div>
-    </QuestionAlertsProvider>
+    </AdminAlertsProvider>
   );
 }

@@ -12,13 +12,14 @@ import { POLICIES, policyHref } from "@/lib/policies/pages";
 import type { RateSource } from "@/lib/delivery/parcel";
 
 describe("the policies", () => {
-  it("are the five pages a shop must have, each under /policies", () => {
+  it("are the five pages a shop must have, and how reviews are handled, each under /policies", () => {
     expect(POLICIES.map((policy) => policy.title)).toEqual([
       "Delivery",
       "Returns and refunds",
       "Terms and conditions",
       "Privacy notice",
       "Cookies",
+      "Reviews",
     ]);
     expect(POLICIES.map((policy) => policyHref(policy))).toEqual([
       "/policies/delivery",
@@ -26,6 +27,7 @@ describe("the policies", () => {
       "/policies/terms",
       "/policies/privacy",
       "/policies/cookies",
+      "/policies/reviews",
     ]);
   });
 });
