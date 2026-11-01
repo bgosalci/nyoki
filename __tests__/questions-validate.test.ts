@@ -54,3 +54,18 @@ describe("isBot", () => {
     expect(isBot(form(good))).toBe(false);
   });
 });
+
+describe("parseQuestion's email check", () => {
+  // The Contact form is open to anyone and takes eleven megabytes; the old
+  // pattern needed seconds for a long run of dots.
+  it("refuses a long crafted address at once", () => {
+    const start = performance.now();
+    const result = parseQuestion(form({ ...good, email: `a@${".".repeat(100_000)}@` }));
+    expect(performance.now() - start).toBeLessThan(50);
+    expect(result).toMatchObject({ ok: false, errors: { email: "That does not look like an email address." } });
+  });
+
+  it("refuses an address that would add recipients to the reply", () => {
+    expect(parseQuestion(form({ ...good, email: "me@x.co?cc=other@y.co" }))).toMatchObject({ ok: false });
+  });
+});

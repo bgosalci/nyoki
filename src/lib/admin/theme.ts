@@ -41,12 +41,24 @@ export function themeAttribute(choice: ThemeChoice): Theme | null {
   return choice === "system" ? null : choice;
 }
 
+/** Where the script acts: the admin, but not its sign-in page. */
+const ADMIN = "/admin";
+const SIGN_IN = "/admin/login";
+
 /**
  * The script that runs inline, ahead of React, so a chosen theme is already
  * on the page at first paint rather than snapping into place after it.
+ *
+ * It runs from the root layout's `<head>`, on every page, so it looks at the
+ * address itself and acts on the admin's pages alone: the storefront is
+ * light-only and must never be marked. Nor is the sign-in page, which has no
+ * ThemeToggle to take the mark off again on the way out. It sat in the
+ * admin's own layout once, and on every client-side arrival there - straight
+ * after signing in - React warned that a script it renders in the browser is
+ * never run; ThemeToggle applies the theme then, once it is on the page.
  *
  * Deliberately tiny and dependency-free - it is inlined into the HTML as a
  * string - and it stays silent when storage is unreadable, which a private
  * window or blocked site data will make it.
  */
-export const THEME_BOOTSTRAP = `try{var t=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});if(t==="dark"||t==="light"){document.documentElement.dataset.theme=t}}catch(e){}`;
+export const THEME_BOOTSTRAP = `try{var p=location.pathname,a=${JSON.stringify(ADMIN)},s=${JSON.stringify(SIGN_IN)};if((p===a||p.indexOf(a+"/")===0)&&p!==s&&p.indexOf(s+"/")!==0){var t=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});if(t==="dark"||t==="light"){document.documentElement.dataset.theme=t}}}catch(e){}`;

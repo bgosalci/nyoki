@@ -23,14 +23,17 @@ enum AdminRole {
 }
 
 model AdminUser {
-  id           String    @id @default(cuid())
-  email        String    @unique
-  name         String
-  passwordHash String    @map("password_hash")
-  role         AdminRole @default(STAFF)
-  lastLoginAt  DateTime? @map("last_login_at")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
+  id                String    @id @default(cuid())
+  email             String    @unique
+  name              String
+  passwordHash      String    @map("password_hash")
+  role              AdminRole @default(STAFF)
+  lastLoginAt       DateTime? @map("last_login_at")
+  // Sessions signed before this are refused. Set when the password changes
+  // or is reset, so that ends every session but the one that changed it.
+  sessionsValidFrom DateTime? @map("sessions_valid_from")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
 
   @@map("admin_users")
 }
@@ -407,6 +410,21 @@ model PriceListEntry {
  * from the Contact page. Answered by email from the admin's Questions list -
  * the shop sends no email itself yet. Kept until deleted.
  */
+// One attempt at something limited - signing in, registering, a question, a
+// promo code that did not work - by what it was (bucket) and who made it
+// (key: an email, or a hash of the address it came from, never the address
+// itself). Rows past the longest window are deleted as new ones are written.
+model RateLimitHit {
+  id        String   @id @default(cuid())
+  bucket    String
+  key       String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([bucket, key, createdAt])
+  @@index([createdAt])
+  @@map("rate_limit_hits")
+}
+
 model Question {
   id String @id @default(cuid())
 
@@ -603,7 +621,10 @@ model Customer {
   // Null for a customer who has never set one: a guest checkout creates the
   // row, and an account is something they may add later against the same
   // email rather than a second identity.
-  passwordHash String? @map("password_hash")
+  passwordHash      String?   @map("password_hash")
+  // Sessions signed before this are refused, as a CMS account's are: set
+  // when the password changes, ending every other session.
+  sessionsValidFrom DateTime? @map("sessions_valid_from")
 
   stripeCustomerId String? @unique @map("stripe_customer_id")
   marketingOptIn   Boolean @default(false) @map("marketing_opt_in")
@@ -682,6 +703,10 @@ model Order {
   customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
   // Captured separately so guest checkout works without a Customer row.
   email      String
+  // Placed while signed in to the account. Only these are listed in the
+  // shopper's own account: a guest order joins whichever Customer row holds
+  // its email, and nothing yet proves an email belongs to whoever claims it.
+  signedIn   Boolean   @default(false) @map("signed_in")
 
   subtotalPence Int    @map("subtotal_pence")
   discountPence Int    @default(0) @map("discount_pence")

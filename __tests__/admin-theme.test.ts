@@ -66,6 +66,7 @@ describe("THEME_BOOTSTRAP", () => {
   beforeEach(() => {
     window.localStorage.clear();
     delete document.documentElement.dataset.theme;
+    window.history.pushState({}, "", "/admin/products");
   });
 
   it("marks the page with a stored choice", () => {
@@ -90,6 +91,33 @@ describe("THEME_BOOTSTRAP", () => {
 
   it("ignores a stored value it does not recognise", () => {
     window.localStorage.setItem(THEME_STORAGE_KEY, "neon");
+    run();
+
+    expect(document.documentElement.dataset.theme).toBeUndefined();
+  });
+
+  it("runs from the root layout, so it acts on admin pages alone: the storefront is light-only", () => {
+    // In the admin's own layout, React warned on every client-side arrival
+    // that a script it renders there is never run.
+    window.localStorage.setItem(THEME_STORAGE_KEY, "dark");
+
+    for (const path of ["/", "/shop/cards", "/product/snowflake-card", "/checkout", "/administration"]) {
+      window.history.pushState({}, "", path);
+      run();
+      expect(document.documentElement.dataset.theme).toBeUndefined();
+    }
+
+    for (const path of ["/admin", "/admin/products/p1/price"]) {
+      window.history.pushState({}, "", path);
+      run();
+      expect(document.documentElement.dataset.theme).toBe("dark");
+      delete document.documentElement.dataset.theme;
+    }
+  });
+
+  it("leaves the sign-in page following the machine, as it always has: nothing there takes the mark off again", () => {
+    window.localStorage.setItem(THEME_STORAGE_KEY, "dark");
+    window.history.pushState({}, "", "/admin/login");
     run();
 
     expect(document.documentElement.dataset.theme).toBeUndefined();

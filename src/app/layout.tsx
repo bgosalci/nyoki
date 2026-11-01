@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Jost } from "next/font/google";
+
+import { THEME_BOOTSTRAP } from "@/lib/admin/theme";
 import "./globals.css";
 
 // Jost carries the geometric caps of the Nyoki wordmark into the site.
@@ -36,6 +38,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       // inside it is.
       suppressHydrationWarning
     >
+      {/* The admin's chosen theme, set before the page first paints. Here
+          rather than in the admin's layout, which React draws afresh on a
+          client-side arrival and warns that it will not run a script for;
+          the root layout is drawn once, on a full load. The script checks
+          the address itself, so the light-only storefront is never marked. */}
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
+      </head>
       {/* Browser extensions write onto <body> before React hydrates -
           Grammarly's data-gr-ext-installed, for one - which the dev overlay
           reported as a hydration error on every page. Again only this

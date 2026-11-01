@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { EditProductForm } from "@/components/admin/edit-product-form";
 import { EditProductImages } from "@/components/admin/edit-product-images";
+import { requireAdmin } from "@/lib/auth/dal";
 import { categoryPaths, pathsOf } from "@/lib/categories/path";
 import { CATEGORY_ORDER } from "@/lib/categories/ordering";
 import { db } from "@/lib/db";
@@ -15,6 +16,10 @@ export default async function EditProductPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  // Checked here as well as in the admin layout, which moving between
+  // admin pages does not render again.
+  await requireAdmin();
+
   const { id } = await params;
 
   const photo = { orderBy: { position: "asc" as const }, take: 1, select: { url: true, alt: true } };

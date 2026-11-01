@@ -17,9 +17,19 @@ import {
   validateRegistration,
   validateSignIn,
 } from "@/lib/account/validate";
+import { normaliseEmail } from "@/lib/auth/authenticate";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { isUniqueViolationOn } from "@/lib/db-errors";
 import { db } from "@/lib/db";
+import {
+  REGISTER_PER_ADDRESS,
+  SIGN_IN_PER_ADDRESS,
+  SIGN_IN_PER_EMAIL,
+  WAIT_A_WHILE,
+  isLimited,
+  recordAttempt,
+  requestAddress,
+} from "@/lib/rate-limit";
 
 const TAKEN = "That email already has an account. Sign in instead.";
 
@@ -44,6 +54,12 @@ export async function register(_state: RegisterState, formData: FormData): Promi
   };
 
   if (!result.ok) return { errors: result.errors, values };
+
+  // Each registration costs a deliberately slow hash, and a script making
+  // accounts by the hundred is nobody shopping.
+  const address = await requestAddress();
+  if (await isLimited(REGISTER_PER_ADDRESS, address)) return { errors: { email: WAIT_A_WHILE }, values };
+  await recordAttempt(REGISTER_PER_ADDRESS, address);
 
   const { name, email, password } = result.data;
   const passwordHash = await hashPassword(password);
@@ -83,6 +99,14 @@ export async function signIn(_state: SignInState, formData: FormData): Promise<S
 
   const result = validateSignIn(formData);
 
+  // Refused before the account is looked up or its slow hash checked, with
+  // the same answer for any email, so it says nothing about which exist.
+  const address = await requestAddress();
+  const tried = normaliseEmail(email);
+  if ((await isLimited(SIGN_IN_PER_ADDRESS, address)) || (await isLimited(SIGN_IN_PER_EMAIL, tried))) {
+    return { error: WAIT_A_WHILE, email };
+  }
+
   const session = result.ok
     ? await authenticateCustomer(result.data.email, result.data.password, {
         findCustomerByEmail: (normalised) =>
@@ -95,7 +119,11 @@ export async function signIn(_state: SignInState, formData: FormData): Promise<S
 
   // One message for every failure. Naming which half was wrong would confirm
   // that an address is registered.
-  if (!session) return { error: "Those details are not right. Please try again.", email };
+  if (!session) {
+    await recordAttempt(SIGN_IN_PER_ADDRESS, address);
+    await recordAttempt(SIGN_IN_PER_EMAIL, tried);
+    return { error: "Those details are not right. Please try again.", email };
+  }
 
   await startCustomerSession(session);
 
@@ -147,10 +175,14 @@ export async function changePassword(_state: PasswordState, formData: FormData):
 
   if (!matches) return { errors: { currentPassword: "That is not your current password." } };
 
+  // A password is changed because someone else may know it, so every
+  // session signed before now stops working, wherever it is - and this one
+  // is signed afresh, so the shopper who changed it stays signed in.
   await db.customer.update({
     where: { id: shopper.id },
-    data: { passwordHash: await hashPassword(result.data.newPassword) },
+    data: { passwordHash: await hashPassword(result.data.newPassword), sessionsValidFrom: new Date() },
   });
+  await startCustomerSession({ customerId: shopper.id, email: shopper.email });
 
   return { errors: {}, changed: true };
 }

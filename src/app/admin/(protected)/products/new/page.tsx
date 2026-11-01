@@ -1,11 +1,16 @@
 import { ProductForm } from "@/components/admin/product-form";
 import { SaveSlot, SaveSlotProvider } from "@/components/admin/save-slot";
 import { createProduct } from "@/app/admin/(protected)/products/actions";
+import { requireAdmin } from "@/lib/auth/dal";
 import { CATEGORY_ORDER } from "@/lib/categories/ordering";
 import { db } from "@/lib/db";
 import { deliverySettings, postageCategories, rateSources } from "@/lib/delivery/store";
 
 export default async function NewProductPage() {
+  // Checked here as well as in the admin layout, which moving between
+  // admin pages does not render again.
+  await requireAdmin();
+
   const [categories, options, settings, rates, usualCategories] = await Promise.all([
     db.category.findMany({
       orderBy: CATEGORY_ORDER,

@@ -2,10 +2,15 @@ import { notFound } from "next/navigation";
 
 import { BackLink } from "@/components/admin/back-link";
 import { EditDiscountCodeForm } from "@/components/admin/edit-discount-code-form";
+import { requireAdmin } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
 import type { DiscountCodeInput } from "@/lib/discounts/validate";
 
 export default async function EditCodePage({ params }: { params: Promise<{ id: string }> }) {
+  // Checked here as well as in the admin layout, which moving between
+  // admin pages does not render again.
+  await requireAdmin();
+
   const { id } = await params;
   const code = await db.discountCode.findUnique({ where: { id } });
   if (!code) notFound();

@@ -7,6 +7,7 @@ import {
   createCustomerToken,
   verifyCustomerToken,
   type CustomerSession,
+  type VerifiedCustomerSession,
 } from "@/lib/account/session";
 
 // Longer than the CMS's week: a shopper comes back occasionally, and being
@@ -44,7 +45,7 @@ export async function startCustomerSession(session: CustomerSession): Promise<vo
   });
 }
 
-export async function readCustomerSession(): Promise<CustomerSession | null> {
+export async function readCustomerSession(): Promise<VerifiedCustomerSession | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(CUSTOMER_SESSION_COOKIE)?.value;
 

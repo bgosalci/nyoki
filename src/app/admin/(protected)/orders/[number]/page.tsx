@@ -2,11 +2,16 @@ import { notFound } from "next/navigation";
 
 import { BackLink } from "@/components/admin/back-link";
 import { OrderDetail } from "@/components/admin/order-detail";
+import { requireAdmin } from "@/lib/auth/dal";
 import { detailsOf } from "@/lib/checkout/order";
 import { db } from "@/lib/db";
 
 /** One order, opened by its number from the orders list. */
 export default async function OrderPage({ params }: { params: Promise<{ number: string }> }) {
+  // Checked here as well as in the admin layout, which moving between
+  // admin pages does not render again.
+  await requireAdmin();
+
   const { number } = await params;
   const order = await db.order.findUnique({
     where: { orderNumber: decodeURIComponent(number) },

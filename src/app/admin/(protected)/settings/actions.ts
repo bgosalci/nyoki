@@ -13,8 +13,11 @@ import { removalBlockedBecause, roleChangeBlockedBecause } from "@/lib/admin/rem
 import { validateAdminEdit, validateNewAdminInput, validatePasswordChange } from "@/lib/admin/validate";
 import { requireAdmin, requireOwner } from "@/lib/auth/dal";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
+import { startSession } from "@/lib/auth/session-cookie";
 import { db } from "@/lib/db";
-import { isUniqueViolationOn } from "@/lib/db-errors";
+import { isSerializationFailure, isUniqueViolationOn } from "@/lib/db-errors";
+
+const RACED = "Someone else changed the team at the same moment. Please try again.";
 
 export async function changePassword(
   _state: ChangePasswordState,
@@ -32,10 +35,14 @@ export async function changePassword(
     return { errors: { currentPassword: "That is not your current password." }, done: false };
   }
 
+  // A password is changed because someone else may know it, so every
+  // session signed before now stops working, wherever it is - and this one
+  // is signed afresh, so whoever changed it stays signed in.
   await db.adminUser.update({
     where: { id: admin.id },
-    data: { passwordHash: await hashPassword(result.data.newPassword) },
+    data: { passwordHash: await hashPassword(result.data.newPassword), sessionsValidFrom: new Date() },
   });
+  await startSession(session);
 
   return { errors: {}, done: true };
 }
@@ -72,11 +79,26 @@ export async function removeAdmin(
 ): Promise<RemoveAdminState> {
   const session = await requireOwner();
 
-  const admins = await db.adminUser.findMany({ select: { id: true, role: true } });
-  const blocked = removalBlockedBecause(admins, { actorId: session.userId, targetId });
+  // Checked and removed in one serializable transaction. Read first and
+  // written after, two owners removing each other at once each saw two
+  // owners, both went through, and the shop was left with none; serialized,
+  // the second fails and is asked to try again, when the check refuses it.
+  let blocked: string | null;
+  try {
+    blocked = await db.$transaction(
+      async (tx) => {
+        const admins = await tx.adminUser.findMany({ select: { id: true, role: true } });
+        const reason = removalBlockedBecause(admins, { actorId: session.userId, targetId });
+        if (!reason) await tx.adminUser.delete({ where: { id: targetId } });
+        return reason;
+      },
+      { isolationLevel: "Serializable" },
+    );
+  } catch (error) {
+    if (isSerializationFailure(error)) return { error: RACED };
+    throw error;
+  }
   if (blocked) return { error: blocked };
-
-  await db.adminUser.delete({ where: { id: targetId } });
 
   revalidatePath("/admin/settings");
   return { error: null };
@@ -92,11 +114,24 @@ export async function updateAdmin(
   const result = validateAdminEdit(formData);
   if (!result.ok) return { errors: result.errors, saved: false };
 
-  const admins = await db.adminUser.findMany({ select: { id: true, role: true } });
-  const blocked = roleChangeBlockedBecause(admins, { actorId: session.userId, targetId, newRole: result.data.role });
+  // Serialized for the same reason as removing: two owners demoting each
+  // other at once must not both go through.
+  let blocked: string | null;
+  try {
+    blocked = await db.$transaction(
+      async (tx) => {
+        const admins = await tx.adminUser.findMany({ select: { id: true, role: true } });
+        const reason = roleChangeBlockedBecause(admins, { actorId: session.userId, targetId, newRole: result.data.role });
+        if (!reason) await tx.adminUser.update({ where: { id: targetId }, data: result.data });
+        return reason;
+      },
+      { isolationLevel: "Serializable" },
+    );
+  } catch (error) {
+    if (isSerializationFailure(error)) return { errors: { role: RACED }, saved: false };
+    throw error;
+  }
   if (blocked) return { errors: { role: blocked }, saved: false };
-
-  await db.adminUser.update({ where: { id: targetId }, data: result.data });
 
   revalidatePath("/admin/settings");
   revalidatePath(`/admin/settings/team/${targetId}`);
@@ -108,13 +143,20 @@ export async function resetAdminPassword(
   _state: ResetPasswordState,
   _formData: FormData,
 ): Promise<ResetPasswordState> {
-  await requireOwner();
+  const session = await requireOwner();
 
   const target = await db.adminUser.findUnique({ where: { id: targetId }, select: { id: true } });
   if (!target) return { password: null, error: "That account no longer exists." };
 
+  // Reset because the account may be in the wrong hands: whoever is signed
+  // in to it is signed out everywhere, and only the new password opens it.
   const password = randomBytes(18).toString("base64url");
-  await db.adminUser.update({ where: { id: targetId }, data: { passwordHash: await hashPassword(password) } });
+  await db.adminUser.update({
+    where: { id: targetId },
+    data: { passwordHash: await hashPassword(password), sessionsValidFrom: new Date() },
+  });
+  // An owner resetting their own keeps this session, as changing it would.
+  if (targetId === session.userId) await startSession(session);
 
   return { password, error: null };
 }

@@ -23,7 +23,10 @@ export function replyLink(question: { name: string; email: string; message: stri
     ...quoted.split("\n").map((line) => `> ${line}`),
   ].join("\r\n");
 
-  // The address goes in as it is: an email that passed the form has no
-  // spaces, and an encoded @ is not understood by every mail program.
-  return `mailto:${question.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  // Everything in the address is encoded but its @, which not every mail
+  // program understands encoded. A question sent before the form refused ?
+  // and & keeps the address it came with, and written as it is, one ending
+  // "?cc=someone&body=..." would add a recipient and replace this body.
+  const to = encodeURIComponent(question.email).replace(/%40/g, "@");
+  return `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }

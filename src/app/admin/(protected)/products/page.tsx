@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/auth/dal";
 import { ui } from "@/lib/brand/ui";
 import { ProductFilterForm } from "@/components/admin/product-filter-form";
 import { PinnedHeight } from "@/components/admin/pinned-height";
@@ -20,6 +21,10 @@ export default async function ProductsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  // Checked here as well as in the admin layout, which moving between
+  // admin pages does not render again.
+  await requireAdmin();
+
   const filter = parseProductFilter(await searchParams);
   const filtering = filter.q !== null || filter.status !== null || filter.category !== null;
 

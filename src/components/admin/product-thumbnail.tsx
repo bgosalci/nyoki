@@ -9,6 +9,10 @@ import Image from "next/image";
 const SIZES = {
   row: { px: 56, className: "size-14" },
   large: { px: 112, className: "size-28" },
+  // The products list: large where there is room, row-sized on a phone, where
+  // the large photo alone took a third of the screen's width. Asked for at
+  // the larger, so it is sharp at both.
+  list: { px: 112, className: "size-14 sm:size-28" },
 } as const;
 
 export type ThumbnailSize = keyof typeof SIZES;

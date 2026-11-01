@@ -1,4 +1,4 @@
-import { act, render, screen, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import Link from "next/link";
 
@@ -430,6 +430,68 @@ describe("ProductForm, saving from the top of the page", () => {
     expect(saving).toHaveLength(2);
     saving.forEach((button) => expect(button).toBeDisabled());
     await act(async () => finish({ errors: {} }));
+  });
+
+  const withSlot = (form: React.ReactNode) => (
+    <SaveSlotProvider>
+      <SaveSlot />
+      {form}
+    </SaveSlotProvider>
+  );
+  const slotStatus = () => within(document.querySelector<HTMLElement>("[data-save-slot]")!).getByRole("status");
+
+  it("says Saved beside the Save at the top, which stays in sight from either button", async () => {
+    render(withSlot(<ProductForm action={noopAction} product={mug} categories={categories} submitLabel="Save changes" />));
+    const user = userEvent.setup();
+    expect(slotStatus()).toBeEmptyDOMElement();
+
+    // The bottom button: the pinned header, and what it says, is still on the screen.
+    await user.click(screen.getAllByRole("button", { name: "Save changes" })[1]);
+
+    await waitFor(() => expect(slotStatus()).toHaveTextContent("Saved."));
+  });
+
+  it("says nothing of the kind when the save was turned down", async () => {
+    render(withSlot(<ProductForm action={async () => ({ errors: { name: "Give the product a name." } })} product={mug} categories={categories} />));
+    const user = userEvent.setup();
+
+    await user.click(screen.getAllByRole("button", { name: "Save product" })[0]);
+    await screen.findByText("Give the product a name.");
+
+    expect(slotStatus()).toBeEmptyDOMElement();
+  });
+
+  describe("when the save from the top is turned down", () => {
+    // jsdom has no scrollIntoView; this records where the page was asked to scroll.
+    const scrolled = jest.fn();
+    beforeEach(() => {
+      scrolled.mockClear();
+      Element.prototype.scrollIntoView = function (this: Element, options?: boolean | ScrollIntoViewOptions) {
+        scrolled(this, options);
+      };
+    });
+
+    it("goes to the first field wrong, in the middle of the screen beneath the pinned header", async () => {
+      const action = async () => ({ errors: { sku: "Another product already uses that code.", name: "Give the product a name." } });
+      render(withSlot(<ProductForm action={action} product={mug} categories={categories} />));
+      const user = userEvent.setup();
+
+      await user.click(screen.getAllByRole("button", { name: "Save product" })[0]);
+      await screen.findByText("Give the product a name.");
+
+      expect(screen.getByLabelText(/^name/i)).toHaveFocus();
+      expect(scrolled).toHaveBeenCalledWith(screen.getByLabelText(/^name/i), { block: "center" });
+    });
+
+    it("goes to a new product's first field wrong as well", async () => {
+      render(withSlot(<ProductForm action={async () => ({ errors: { leadTimeDays: "Lead time has to be a whole number of days." } })} submitLabel="Create product" />));
+      const user = userEvent.setup();
+
+      await user.click(screen.getAllByRole("button", { name: "Create product" })[0]);
+      await screen.findByText("Lead time has to be a whole number of days.");
+
+      expect(screen.getByLabelText(/^lead time/i)).toHaveFocus();
+    });
   });
 
   it("keeps a single Save where the page has no place for one at the top", () => {

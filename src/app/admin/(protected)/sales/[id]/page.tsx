@@ -2,11 +2,16 @@ import { BackLink } from "@/components/admin/back-link";
 import { notFound } from "next/navigation";
 
 import { EditSaleForm } from "@/components/admin/edit-sale-form";
+import { requireAdmin } from "@/lib/auth/dal";
 import { categoryPaths, pathsOf } from "@/lib/categories/path";
 import { db } from "@/lib/db";
 import type { SaleInput } from "@/lib/sales/validate";
 
 export default async function EditSalePage({ params }: { params: Promise<{ id: string }> }) {
+  // Checked here as well as in the admin layout, which moving between
+  // admin pages does not render again.
+  await requireAdmin();
+
   const { id } = await params;
 
   const [sale, found, categories] = await Promise.all([

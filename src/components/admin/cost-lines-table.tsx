@@ -13,6 +13,10 @@ const lineInput = `w-full rounded-md border px-2 py-1.5 text-sm outline-none ${u
  *
  * Controlled: the form around it keeps the rows, since a piece's Price tab
  * works its profit out from them as they are typed.
+ *
+ * Laid out fixed, so what each line is takes whatever the figures leave:
+ * beside the Price tab's figures, with the sidebar open, the labels were cut
+ * to "Yarn - me" while the number columns took two thirds of the row.
  */
 export function CostLinesTable({
   rows,
@@ -28,14 +32,14 @@ export function CostLinesTable({
 
   return (
     <>
-      <table className="mt-4 w-full border-collapse text-sm">
+      <table className="mt-4 w-full table-fixed border-collapse text-sm">
         <thead>
           <tr className={`border-b text-left ${ui.tableHead}`}>
             <th className="py-2 pr-2 font-medium">What</th>
-            <th className="w-28 py-2 pr-2 font-medium">Cost each</th>
-            <th className="w-20 py-2 pr-2 font-medium">How many</th>
-            <th className="w-24 py-2 pr-2 text-right font-medium">Cost</th>
-            <th className="w-10" />
+            <th className="w-20 py-2 pr-2 font-medium">Cost each</th>
+            <th className="w-18 py-2 pr-2 font-medium">How many</th>
+            <th className="w-16 py-2 pr-2 text-right font-medium">Cost</th>
+            <th className="w-8" />
           </tr>
         </thead>
         <tbody>
@@ -50,7 +54,7 @@ export function CostLinesTable({
               <td className="py-1.5 pr-2">
                 <input aria-label="How many" name="lineQuantity" inputMode="decimal" value={row.quantity} onChange={(e) => update(row.key, { quantity: e.target.value })} className={lineInput} />
               </td>
-              <td className="py-1.5 pr-2 text-right tabular-nums">{formatPence(rowCostPence(row))}</td>
+              <td className="py-1.5 pr-2 text-right whitespace-nowrap tabular-nums">{formatPence(rowCostPence(row))}</td>
               <td className="py-1.5 text-right">
                 <button
                   type="button"

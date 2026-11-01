@@ -17,6 +17,11 @@ export interface SessionPayload {
   role: AdminRole;
 }
 
+/** A session as its token carries it back: who, and when it was signed (whole seconds). */
+export interface VerifiedSession extends SessionPayload {
+  issuedAt: number;
+}
+
 export const SESSION_COOKIE = "nyoki_admin_session";
 
 const ALGORITHM = "HS256";
@@ -60,7 +65,7 @@ export async function verifySessionToken(
   token: string,
   secret: string,
   options: { now?: Date } = {},
-): Promise<SessionPayload | null> {
+): Promise<VerifiedSession | null> {
   if (!token) return null;
 
   try {
@@ -69,7 +74,7 @@ export async function verifySessionToken(
       currentDate: options.now,
     });
 
-    const { userId, email, role, kind } = payload as unknown as SessionPayload & { kind?: string };
+    const { userId, email, role, kind, iat } = payload as unknown as SessionPayload & { kind?: string; iat?: number };
 
     // A shopper's token is signed with this same secret, so the signature
     // alone proves nothing about who it was issued for. It carries kind
@@ -77,9 +82,23 @@ export async function verifySessionToken(
     if (kind !== undefined) return null;
     if (typeof userId !== "string" || typeof email !== "string") return null;
     if (role !== "OWNER" && role !== "STAFF") return null;
+    if (typeof iat !== "number") return null;
 
-    return { userId, email, role };
+    return { userId, email, role, issuedAt: iat };
   } catch {
     return null;
   }
+}
+
+/**
+ * Whether a session was signed before its account's password last changed,
+ * and so must stop working. Shared by the CMS and the shop's accounts.
+ *
+ * A token records whole seconds, so the change is compared by its second: the
+ * session signed afresh for whoever made the change falls in that same second
+ * and stays valid. One signed elsewhere in that very second survives too - a
+ * window too narrow to aim at.
+ */
+export function signedBefore(issuedAt: number, validFrom: Date | null): boolean {
+  return validFrom !== null && issuedAt < Math.floor(validFrom.getTime() / 1000);
 }

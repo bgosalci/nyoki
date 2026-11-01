@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ProductSteps } from "@/components/admin/product-steps";
 import { SaveSlotProvider } from "@/components/admin/save-slot";
 import { ProductHeader } from "@/components/admin/product-header";
+import { requireAdmin } from "@/lib/auth/dal";
 import { customisationGroup } from "@/lib/customisation/group";
 import { db } from "@/lib/db";
 import { PRODUCT_LIST_ORDER } from "@/lib/products/filter";
@@ -18,6 +19,10 @@ export default async function ProductLayout({
   params: Promise<{ id: string }>;
   children: React.ReactNode;
 }) {
+  // Checked here as well as in the admin layout, which moving between
+  // admin pages does not render again.
+  await requireAdmin();
+
   const { id } = await params;
   const [product, everything, categories] = await Promise.all([
     db.product.findUnique({ where: { id }, select: { id: true, name: true, categories: { select: { categoryId: true } } } }),

@@ -19,6 +19,9 @@ import { restoreFormValues } from "@/lib/forms/restore";
  * form still works before the page's JavaScript has loaded.
  *
  * Usage: `<form ref={formRef} action={formAction} onSubmit={onSubmit}>`.
+ *
+ * `rejection` is the state when the save was turned down, a new one each
+ * time, and null otherwise - on arrival too - for `useFocusFirstError`.
  */
 export function useActionForm<State>(
   action: (state: Awaited<State>, formData: FormData) => State | Promise<State>,
@@ -40,5 +43,5 @@ export function useActionForm<State>(
     submitted.current = new FormData(event.currentTarget);
   }
 
-  return { state, formAction, isPending, formRef, onSubmit };
+  return { state, formAction, isPending, formRef, onSubmit, rejection: restore ? state : null };
 }

@@ -307,8 +307,8 @@ describe("the customiser", () => {
       await user.click(addButton());
 
       expect(screen.getByText("Please choose a message option.")).toBeInTheDocument();
-      expect(screen.getByText("Please fill in the name.")).toBeInTheDocument();
-      expect(screen.getByText("Please choose the zodiac sign.")).toBeInTheDocument();
+      expect(screen.getByText("Please fill in “Name”.")).toBeInTheDocument();
+      expect(screen.getByText("Please choose one for “Zodiac sign”.")).toBeInTheDocument();
       expect(screen.getAllByRole("radio", { name: /leave it blank|add a printed message/i })[0]).toHaveFocus();
     });
 

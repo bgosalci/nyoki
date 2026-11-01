@@ -1,7 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-import { AdminSidebar } from "@/components/admin/admin-sidebar";
+import { AdminMenuProvider, AdminSidebar } from "@/components/admin/admin-sidebar";
+import { AdminTopBar } from "@/components/admin/admin-top-bar";
 
 jest.mock("next/navigation", () => ({ usePathname: () => "/admin/products" }));
 
@@ -78,5 +79,85 @@ describe("AdminSidebar", () => {
     expect(screen.getByRole("button", { name: /collapse/i })).toBeInTheDocument();
 
     getItem.mockRestore();
+  });
+});
+
+describe("on a phone, behind the top bar's Menu", () => {
+  // Below md the whole list was laid out above every page, pushing what the
+  // page is for halfway down the first screen.
+  function Chrome() {
+    return (
+      <AdminMenuProvider>
+        <AdminTopBar />
+        <AdminSidebar />
+        <main>
+          <p>The page</p>
+        </main>
+      </AdminMenuProvider>
+    );
+  }
+  const menuButton = () => screen.getByRole("button", { name: /^menu/i });
+  const menu = () => document.getElementById(menuButton().getAttribute("aria-controls")!)!;
+
+  it("is shut to begin with, and says which list it opens", () => {
+    render(<Chrome />);
+
+    expect(menuButton()).toHaveAttribute("aria-expanded", "false");
+    expect(menu()).toContainElement(screen.getByRole("link", { name: "Products" }));
+    expect(menu()).toHaveClass("hidden", "md:block");
+    // Only on a phone: from md up the sidebar is always there.
+    expect(menuButton()).toHaveClass("md:hidden");
+  });
+
+  it("opens over the page from the top bar, and shuts again", async () => {
+    const user = userEvent.setup();
+    render(<Chrome />);
+
+    await user.click(menuButton());
+    expect(menuButton()).toHaveAttribute("aria-expanded", "true");
+    expect(menu()).not.toHaveClass("hidden");
+    expect(menu()).toHaveClass("fixed");
+
+    await user.click(menuButton());
+    expect(menuButton()).toHaveAttribute("aria-expanded", "false");
+    expect(menu()).toHaveClass("hidden");
+  });
+
+  it("shuts once a page is chosen", async () => {
+    const user = userEvent.setup();
+    render(<Chrome />);
+
+    await user.click(menuButton());
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+
+    expect(menuButton()).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("shuts on Escape, and puts the keyboard back on Menu", async () => {
+    const user = userEvent.setup();
+    render(<Chrome />);
+
+    await user.click(menuButton());
+    screen.getByRole("link", { name: "Orders" }).focus();
+    await user.keyboard("{Escape}");
+
+    expect(menuButton()).toHaveAttribute("aria-expanded", "false");
+    expect(menuButton()).toHaveFocus();
+  });
+
+  it("shuts on a press anywhere else on the page", async () => {
+    const user = userEvent.setup();
+    render(<Chrome />);
+
+    await user.click(menuButton());
+    await user.click(screen.getByText("The page"));
+
+    expect(menuButton()).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("keeps the Collapse button for a computer alone", () => {
+    render(<Chrome />);
+
+    expect(screen.getByRole("button", { name: /collapse/i })).toHaveClass("hidden", "md:flex");
   });
 });

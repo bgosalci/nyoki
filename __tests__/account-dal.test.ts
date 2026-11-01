@@ -78,3 +78,23 @@ describe("requireCustomer", () => {
     expect(await requireCustomer()).toEqual(shopper);
   });
 });
+
+describe("a shopper's session signed before the password last changed", () => {
+  const changedAt = new Date("2026-11-01T12:00:00Z");
+
+  beforeEach(() => jest.clearAllMocks());
+
+  it("opens nothing", async () => {
+    readCustomerSession.mockResolvedValue({ ...cookieSession, issuedAt: changedAt.getTime() / 1000 - 1 });
+    findUnique.mockResolvedValue({ ...row, sessionsValidFrom: changedAt });
+
+    expect(await currentCustomer()).toBeNull();
+  });
+
+  it("opens the account when signed since", async () => {
+    readCustomerSession.mockResolvedValue({ ...cookieSession, issuedAt: changedAt.getTime() / 1000 + 5 });
+    findUnique.mockResolvedValue({ ...row, sessionsValidFrom: changedAt });
+
+    expect(await currentCustomer()).toEqual(shopper);
+  });
+});

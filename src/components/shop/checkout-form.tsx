@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useId, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
 
 import type { CheckoutState, CodeResult } from "@/app/(checkout)/checkout/actions";
 import { INPUT, PANEL, PANEL_SURFACE, Tile, TileGroup } from "@/components/shop/customiser";
@@ -12,6 +12,7 @@ import { checkoutTotals, deliveryPence, freeOption, type DeliveryRate, type Tota
 import { GIFT_NOTE_MAX } from "@/lib/checkout/validate";
 import { deliveryDays } from "@/lib/delivery/validate";
 import { useActionForm } from "@/lib/forms/action-form";
+import { useFocusFirstError } from "@/lib/forms/first-error";
 import { formatPence } from "@/lib/money";
 
 /**
@@ -26,6 +27,10 @@ import { formatPence } from "@/lib/money";
  * On a computer the order sits beside the form; on a phone it folds to one
  * line at the top, and the total and Continue are held in the slim bar at
  * the foot, as Add to basket and Checkout are.
+ *
+ * Turned down, it goes to the first problem in page order - Continue in a
+ * phone's bar is far from the postcode - or, with no box wrong, to what was
+ * said about the whole order.
  */
 
 export interface CheckoutLine {
@@ -99,12 +104,15 @@ export function CheckoutForm({
   applyCode,
 }: CheckoutFormProps) {
   const formId = useId();
-  const { state, formAction, isPending, formRef, onSubmit } = useActionForm(
+  const { state, formAction, isPending, formRef, onSubmit, rejection } = useActionForm(
     action,
     initialState,
     (result) => Object.keys(result.errors).length > 0 || Boolean(result.notice),
   );
   const errors = state.errors;
+  const pageRef = useRef<HTMLDivElement>(null);
+  const foldedRef = useRef<HTMLDetailsElement>(null);
+  const noticeRef = useRef<HTMLParagraphElement>(null);
 
   // For me, always - coming back to an order waiting as a gift included. Its
   // note and prices setting wait behind the gift tile, should it be one again.
@@ -115,6 +123,14 @@ export function CheckoutForm({
     return savedAddresses[0]?.id ?? "new";
   });
   const [code, setCode] = useState<AppliedCode | null>(prefill?.code ?? null);
+  // A code the order would not take comes off it, so the total is the one
+  // without it and the box is back, with why beside it. Taken off as the
+  // answer is drawn, so the box is there to be gone to.
+  const [codeRefusedBy, setCodeRefusedBy] = useState<CheckoutState | null>(null);
+  if (rejection?.errors.code && codeRefusedBy !== rejection) {
+    setCodeRefusedBy(rejection);
+    setCode(null);
+  }
   // The free way, whenever there is one - coming back to change something
   // included, though faster was chosen before. Else the way chosen before;
   // else none, since a paid way is the shopper's to choose.
@@ -132,14 +148,21 @@ export function CheckoutForm({
   const newAddress = addressChoice === "new";
   const defaults = prefill?.address ?? (gift ? null : shopper?.name ? { name: shopper.name } : null);
 
+  // The folded order is unfolded on a phone, so the code's box is seen; ahead
+  // of going to the first problem, which the box may be.
+  useEffect(() => {
+    if (rejection?.errors.code && foldedRef.current) foldedRef.current.open = true;
+  }, [rejection]);
+  useFocusFirstError(pageRef, rejection, noticeRef);
+
   const summary = (
     <OrderSummary lines={lines} totals={totals} rate={rate} code={code} setCode={setCode} applyCode={applyCode} error={errors.code} />
   );
 
   return (
-    <div className="mt-7 grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_430px] lg:gap-12">
+    <div ref={pageRef} className="mt-7 grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_430px] lg:gap-12">
       {/* On a phone or tablet the order folds to one line at the top. */}
-      <details className={`group lg:hidden ${PANEL_SURFACE}`}>
+      <details ref={foldedRef} className={`group lg:hidden ${PANEL_SURFACE}`}>
         <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 font-medium [&::-webkit-details-marker]:hidden">
           <span className="flex items-center gap-2">
             <span className="group-open:hidden">Show your order</span>
@@ -238,11 +261,11 @@ export function CheckoutForm({
           <p className={`mt-1 text-[0.93rem] ${ui.shopMuted}`}>
             {gift ? "Their name and address. " : ""}We deliver within the UK for now.
           </p>
-          {errors.address ? <p className="mt-2 text-xs text-red-700">{errors.address}</p> : null}
+          {errors.address && savedAddresses.length === 0 ? <p className="mt-2 text-xs text-red-700">{errors.address}</p> : null}
 
           {savedAddresses.length > 0 ? (
             <div className="mt-5">
-              <TileGroup labelledBy={`${formId}-where`} describedBy={`${formId}-where`} className="grid-cols-1">
+              <TileGroup labelledBy={`${formId}-where`} describedBy={`${formId}-where`} error={errors.address} className="grid-cols-1">
                 {savedAddresses.map((saved) => (
                   <Tile key={saved.id} name="address" value={saved.id} checked={addressChoice === saved.id} onSelect={() => setAddressChoice(saved.id)}>
                     <span className="pr-6 font-medium">{saved.name}</span>{" "}
@@ -266,7 +289,7 @@ export function CheckoutForm({
               <ShopField label="Address" name="line1" error={errors.line1}>
                 {(props) => <input {...props} type="text" autoComplete="shipping address-line1" defaultValue={prefill?.address?.line1 ?? ""} className={INPUT} />}
               </ShopField>
-              <ShopField label="Address, second line (optional)" name="line2">
+              <ShopField label="Address, second line (optional)" name="line2" error={errors.line2}>
                 {(props) => (
                   <input
                     {...props}
@@ -282,7 +305,7 @@ export function CheckoutForm({
                 <ShopField label="Town or city" name="city" error={errors.city}>
                   {(props) => <input {...props} type="text" autoComplete="shipping address-level2" defaultValue={prefill?.address?.city ?? ""} className={INPUT} />}
                 </ShopField>
-                <ShopField label="County (optional)" name="county">
+                <ShopField label="County (optional)" name="county" error={errors.county}>
                   {(props) => <input {...props} type="text" autoComplete="shipping address-level1" defaultValue={prefill?.address?.county ?? ""} className={INPUT} />}
                 </ShopField>
               </div>
@@ -359,7 +382,7 @@ export function CheckoutForm({
         </section>
 
         {state.notice ? (
-          <p role="alert" className="rounded-md bg-nyoki-accent-beige px-5 py-3.5 text-[15px]">
+          <p ref={noticeRef} role="alert" tabIndex={-1} className="rounded-md bg-nyoki-accent-beige px-5 py-3.5 text-[15px] outline-none">
             {state.notice}
           </p>
         ) : null}

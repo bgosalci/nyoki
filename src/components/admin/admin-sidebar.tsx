@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSyncExternalStore } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 import { useWaitingQuestions } from "@/components/admin/question-alerts";
 import { ADMIN_NAV, isCurrent } from "@/lib/admin/nav";
@@ -110,6 +110,67 @@ function remember(collapsed: boolean): void {
   for (const listener of listeners) listener();
 }
 
+/** The sidebar, which the top bar's Menu shows on a phone. */
+const MENU_ID = "admin-menu";
+
+interface Menu {
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  button: React.RefObject<HTMLButtonElement | null>;
+}
+
+const MenuContext = createContext<Menu | null>(null);
+
+/**
+ * Whether the phone's menu is open, shared by the top bar's Menu button and
+ * the sidebar it shows. Open only on the page it was opened on, so arriving
+ * anywhere else - by the menu, or the browser's Back - finds it shut.
+ */
+export function AdminMenuProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const [openOn, setOpenOn] = useState<string | null>(null);
+  const button = useRef<HTMLButtonElement>(null);
+  const open = openOn === pathname;
+
+  const menu = useMemo(() => ({ open, setOpen: (next: boolean) => setOpenOn(next ? pathname : null), button }), [open, pathname]);
+  return <MenuContext.Provider value={menu}>{children}</MenuContext.Provider>;
+}
+
+/**
+ * The top bar's way to the pages on a phone, where the sidebar laid out
+ * above every page pushed the page itself halfway down the first screen.
+ * It carries the count of questions waiting, since Questions is shut away
+ * behind it. From md up the sidebar is always there, and this is not.
+ */
+export function AdminMenuButton() {
+  const menu = useContext(MenuContext);
+  const waiting = useWaitingQuestions();
+  const open = menu?.open ?? false;
+
+  return (
+    <button
+      ref={menu?.button}
+      type="button"
+      aria-expanded={open}
+      aria-controls={MENU_ID}
+      // Said whole, as the sidebar's Questions is.
+      aria-label={waiting > 0 ? `Menu, ${waiting} ${waiting === 1 ? "question" : "questions"} waiting` : undefined}
+      onClick={() => menu?.setOpen(!open)}
+      className={`flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1.5 text-sm md:hidden ${open ? ui.navActive : ui.navItem}`}
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true" className="size-5 shrink-0">
+        <path d={open ? "m6 6 12 12M18 6 6 18" : "M4 7h16M4 12h16M4 17h16"} strokeLinecap="round" />
+      </svg>
+      Menu
+      {waiting > 0 ? (
+        <span aria-hidden="true" className={`min-w-5 rounded-full px-1.5 text-center text-xs leading-5 font-semibold tabular-nums ${ui.badgeSale}`}>
+          {waiting}
+        </span>
+      ) : null}
+    </button>
+  );
+}
+
 /**
  * The admin sidebar: a destination per row with an icon, and a control to
  * narrow it to icons alone.
@@ -118,15 +179,48 @@ function remember(collapsed: boolean): void {
  * column of unlabelled icons is unusable without sight. The choice is
  * remembered per browser, which is all localStorage should ever be trusted
  * with.
+ *
+ * On a phone it is shut away behind the top bar's Menu, and opens over the
+ * page, beneath the bar: a page further down would put it out of sight. It
+ * shuts once a page is chosen, on Escape, and on a press anywhere else.
+ * Above the pinned headers (z-20), below the bar (z-30).
  */
 export function AdminSidebar() {
   const pathname = usePathname();
   const collapsed = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const waiting = useWaitingQuestions();
+  const menu = useContext(MenuContext);
+  const open = menu?.open ?? false;
+  const aside = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!open || !menu) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      menu.setOpen(false);
+      menu.button.current?.focus();
+    };
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      // The button shuts it itself.
+      if (aside.current?.contains(target) || menu.button.current?.contains(target)) return;
+      menu.setOpen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
+  }, [open, menu]);
+
+  const phone = open ? "fixed inset-x-0 top-14 z-[25] max-h-[calc(100dvh-6.5rem)] overflow-y-auto shadow-lg" : "hidden";
 
   return (
     <aside
-      className={`shrink-0 border-b p-4 md:border-r md:border-b-0 ${collapsed ? "md:w-16" : "md:w-56"} ${ui.panel} ${ui.rule}`}
+      ref={aside}
+      id={MENU_ID}
+      className={`shrink-0 border-b p-4 md:static md:z-auto md:block md:max-h-none md:overflow-visible md:border-r md:border-b-0 md:shadow-none ${phone} ${collapsed ? "md:w-16" : "md:w-56"} ${ui.panel} ${ui.rule}`}
     >
       <div className="md:sticky md:top-[calc(3.5rem+1rem)]">
         <nav aria-label="Shop admin" className="flex flex-col gap-0.5">
@@ -143,6 +237,7 @@ export function AdminSidebar() {
                 // Said whole, rather than pieced together from the label and the badge.
                 aria-label={count > 0 ? `${item.label}, ${count} waiting` : undefined}
                 title={collapsed ? item.label : undefined}
+                onClick={() => menu?.setOpen(false)}
                 className={`relative flex items-center gap-3 rounded-md px-3 py-2 text-sm ${collapsed ? "md:justify-center" : ""} ${current ? ui.navActive : ui.navItem}`}
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true" className="size-5 shrink-0">

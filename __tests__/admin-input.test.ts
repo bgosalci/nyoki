@@ -101,3 +101,11 @@ describe("validateAdminEdit", () => {
     expect(!result.ok && result.errors.role).toBeTruthy();
   });
 });
+
+describe("validateNewAdminInput's email check", () => {
+  it("is the shared one, which answers crafted input at once", () => {
+    const start = performance.now();
+    expect(validateNewAdminInput(form({ email: `a@${".".repeat(100_000)}@`, name: "A" })).ok).toBe(false);
+    expect(performance.now() - start).toBeLessThan(50);
+  });
+});

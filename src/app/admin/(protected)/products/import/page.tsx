@@ -1,9 +1,14 @@
 import { applyImport, checkImport } from "@/app/admin/(protected)/products/import/actions";
 import { BackLink } from "@/components/admin/back-link";
 import { ImportProducts } from "@/components/admin/import-products";
+import { requireAdmin } from "@/lib/auth/dal";
 import { ui } from "@/lib/brand/ui";
 
-export default function ImportProductsPage() {
+export default async function ImportProductsPage() {
+  // Checked here as well as in the admin layout, which moving between
+  // admin pages does not render again.
+  await requireAdmin();
+
   return (
     <>
       <div className="flex flex-col gap-3">

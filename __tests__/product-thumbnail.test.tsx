@@ -17,6 +17,14 @@ describe("ProductThumbnail", () => {
     expect(container.querySelector("img")).toHaveClass("size-28");
   });
 
+  it("can be half that on a phone and twice it from sm up, for the products list", () => {
+    const { container } = render(<ProductThumbnail image={image} size="list" />);
+
+    expect(container.querySelector("img")).toHaveClass("size-14", "sm:size-28");
+    // Asked for at the larger, so it is sharp at both.
+    expect(container.querySelector("img")).toHaveAttribute("width", "112");
+  });
+
   it("asks for a photo the size it will draw it, not a thumbnail stretched", () => {
     const { container } = render(<ProductThumbnail image={image} size="large" />);
 

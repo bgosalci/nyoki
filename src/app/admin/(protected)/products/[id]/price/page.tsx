@@ -2,12 +2,17 @@ import { notFound } from "next/navigation";
 
 import { savePricing } from "@/app/admin/(protected)/products/[id]/price/actions";
 import { PricingEditor } from "@/components/admin/pricing-editor";
+import { requireAdmin } from "@/lib/auth/dal";
 import type { EntryLine } from "@/lib/costing/import";
 import { rankEntriesFor } from "@/lib/costing/matching";
 import { templatesFor } from "@/lib/costing/templates";
 import { db } from "@/lib/db";
 
 export default async function ProductPricePage({ params }: { params: Promise<{ id: string }> }) {
+  // Checked here as well as in the admin layout, which moving between
+  // admin pages does not render again.
+  await requireAdmin();
+
   const { id } = await params;
 
   const product = await db.product.findUnique({

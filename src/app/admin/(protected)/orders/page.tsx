@@ -1,6 +1,7 @@
 import { OrderTable } from "@/components/admin/order-table";
 import { PinnedHeight } from "@/components/admin/pinned-height";
 import { PINNED_BLOCK_CLASS } from "@/components/admin/th";
+import { requireAdmin } from "@/lib/auth/dal";
 import { ui } from "@/lib/brand/ui";
 import { db } from "@/lib/db";
 import { isAwaitingFulfilment } from "@/lib/orders/status";
@@ -12,6 +13,10 @@ import { isAwaitingFulfilment } from "@/lib/orders/status";
 const RECENT = 200;
 
 export default async function OrdersPage() {
+  // Checked here as well as in the admin layout, which moving between
+  // admin pages does not render again.
+  await requireAdmin();
+
   const [orders, total] = await Promise.all([
     db.order.findMany({
       orderBy: { createdAt: "desc" },

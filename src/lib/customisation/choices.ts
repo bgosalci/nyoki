@@ -119,9 +119,32 @@ export interface MissingChoice {
 const blank = (text: string | undefined) => (text ?? "").trim() === "";
 
 /**
+ * Longer than its box takes, counted as the basket keeps it - without the
+ * spaces around it - and in the units the box's own `maxlength` counts.
+ */
+const tooLong = (text: string | undefined, most: number | null) => most !== null && (text ?? "").trim().length > most;
+
+const characters = (count: number) => `${count.toLocaleString("en-GB")} ${count === 1 ? "character" : "characters"}`;
+
+/**
+ * A thing to personalise, named as the shop wrote it and in quotes, so that
+ * any label reads: a noun ("Name") and a sentence ("Type your character")
+ * alike. Lowercased into "fill in the ..." the sentence did not. A colon or
+ * full stop of its own is left out of the quotes.
+ */
+const quoted = (label: string) => `“${label.trim().replace(/[\s:.]+$/, "")}”`;
+
+/** Ended with a full stop, unless the quoted label ends in a question or exclamation mark already. */
+const sentence = (text: string) => (/[?!]”$/.test(text) ? text : `${text}.`);
+
+/**
  * What still needs answering, in page order. Nothing the current choices
  * hide is asked: the words for a card left blank inside, or what to
  * personalise with personalising switched off.
+ *
+ * Text longer than its box takes counts as unanswered too. The box stops at
+ * its limit, but the basket is sent the choices directly and checks them by
+ * this, so a message of any length cannot reach a basket line or an order.
  */
 export function missingChoices(offer: Offer, choices: Choices): MissingChoice[] {
   const missing: MissingChoice[] = [];
@@ -152,17 +175,26 @@ export function missingChoices(offer: Offer, choices: Choices): MissingChoice[] 
       missing.push({ key: "message", message: "Please choose a message option.", short: "Choose a message option" });
     } else if (choices.message === "Printed message" && blank(choices.messageText)) {
       missing.push({ key: "messageText", message: "Please type the message you want printed.", short: "Type your message" });
+    } else if (choices.message === "Printed message" && tooLong(choices.messageText, offer.message.maxLength)) {
+      missing.push({
+        key: "messageText",
+        message: `Please keep the message to ${characters(offer.message.maxLength)}.`,
+        short: "Shorten your message",
+      });
     }
   }
 
   if (isPersonalising(offer, choices)) {
     for (const field of offer.personalisation!.fields) {
       const value = choices.personalisation[field.id];
-      const what = field.label.toLowerCase();
+      const what = quoted(field.label);
+      const key = `field:${field.id}` as const;
       if (field.kind === "TEXT" && blank(value)) {
-        missing.push({ key: `field:${field.id}`, message: `Please fill in the ${what}.`, short: `Fill in the ${what}` });
+        missing.push({ key, message: sentence(`Please fill in ${what}`), short: `Fill in ${what}` });
+      } else if (field.kind === "TEXT" && tooLong(value, field.maxLength)) {
+        missing.push({ key, message: `Please keep ${what} to ${characters(field.maxLength!)}.`, short: `Shorten ${what}` });
       } else if (field.kind === "CHOICE" && !field.choices.includes(value ?? "")) {
-        missing.push({ key: `field:${field.id}`, message: `Please choose the ${what}.`, short: `Choose the ${what}` });
+        missing.push({ key, message: sentence(`Please choose one for ${what}`), short: `Choose one for ${what}` });
       }
     }
   }

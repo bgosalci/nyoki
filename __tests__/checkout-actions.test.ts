@@ -50,7 +50,17 @@ jest.mock("../src/lib/basket/store", () => ({
   ratesFor: (...args: unknown[]) => ratesFor(...args),
 }));
 
+const isLimited = jest.fn();
+const recordAttempt = jest.fn();
+jest.mock("../src/lib/rate-limit", () => ({
+  ...jest.requireActual("../src/lib/rate-limit"),
+  isLimited: (...args: unknown[]) => isLimited(...args),
+  recordAttempt: (...args: unknown[]) => recordAttempt(...args),
+  requestAddress: async () => "address-hash",
+}));
+
 import { applyCode, continueToPayment } from "@/app/(checkout)/checkout/actions";
+import { CODE_MISSES_PER_ADDRESS, WAIT_A_WHILE } from "@/lib/rate-limit";
 
 const line = (overrides: Partial<PricedLine>): PricedLine => ({
   id: "l1",
@@ -119,6 +129,7 @@ beforeEach(() => {
   addressCreate.mockResolvedValue({ id: "addr-new" });
   orderFindFirst.mockResolvedValue(null);
   orderCreate.mockResolvedValue({ id: "o1" });
+  isLimited.mockResolvedValue(false);
 });
 
 describe("continueToPayment", () => {
@@ -137,6 +148,9 @@ describe("continueToPayment", () => {
         basketId: "b1",
         customerId: "guest1",
         email: "ella.morgan@example.com",
+        // Joined to the guest row by email, but not placed signed in: it is
+        // never listed in an account that claims that email later.
+        signedIn: false,
         subtotalPence: 7490,
         discountPence: 749,
         shippingPence: 0,
@@ -181,7 +195,7 @@ describe("continueToPayment", () => {
 
     expect(addressFindFirst).toHaveBeenCalledWith(expect.objectContaining({ where: { id: "saved1", customerId: "c1" } }));
     expect(customerUpsert).not.toHaveBeenCalled();
-    expect(orderCreate).toHaveBeenCalledWith({ data: expect.objectContaining({ customerId: "c1", email: "ella@example.com", gift: false, giftNote: null }) });
+    expect(orderCreate).toHaveBeenCalledWith({ data: expect.objectContaining({ customerId: "c1", email: "ella@example.com", signedIn: true, gift: false, giftNote: null }) });
     expect(addressCreate).toHaveBeenCalledWith({ data: expect.objectContaining({ customerId: null, line1: "3 Mill Yard" }) });
   });
 
@@ -282,5 +296,47 @@ describe("applyCode", () => {
   it("asks for a code when none was typed", async () => {
     expect(await applyCode("  ")).toEqual({ ok: false, message: "Type a code first." });
     expect(codeFindUnique).not.toHaveBeenCalled();
+  });
+});
+
+describe("guessing at promo codes", () => {
+  // Codes are words a shop chooses - XMAS10, WINTER20 - and words can be
+  // guessed. Every miss reads the same; past ten from one address in a
+  // quarter of an hour, the shop stops looking.
+  it("counts a code it will not take against the address it came from", async () => {
+    codeFindUnique.mockResolvedValue(null);
+
+    await applyCode("NOPE");
+
+    expect(recordAttempt).toHaveBeenCalledWith(CODE_MISSES_PER_ADDRESS, "address-hash");
+  });
+
+  it("counts nothing for a code that works", async () => {
+    await applyCode("WINTER10");
+
+    expect(recordAttempt).not.toHaveBeenCalled();
+  });
+
+  it("stops looking codes up for an address that has missed too often", async () => {
+    isLimited.mockResolvedValue(true);
+
+    expect(await applyCode("WINTER10")).toEqual({ ok: false, message: WAIT_A_WHILE });
+    expect(codeFindUnique).not.toHaveBeenCalled();
+  });
+
+  it("holds continuing to payment with a code to the same limit", async () => {
+    isLimited.mockResolvedValue(true);
+
+    expect(await continueToPayment({ errors: {} }, form({ ...gift, code: "WINTER10" }))).toEqual({ errors: { code: WAIT_A_WHILE } });
+    expect(codeFindUnique).not.toHaveBeenCalled();
+    expect(orderCreate).not.toHaveBeenCalled();
+  });
+
+  it("counts a code continuing to payment would not take", async () => {
+    codeFindUnique.mockResolvedValue(null);
+
+    await continueToPayment({ errors: {} }, form({ ...gift, code: "NOPE" }));
+
+    expect(recordAttempt).toHaveBeenCalledWith(CODE_MISSES_PER_ADDRESS, "address-hash");
   });
 });

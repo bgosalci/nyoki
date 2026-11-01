@@ -5,6 +5,7 @@ import { BackLink } from "@/components/admin/back-link";
 import { DeliverySettingsForm } from "@/components/admin/delivery-settings-form";
 import { PinnedHeight } from "@/components/admin/pinned-height";
 import { PINNED_BLOCK_CLASS, Th } from "@/components/admin/th";
+import { requireAdmin } from "@/lib/auth/dal";
 import { ui } from "@/lib/brand/ui";
 import { ROYAL_MAIL_PRICES_FROM } from "@/lib/delivery/royal-mail";
 import { deliverySettings, rateSources, unweighedCount } from "@/lib/delivery/store";
@@ -14,6 +15,10 @@ import { formatOrderDate } from "@/lib/orders/status";
 
 /** The ways an order can be sent, as checkout offers them, and how postage is worked out. */
 export default async function DeliveryPage() {
+  // Checked here as well as in the admin layout, which moving between
+  // admin pages does not render again.
+  await requireAdmin();
+
   const [sources, active, settings, unweighed] = await Promise.all([
     rateSources({ activeOnly: false }),
     db.shippingRate.findMany({ where: { active: true }, select: { id: true } }),

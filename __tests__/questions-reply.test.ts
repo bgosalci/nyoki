@@ -31,3 +31,19 @@ describe("replyLink", () => {
     expect(body.endsWith("…")).toBe(true);
   });
 });
+
+describe("replyLink with an address the form would now refuse", () => {
+  // Questions sent before the address check tightened keep what they were
+  // sent with: a ? or & in one must not add a recipient or replace the body.
+  it("keeps the whole address as the one recipient, and the body as ours", () => {
+    const url = new URL(replyLink({ ...asked, email: "me@x.co?cc=third@party.com&body=Pay%20here" }));
+
+    expect(url.searchParams.get("cc")).toBeNull();
+    expect(url.searchParams.get("body")).toMatch(/^Hello Ada,/);
+    expect(decodeURIComponent(url.pathname)).toBe("me@x.co?cc=third@party.com&body=Pay%20here");
+  });
+
+  it("still writes the @ as it is", () => {
+    expect(replyLink(asked)).toMatch(/^mailto:ada@example\.com\?/);
+  });
+});

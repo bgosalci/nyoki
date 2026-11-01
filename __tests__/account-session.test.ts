@@ -20,7 +20,7 @@ describe("customer session tokens", () => {
   it("carries the customer back out again", async () => {
     const token = await createCustomerToken(session, SECRET);
 
-    expect(await verifyCustomerToken(token, SECRET)).toEqual(session);
+    expect(await verifyCustomerToken(token, SECRET)).toEqual({ ...session, issuedAt: expect.any(Number) });
   });
 
   it("refuses a token signed by somebody else", async () => {

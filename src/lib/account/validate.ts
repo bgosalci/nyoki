@@ -1,5 +1,6 @@
 import { MAX_PASSWORD_BYTES } from "@/lib/admin/validate";
 import { normaliseEmail } from "@/lib/auth/authenticate";
+import { looksLikeEmail } from "@/lib/email";
 
 /**
  * What a shopper types to register or sign in.
@@ -10,11 +11,16 @@ import { normaliseEmail } from "@/lib/auth/authenticate";
  * it - demanding a digit and a capital reliably produces Password1.
  */
 
-// Deliberately loose: something@something.something. The point is to catch a
-// name typed into the wrong box, not to validate deliverability.
-const LOOKS_LIKE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
 export const MIN_CUSTOMER_PASSWORD_LENGTH = 8;
+
+/** As the Contact form's: room for any real name, and no more. */
+export const CUSTOMER_NAME_MAX = 100;
+
+function nameProblem(name: string): string | null {
+  if (name.length === 0) return "Tell us your name, so we know how to address you.";
+  if (name.length > CUSTOMER_NAME_MAX) return `Keep your name to ${CUSTOMER_NAME_MAX} characters.`;
+  return null;
+}
 
 function text(form: FormData, key: string): string {
   const value = form.get(key);
@@ -44,10 +50,11 @@ export function validateRegistration(form: FormData): RegistrationValidation {
   const errors: RegistrationErrors = {};
 
   const name = text(form, "name");
-  if (name.length === 0) errors.name = "Tell us your name, so we know how to address you.";
+  const nameError = nameProblem(name);
+  if (nameError) errors.name = nameError;
 
   const email = normaliseEmail(text(form, "email"));
-  if (!LOOKS_LIKE_EMAIL.test(email)) errors.email = "Enter an email address we can reach you at.";
+  if (!looksLikeEmail(email)) errors.email = "Enter an email address we can reach you at.";
 
   const password = raw(form, "password");
   if (password.length < MIN_CUSTOMER_PASSWORD_LENGTH) {
@@ -102,10 +109,11 @@ export function validateCustomerDetails(form: FormData): CustomerDetailsValidati
   const errors: CustomerDetailsErrors = {};
 
   const name = text(form, "name");
-  if (name.length === 0) errors.name = "Tell us your name, so we know how to address you.";
+  const nameError = nameProblem(name);
+  if (nameError) errors.name = nameError;
 
   const email = normaliseEmail(text(form, "email"));
-  if (!LOOKS_LIKE_EMAIL.test(email)) errors.email = "Enter an email address we can reach you at.";
+  if (!looksLikeEmail(email)) errors.email = "Enter an email address we can reach you at.";
 
   if (Object.keys(errors).length > 0) return { ok: false, errors };
 

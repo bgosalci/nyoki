@@ -14,7 +14,7 @@ jest.mock("next/navigation", () => ({ redirect: (to: string) => redirect(to) }))
 jest.mock("../src/lib/auth/session-cookie", () => ({ readSession: () => readSession() }));
 jest.mock("../src/lib/db", () => ({ db: { adminUser: { findUnique: (args: unknown) => findUnique(args) } } }));
 
-import { requireAdmin, requireOwner } from "@/lib/auth/dal";
+import { currentAdmin, requireAdmin, requireOwner } from "@/lib/auth/dal";
 
 const cookieSession = { userId: "u_1", email: "burim@nyoki.co.uk", role: "STAFF" as const };
 
@@ -72,5 +72,27 @@ describe("requireOwner", () => {
     findUnique.mockResolvedValue({ id: "u_1", email: "burim@nyoki.co.uk", role: "STAFF" });
 
     await expect(requireOwner()).rejects.toThrow("REDIRECT:/admin");
+  });
+});
+
+describe("a session signed before the password last changed", () => {
+  const changedAt = new Date("2026-11-01T12:00:00Z");
+  const account = { id: "u_1", email: "burim@nyoki.co.uk", role: "STAFF", sessionsValidFrom: changedAt };
+
+  beforeEach(() => jest.clearAllMocks());
+
+  it("is signed out: whoever else knew the old password is shut out", async () => {
+    readSession.mockResolvedValue({ ...cookieSession, issuedAt: changedAt.getTime() / 1000 - 1 });
+    findUnique.mockResolvedValue(account);
+
+    await expect(requireAdmin()).rejects.toThrow("REDIRECT:/admin/sign-out");
+    await expect(currentAdmin()).resolves.toBeNull();
+  });
+
+  it("lets one signed since through", async () => {
+    readSession.mockResolvedValue({ ...cookieSession, issuedAt: changedAt.getTime() / 1000 });
+    findUnique.mockResolvedValue(account);
+
+    await expect(requireAdmin()).resolves.toEqual({ userId: "u_1", email: "burim@nyoki.co.uk", role: "STAFF" });
   });
 });

@@ -3,6 +3,7 @@ import "server-only";
 import { redirect } from "next/navigation";
 
 import { readCustomerSession } from "@/lib/account/session-cookie";
+import { signedBefore } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 
 export interface Shopper {
@@ -25,12 +26,14 @@ export async function currentCustomer(): Promise<Shopper | null> {
 
   const customer = await db.customer.findUnique({
     where: { id: session.customerId },
-    select: { id: true, email: true, name: true, passwordHash: true },
+    select: { id: true, email: true, name: true, passwordHash: true, sessionsValidFrom: true },
   });
 
   // No hash means the account has been closed back down to a guest record,
   // which is not something a session should still open.
   if (!customer?.passwordHash) return null;
+  // Nor is one signed before the password last changed.
+  if (signedBefore(session.issuedAt, customer.sessionsValidFrom ?? null)) return null;
 
   return { id: customer.id, email: customer.email, name: customer.name };
 }

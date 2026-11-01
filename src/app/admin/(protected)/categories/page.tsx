@@ -1,4 +1,5 @@
 import { CategoryTable } from "@/components/admin/category-table";
+import { requireAdmin } from "@/lib/auth/dal";
 import { ui } from "@/lib/brand/ui";
 import { PinnedHeight } from "@/components/admin/pinned-height";
 import { PINNED_BLOCK_CLASS } from "@/components/admin/th";
@@ -9,6 +10,10 @@ import { CATEGORY_ORDER } from "@/lib/categories/ordering";
 import { db } from "@/lib/db";
 
 export default async function CategoriesPage() {
+  // Checked here as well as in the admin layout, which moving between
+  // admin pages does not render again.
+  await requireAdmin();
+
   const categories = await db.category.findMany({
     orderBy: CATEGORY_ORDER,
     include: { _count: { select: { products: true } } },

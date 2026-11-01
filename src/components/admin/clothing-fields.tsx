@@ -107,7 +107,8 @@ function AxisList({
   });
 
   return (
-    <fieldset aria-labelledby={legendId} aria-describedby={hintId} className="flex flex-col gap-2">
+    // Marked for a save turned down, which goes to the list (`useFocusFirstError`).
+    <fieldset aria-labelledby={legendId} aria-describedby={hintId} data-invalid={error ? "" : undefined} className="flex flex-col gap-2">
       <legend id={legendId} className="text-sm font-medium">
         {legend}
       </legend>
@@ -202,7 +203,7 @@ function StockGrid({ editor, onChange, error }: { editor: ClothingEditor; onChan
   const rows = colours.length > 0 ? colours.map((row, index) => ({ row, index })) : [{ row: null, index: null }];
 
   return (
-    <section id={CLOTHING_STOCK_ID} aria-labelledby={headingId} className="flex scroll-mt-40 flex-col gap-2">
+    <section id={CLOTHING_STOCK_ID} aria-labelledby={headingId} data-invalid={error ? "" : undefined} className="flex scroll-mt-40 flex-col gap-2">
       <h3 id={headingId} className="text-sm font-medium">
         {heading}
       </h3>

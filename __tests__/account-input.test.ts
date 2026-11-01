@@ -134,3 +134,21 @@ describe("validateCustomerPasswordChange", () => {
     expect(result.ok === false && result.errors.newPassword).toBeTruthy();
   });
 });
+
+describe("the account forms' limits", () => {
+  const crafted = `a@${".".repeat(100_000)}@`;
+
+  it("refuses a long crafted address at once, registering or changing details", () => {
+    const start = performance.now();
+    expect(validateRegistration(form({ ...good, email: crafted })).ok).toBe(false);
+    expect(validateCustomerDetails(form({ name: "Ada", email: crafted })).ok).toBe(false);
+    expect(performance.now() - start).toBeLessThan(100);
+  });
+
+  it("keeps a name to a hundred characters", () => {
+    const long = "A".repeat(101);
+    expect(validateRegistration(form({ ...good, name: long }))).toMatchObject({ ok: false, errors: { name: "Keep your name to 100 characters." } });
+    expect(validateCustomerDetails(form({ name: long, email: "ada@example.com" }))).toMatchObject({ ok: false, errors: { name: "Keep your name to 100 characters." } });
+    expect(validateRegistration(form({ ...good, name: "A".repeat(100) })).ok).toBe(true);
+  });
+});

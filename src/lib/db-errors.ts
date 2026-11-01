@@ -31,3 +31,19 @@ export function isUniqueViolationOn(error: unknown, { table, column }: UniqueCol
   const constraint = /constraint: `([^`]+)`/.exec(message)?.[1];
   return constraint === `${table}_${column}_key`;
 }
+
+/**
+ * Whether a serializable transaction lost to another running at the same
+ * time (Postgres's serialization failure). The transaction changed nothing,
+ * and trying again is the answer.
+ *
+ * Prisma documents this as P2034, but the driver adapter used here throws a
+ * DriverAdapterError with no code at all, the kind on its cause - found by
+ * racing two transactions on a real database. Both shapes are accepted.
+ */
+export function isSerializationFailure(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+
+  const { code, cause } = error as { code?: unknown; cause?: { kind?: unknown } };
+  return code === "P2034" || cause?.kind === "TransactionWriteConflict";
+}

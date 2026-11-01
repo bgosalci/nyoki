@@ -53,3 +53,73 @@ describe("serverActions.bodySizeLimit", () => {
   });
 });
 
+
+describe("security headers", () => {
+  async function headersFor(path: string): Promise<Record<string, string>> {
+    const rules = (await nextConfig.headers?.()) ?? [];
+    const rule = rules.find((r) => r.source === "/:path*");
+    expect(rule).toBeDefined();
+    expect(path.startsWith("/")).toBe(true);
+    return Object.fromEntries(rule!.headers.map(({ key, value }) => [key.toLowerCase(), value]));
+  }
+
+  // No page of the shop or the CMS is meant to sit inside someone else's.
+  it("keeps every page out of other websites' frames", async () => {
+    const headers = await headersFor("/admin/products");
+
+    expect(headers["content-security-policy"]).toContain("frame-ancestors 'none'");
+    expect(headers["x-frame-options"]).toBe("DENY");
+  });
+
+  it("stops a <base> tag, a plugin or a form posting elsewhere from being slipped in", async () => {
+    const policy = (await headersFor("/"))["content-security-policy"];
+
+    expect(policy).toContain("base-uri 'self'");
+    expect(policy).toContain("object-src 'none'");
+    expect(policy).toContain("form-action 'self'");
+  });
+
+  it("asks browsers not to guess file types, to keep addresses to the shop, and to stay on https", async () => {
+    const headers = await headersFor("/");
+
+    expect(headers["x-content-type-options"]).toBe("nosniff");
+    expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+    expect(headers["strict-transport-security"]).toMatch(/^max-age=\d{8,}/);
+    expect(headers["permissions-policy"]).toContain("camera=()");
+  });
+
+  // Apple Pay and Google Pay in a card form go through the Payment Request API.
+  it("leaves payments allowed, for when payment is built", async () => {
+    expect((await headersFor("/"))["permissions-policy"]).not.toContain("payment=()");
+  });
+});
+
+describe("images.remotePatterns", () => {
+  const originalToken = process.env.BLOB_READ_WRITE_TOKEN;
+
+  afterEach(() => {
+    if (originalToken === undefined) delete process.env.BLOB_READ_WRITE_TOKEN;
+    else process.env.BLOB_READ_WRITE_TOKEN = originalToken;
+    jest.resetModules();
+  });
+
+  async function patternsWith(token: string | undefined) {
+    if (token === undefined) delete process.env.BLOB_READ_WRITE_TOKEN;
+    else process.env.BLOB_READ_WRITE_TOKEN = token;
+    jest.resetModules();
+    const { default: config } = await import("../next.config");
+    return config.images?.remotePatterns ?? [];
+  }
+
+  // Every Vercel Blob store answers under that domain, anyone's included: a
+  // wildcard let any stranger's images through the shop's image optimiser.
+  it("lets through only the shop's own Blob store, named in its token", async () => {
+    const patterns = await patternsWith("vercel_blob_rw_AbC123xyz_SecretPartHere");
+
+    expect(patterns).toEqual([{ protocol: "https", hostname: "abc123xyz.public.blob.vercel-storage.com" }]);
+  });
+
+  it("lets nothing remote through without a store (local photos are the shop's own address)", async () => {
+    expect(await patternsWith(undefined)).toEqual([]);
+  });
+});

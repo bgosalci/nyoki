@@ -1,5 +1,6 @@
 import { normaliseEmail } from "@/lib/auth/authenticate";
 import { normaliseCode } from "@/lib/discounts/validate";
+import { looksLikeEmail } from "@/lib/email";
 
 /**
  * What a shopper fills in at checkout: who they are, who it is for, where it
@@ -12,9 +13,13 @@ import { normaliseCode } from "@/lib/discounts/validate";
 
 export const GIFT_NOTE_MAX = 300;
 
-// Deliberately loose, as the account forms are: it catches a name typed into
-// the wrong box, not an address that cannot be delivered to.
-const LOOKS_LIKE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/**
+ * The browser's boxes set no limit, and whatever is posted is kept on the
+ * order and printed on its label. A hundred is room for any real name or
+ * line of an address.
+ */
+export const ADDRESS_LINE_MAX = 100;
+export const PHONE_MAX = 30;
 
 // The outward code (one or two letters, a digit, then a letter or digit) and
 // the inward code (a digit and two letters), as Royal Mail writes them.
@@ -43,7 +48,7 @@ export interface CheckoutInput {
   code: string | null;
 }
 
-export type CheckoutField = "email" | "phone" | "giftNote" | "name" | "line1" | "city" | "postcode" | "address" | "rate" | "code";
+export type CheckoutField = "email" | "phone" | "giftNote" | "name" | "line1" | "line2" | "city" | "county" | "postcode" | "address" | "rate" | "code";
 export type CheckoutErrors = Partial<Record<CheckoutField, string>>;
 
 export type CheckoutValidation = { ok: true; data: CheckoutInput } | { ok: false; errors: CheckoutErrors };
@@ -63,10 +68,10 @@ export function parseCheckout(form: FormData, { shopperEmail }: { shopperEmail: 
   const errors: CheckoutErrors = {};
 
   const email = shopperEmail ?? normaliseEmail(text(form, "email"));
-  if (!LOOKS_LIKE_EMAIL.test(email)) errors.email = "Enter an email address we can reach you at.";
+  if (!looksLikeEmail(email)) errors.email = "Enter an email address we can reach you at.";
 
   const phone = orNull(text(form, "phone"));
-  if (phone !== null && (!/^[0-9+()\-\s]+$/.test(phone) || phone.replace(/\D/g, "").length < 7)) {
+  if (phone !== null && (phone.length > PHONE_MAX || !/^[0-9+()\-\s]+$/.test(phone) || phone.replace(/\D/g, "").length < 7)) {
     errors.phone = "Enter a phone number, or leave it blank.";
   }
 
@@ -81,13 +86,21 @@ export function parseCheckout(form: FormData, { shopperEmail }: { shopperEmail: 
   } else {
     const name = text(form, "name");
     const line1 = text(form, "line1");
+    const line2 = orNull(text(form, "line2"));
     const city = text(form, "city");
+    const county = orNull(text(form, "county"));
     const postcode = normalisePostcode(text(form, "postcode"));
+    const tooLong = (value: string | null) => value !== null && value.length > ADDRESS_LINE_MAX;
     if (name === "") errors.name = gift ? "Enter their name." : "Enter your name.";
+    else if (tooLong(name)) errors.name = `Keep the name to ${ADDRESS_LINE_MAX} characters.`;
     if (line1 === "") errors.line1 = "Enter the first line of the address.";
+    else if (tooLong(line1)) errors.line1 = `Keep this line to ${ADDRESS_LINE_MAX} characters.`;
+    if (tooLong(line2)) errors.line2 = `Keep this line to ${ADDRESS_LINE_MAX} characters.`;
     if (city === "") errors.city = "Enter the town or city.";
+    else if (tooLong(city)) errors.city = `Keep the town or city to ${ADDRESS_LINE_MAX} characters.`;
+    if (tooLong(county)) errors.county = `Keep the county to ${ADDRESS_LINE_MAX} characters.`;
     if (postcode === null) errors.postcode = "Enter a UK postcode, like LS29 9AA.";
-    address = { kind: "new", name, line1, line2: orNull(text(form, "line2")), city, county: orNull(text(form, "county")), postcode: postcode ?? "" };
+    address = { kind: "new", name, line1, line2, city, county, postcode: postcode ?? "" };
   }
 
   const rateId = text(form, "rate");

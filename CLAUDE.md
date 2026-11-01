@@ -21,6 +21,15 @@ TypeScript, deployed to Vercel.
   two packages permitted to run install scripts. The pnpm 10 spelling
   (`onlyBuiltDependencies`) is silently ignored by pnpm 11 and will make
   `pnpm install` exit 1 on Vercel.
+- `pnpm-workspace.yaml` also carries `overrides`: patched versions of
+  packages only other packages depend on (undici via @vercel/blob, lodash and
+  mysql2 via the prisma CLI, ...), each within the major version asked for.
+  `pnpm audit --prod` was clean after them and Next 16.4.3; re-run it after
+  an upgrade, and drop an override the upgrade has made unnecessary.
+- `src/lib/storage/local.ts` marks its `process.cwd()` with
+  `/* turbopackIgnore: true */`. Without it Turbopack follows the uploads
+  folder into the build - and a worktree's `public/uploads` is a link to the
+  main checkout's, outside the project, which stopped `pnpm build` outright.
 
 ## Stopping the dev server
 
@@ -105,6 +114,12 @@ TypeScript, deployed to Vercel.
   Following the system means *no* attribute, so CSS answers it alone: no
   JavaScript, no flash. `THEME_BOOTSTRAP` runs inline ahead of React for an
   outright choice, which is why `<html>` carries `suppressHydrationWarning`.
+  It runs from the **root layout's `<head>`**, on every page, and checks the
+  address itself: admin pages only, never the light-only storefront, nor the
+  sign-in page (nothing there takes the mark off again). In the admin's own
+  layout React warned on every client-side arrival - straight after signing
+  in - that a script it renders in the browser is never run; ThemeToggle's
+  effect applies the theme then.
   `<body>` carries it too, for browser extensions: Grammarly writes
   `data-gr-ext-installed` onto it, and the dev overlay showed that as a
   hydration error on every page. Each covers only its own attributes.
@@ -132,6 +147,14 @@ TypeScript, deployed to Vercel.
 - A code is applied at checkout, in the order's summary: off the goods at
   the prices they sell at (a sale's included), never off delivery. Its
   `usedCount` goes up when payment is confirmed, which is not built yet.
+  **When it is, raise it with a conditional update** (only while
+  `usedCount < usageLimit`, e.g. a field reference), never a read then a
+  write: checkout checks the limit, but two payments confirming at once
+  would both pass a read and take a code past it.
+- **Codes are words, and words can be guessed**: a code that does not work
+  counts against the address it came from (`CODE_MISSES_PER_ADDRESS`, ten in
+  a quarter of an hour), in Apply and in Continue to payment alike, and past
+  that the shop stops looking codes up for a while. See Security.
 
 ## Products list
 
@@ -297,6 +320,11 @@ TypeScript, deployed to Vercel.
   the form, it shares the form's pending state ("Saving…", no second press)
   though it sits outside the form's markup; its `form` attribute ties it
   back, so it submits exactly as the bottom button does.
+- **The Details tab says "Saved." beside that top Save** (`TopSaveButton`'s
+  `status`, a live region), which the pinned header keeps in sight from
+  either button; it said nothing at all, so a save turned down off-screen
+  looked the same as one that went through. A new product leaves for its
+  page instead.
 - The slot is found through `SaveSlotProvider` - it registers itself, in
   React state, when it is put on the page - **not by searching the page**.
   It first shipped with `document.getElementById`, and Njomza saw no Save on
@@ -348,6 +376,14 @@ TypeScript, deployed to Vercel.
   from the name) - and undoes it for a rejected one: React resets during the
   commit that brings the result, and a layout effect puts back what was
   submitted (`restoreFormValues`) before the page paints.
+- **A rejected save goes to its first problem**: `useFocusFirstError`
+  (`src/lib/forms/first-error.ts`), given `useActionForm`'s `rejection`,
+  focuses the first field marked `aria-invalid` in page order - or the first
+  control of a group marked `data-invalid`, whose error is the whole
+  group's - and centres it, clear of a pinned header above and a phone's bar
+  below, as the customiser does with a missing choice. Used by a product's
+  Details tab (Save at the top left the error ~900px off-screen) and
+  checkout.
 - What was submitted is read in `onSubmit`, which runs before the action,
   not by wrapping the action - a server action passed straight to the form
   keeps working before the JavaScript loads.
@@ -462,6 +498,13 @@ TypeScript, deployed to Vercel.
   wide, so a phone takes one to a row rather than break it.
 - The rules - price, what is missing, the summary's words - are
   `src/lib/customisation/choices.ts`, pure, for the basket to check by too.
+- **A thing to personalise is named as written, in quotes** ("Please fill
+  in “Type your character”."): lowercased into "fill in the ..." a label
+  that is a sentence did not read.
+- **Text longer than its box takes is missing too** - the printed message
+  and each personalised thing, counted without the spaces around it - so
+  the basket refuses it as it does a blank: the box's `maxlength` stops only
+  the page, and the add action takes choices straight from a request.
 - Pressed too soon, Add to basket shows what is missing and moves to the
   first of it. With everything chosen it puts the piece in (see Basket);
   while ordering is closed it is `aria-disabled` but never faded, and says
@@ -549,7 +592,9 @@ TypeScript, deployed to Vercel.
   the costs no longer come from it; choosing a row lets go of the usual costs.
 - The cost table is one component, `CostLinesTable`, on both the Price tab
   and the category page, and its posted lines are read by one function,
-  `parseCostLines`, so both follow the same rules.
+  `parseCostLines`, so both follow the same rules. It is laid out fixed, the
+  figures narrow, so what each line is has the room: beside the Price tab's
+  figures at 1024px, labels read "Yarn - me" and "Making c".
 
 ## Export
 
@@ -857,7 +902,10 @@ TypeScript, deployed to Vercel.
   showing one button was not wanted.
 - Kept on the server (`Basket`, `BasketLine`; `src/lib/basket/store.ts`). A
   guest's is named by the httpOnly `nyoki_basket` cookie, which only a
-  server action can set; a signed-in shopper's is joined to the account, and
+  server action can set, and which holds the basket's id **signed** with
+  `AUTH_SECRET` (`src/lib/basket/cookie.ts`) - whoever holds a basket's id
+  holds the order waiting for it, and a cuid is unique, not secret. An
+  unsigned cookie from before opens nothing; a signed-in shopper's is joined to the account, and
   a guest basket is folded into it the next time the basket is looked at -
   covering sign-in and registering alike. A guest basket already joined to
   an account is not shown to a signed-out visitor.
@@ -939,6 +987,10 @@ TypeScript, deployed to Vercel.
   Left on For me, the order is saved as no gift - no note, prices shown.
 - UK only for now: the country is not asked and the postcode is checked and
   written as Royal Mail writes it (`normalisePostcode`).
+- **The server caps every box**, since the browser's set no limit and what is
+  posted is kept on the order and printed on its label: the name and each
+  line of the address at 100 characters (`ADDRESS_LINE_MAX`), the phone at
+  30, the gift note at 300, the email at 254 (see Security).
 - The total follows every choice live, by `checkoutTotals`
   (`src/lib/checkout/totals.ts`, pure), which the server uses again. Free
   delivery is per option and judged after the code. **VAT is shown, not
@@ -954,6 +1006,11 @@ TypeScript, deployed to Vercel.
   basket (`Order.basketId`), and the form starts from it - all but who it
   is for, which starts on For me, and delivery, which starts on the free way
   (see Delivery options).
+- **Turned down, it goes to the first problem** in page order
+  (`useFocusFirstError`): pressed in a phone's bar, Continue with only the
+  postcode wrong looked to do nothing. With no box wrong it goes to the
+  notice. A code the order would not take comes off the order, so the total
+  is the one without it, and the folded order opens on a phone to show why.
 - **An order's address is its own row**, joined to no account, so editing a
   saved address cannot move an old order; "Save it to your account" makes a
   second, saved copy.
@@ -1073,8 +1130,14 @@ TypeScript, deployed to Vercel.
   an order line does, and its product reference is SetNull. One about a piece
   taken off the shop since the page was opened is kept without the piece.
 - **Spam**: a hidden box only a bot fills in (`HONEYPOT` - a bot is told it
-  worked and nothing is kept) and five questions an hour per address
-  (`QUESTIONS_PER_HOUR`). No puzzle to solve: it would stop shoppers too.
+  worked and nothing is kept); five questions an hour per email
+  (`QUESTIONS_PER_HOUR`), five per address they come from, whatever email
+  they give (`QUESTIONS_PER_ADDRESS`), and sixty an hour from everyone
+  together (`QUESTIONS_IN_ALL`), since each one chimes on every open admin
+  page. All three read alike. No puzzle to solve: it would stop shoppers too.
+- The Reply by email link encodes the shopper's address, all but its @: one
+  sent before the form refused `?` and `&` could otherwise add a recipient
+  or replace the body (`?cc=...&body=...`).
 - What was typed survives a rejected send (`useActionForm`); once sent, a
   thank-you takes the form's place.
 - **Kept until deleted.** Each holds a shopper's email address, and the page
@@ -1251,6 +1314,15 @@ TypeScript, deployed to Vercel.
   (`AdminFooter`, h-12); the protected layout pads the content by those
   heights. A page that pins its own header uses `sticky top-14` with the page
   ground as background so rows scroll beneath it (see the products list).
+- **On a phone the sidebar is behind the top bar's Menu** (below md):
+  laid out above every page, it pushed the page halfway down the first
+  screen. Shut to begin with, it opens over the page beneath the bar and
+  shuts once a page is chosen, on Escape and on a press elsewhere; the
+  Menu button carries the questions waiting. `AdminMenuProvider` (in the
+  protected layout) joins the two. From md up nothing changes.
+- The footer is one line at any width: below sm the shop's name is left out
+  (it wrapped to four lines and spilled out of the 48px bar), the account
+  shortens with an ellipsis, and Sign out never shrinks.
 - The nav map and `isCurrent`/`sectionTitle` live in `src/lib/admin/nav.ts`,
   a plain module, so server components can import them; `admin-nav.tsx` is
   the client component.
@@ -1274,7 +1346,12 @@ TypeScript, deployed to Vercel.
 - List thumbnails go through `next/image` (`ProductThumbnail`). The imported
   catalogue has photos up to ~4,900px wide, so a plain `<img>` would download
   the full original for a small square, 240-odd times on one page.
-- Two sizes: `row` (56px) and `large` (112px, the products list). The class
+- **The products list fits a phone** (375px): it was 511px wide, and an
+  overflow container would take its pinned headers. Below sm the photo is
+  row-sized, Status is said under the name, and the columns sit closer
+  (`Th` is `pr-2` there); the drag handle stays, as the finger's way in.
+- Sizes: `row` (56px), `large` (112px) and `list` (56px on a phone, 112px
+  from sm - the products list). The class
   cannot be built from the number - Tailwind reads the source for whole class
   names, so `size-${n}` would never be generated - which is why `SIZES` pairs
   each measurement with its class.
@@ -1352,11 +1429,30 @@ TypeScript, deployed to Vercel.
   what. A promotion applies on the next request; a removed account is sent to
   `/admin/sign-out` (a route handler, since cookies cannot be cleared during a
   page render) and lands on login without looping.
+- **Every admin page, layout, route and action calls it itself**, not just
+  the protected layout: moving between admin pages renders only the page,
+  never the layout above it. With only the layout checking, a cookie whose
+  account had been removed - still validly signed, for up to seven days -
+  read every page by a client-side navigation: the orders list came back
+  with every customer's email. `__tests__/admin-guards.test.ts` fails on any
+  page that does not call it. It is wrapped in React's `cache`, so a page
+  and its layouts look the account up once between them.
+- **Changing or resetting a password ends every other session**:
+  `AdminUser.sessionsValidFrom` is set to the moment, and a session whose
+  token was signed in an earlier second is refused (`signedBefore`). The
+  account that changed its own password is signed afresh and stays in; one
+  reset by an owner is signed out everywhere.
+- **Failed sign-ins are limited**: ten from one address in a quarter of an
+  hour, twenty against one email in an hour, refused before the slow hash is
+  checked, in the same words for any email. See Security.
 
 - Settings lets anyone change their own password and lets an OWNER add, edit
   (name, role, password reset) or remove accounts. `removalBlockedBecause()` in `src/lib/admin/removal.ts` is
   the rule: no removing yourself, no removing the last owner, staff remove
-  nobody. It runs on the server for every removal.
+  nobody. It runs on the server for every removal, **inside a serializable
+  transaction with the write**: read first and written after, two owners
+  removing or demoting each other at once both passed and left no owner.
+  The loser is asked to try again (`isSerializationFailure`: the pg adapter throws a `TransactionWriteConflict`, not the documented P2034).
 - A new account's password is generated and returned to the owner once; it is
   never stored in plain text and never shown again.
 - Passwords are never trimmed - a leading space is a legitimate character.
@@ -1395,15 +1491,30 @@ TypeScript, deployed to Vercel.
 - A `Customer` with no `passwordHash` is a guest row from checkout, not an
   account. Registering against that email gives it a password rather than
   creating a second identity, so guest orders stay attached.
+- **An account lists only orders placed signed in to it** (`Order.signedIn`,
+  `shopperOrders`). A guest order joins whichever row holds its email, and
+  nothing proves an email belongs to whoever registers it or changes their
+  account to it; listing those showed the email's owner's guest orders,
+  past and future, to anyone who claimed it. They stay joined, for the
+  shop's records, and can be listed once an email can be confirmed.
+- Changing the password ends every other session, as a CMS account's does
+  (`Customer.sessionsValidFrom`); this one is signed afresh.
+- Failed sign-ins are limited as the CMS's are (ten from an address in a
+  quarter of an hour, thirty against an email in an hour), and registering
+  to ten an hour from one address.
+- **Signing out ends a live session only from the shop's own pages** (or an
+  address typed in): `/account/sign-out` and `/admin/sign-out` are links,
+  and any website could otherwise link to them. A dead session is cleared
+  wherever the request came from - the guards send it there, and kept, it
+  would loop. Told apart by `Sec-Fetch-Site` (`cameFromElsewhere`).
 - The password floor is **eight** for shoppers against the CMS's twelve, and
   no composition rules - a shopper account holds an order history, a staff
   account holds the shop.
 - **Known gaps, all for want of sending email:** registration says plainly
-  when an address is taken (an enumeration vector, but the alternative needs
-  email we cannot send and strands anyone who forgot they had an account);
-  there is no password reset; and changing a password does not invalidate
-  sessions elsewhere, which needs a "valid from" column on the customer and
-  an `iat` check.
+  when an address is taken, and so does changing an account's email to one
+  in use (an enumeration vector, but the alternative needs email we cannot
+  send and strands anyone who forgot they had an account); there is no
+  password reset; and guest orders are not listed in an account (above).
 
 ## CMS accounts
 
@@ -1439,6 +1550,38 @@ run it from another directory.
   and the photos back with `rsync -a "<BACKUP_DIR>/uploads/" public/uploads/`.
   Checked when it was built: a restored dump matched the original row for
   row in all 30 tables, and the photo copy matched file for file.
+
+## Security
+
+- **One email check** (`looksLikeEmail`, `src/lib/email.ts`) for every form
+  that asks for one. It refuses anything over 254 characters before
+  matching, and its pattern cannot backtrack - a domain's labels hold no
+  dots, so there is one way to split it. The pattern it replaced took three
+  seconds for 80,000 dots through the public Contact form, four times as
+  long for each doubling, on a form that takes eleven megabytes. It also
+  refuses the characters a mailto: link reads as more than an address.
+- **Rate limits** live in `src/lib/rate-limit.ts`: named limits, counted as
+  `RateLimitHit` rows in the database (Vercel runs many instances, and a
+  counter in memory knows nothing of the others), by an email or by a keyed
+  hash of the visitor's address (`requestAddress`: the first
+  x-forwarded-for, which Vercel sets itself), never the address itself.
+  Rows older than a day are deleted as new ones are written. What a visitor
+  is told is `WAIT_A_WHILE`. Locally every request shares one key.
+- **Security headers** on every response (`next.config.ts`): no framing by
+  other sites, no `<base>` or plugins, forms post only here, nosniff, a
+  referrer policy, HSTS and a permissions policy that leaves payment alone.
+  The CSP does not limit scripts - that needs a nonce on every script Next
+  writes. **When payment is built**, a form that hands over to a payment page
+  elsewhere needs that origin in `form-action`.
+- **Images**: `remotePatterns` lets through only the shop's own Blob store,
+  its host worked out from `BLOB_READ_WRITE_TOKEN` exactly as the Blob SDK
+  works it out. The wildcard over the whole Blob domain let anyone's store
+  through the optimiser. A build without the token lets nothing remote in.
+- **Next is 16.4.3**: 16.3.5 had critical advisories (remote code execution
+  in the image optimiser and `use cache`, a Server Actions denial of
+  service). `pnpm audit --prod` before an upgrade is worth the minute.
+- Admin roles are as they were: staff can do everything but manage accounts
+  - edit delivery, codes, sales, imports, export the costs, delete pieces.
 
 ## Git
 

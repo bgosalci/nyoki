@@ -105,3 +105,37 @@ describe("parseCheckout", () => {
     expect(result.ok && result.data.code).toBe("WINTER10");
   });
 });
+
+describe("parseCheckout's limits", () => {
+  it("refuses a long crafted address at once", () => {
+    const start = performance.now();
+    const result = parseCheckout(form({ ...guest, email: `a@${".".repeat(100_000)}@` }), { shopperEmail: null });
+    expect(performance.now() - start).toBeLessThan(50);
+    expect(result).toMatchObject({ ok: false, errors: { email: "Enter an email address we can reach you at." } });
+  });
+
+  // The browser's boxes set no limit, and anything posted is kept on the
+  // order and printed on the label.
+  it("keeps the name and every line of the address to a hundred characters", () => {
+    const long = "x".repeat(101);
+    const result = parseCheckout(form({ ...guest, name: long, line1: long, line2: long, city: long, county: long }), { shopperEmail: null });
+    expect(result).toEqual({
+      ok: false,
+      errors: {
+        name: "Keep the name to 100 characters.",
+        line1: "Keep this line to 100 characters.",
+        line2: "Keep this line to 100 characters.",
+        city: "Keep the town or city to 100 characters.",
+        county: "Keep the county to 100 characters.",
+      },
+    });
+    expect(parseCheckout(form({ ...guest, name: "x".repeat(100), line1: "x".repeat(100) }), { shopperEmail: null }).ok).toBe(true);
+  });
+
+  it("keeps a phone number to thirty characters", () => {
+    expect(parseCheckout(form({ ...guest, phone: "0".repeat(31) }), { shopperEmail: null })).toMatchObject({
+      ok: false,
+      errors: { phone: "Enter a phone number, or leave it blank." },
+    });
+  });
+});

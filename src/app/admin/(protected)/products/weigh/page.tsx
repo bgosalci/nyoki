@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { saveWeights } from "@/app/admin/(protected)/products/weigh/actions";
 import { BackLink } from "@/components/admin/back-link";
 import { WeighSheet } from "@/components/admin/weigh-sheet";
+import { requireAdmin } from "@/lib/auth/dal";
 import { ui } from "@/lib/brand/ui";
 import { categoryPaths, pathsOf } from "@/lib/categories/path";
 import { db } from "@/lib/db";
@@ -14,6 +15,10 @@ export const metadata: Metadata = { title: "Weigh pieces" };
 
 /** Every piece on the shop in one sheet, for entering weights along the shelf. */
 export default async function WeighPage() {
+  // Checked here as well as in the admin layout, which moving between
+  // admin pages does not render again.
+  await requireAdmin();
+
   const [products, categories, settings, rates] = await Promise.all([
     db.product.findMany({
       where: { status: "ACTIVE" },

@@ -360,7 +360,8 @@ export function ProductTable({
               </Th>
               <Th srOnly>Photo</Th>
               <Th>Name</Th>
-              <Th>Status</Th>
+              {/* Said under the name on a phone, which has no room for it. */}
+              <Th className="hidden sm:table-cell">Status</Th>
               <Th align="right">Price</Th>
               <Th align="right">Stock</Th>
             </tr>
@@ -376,7 +377,9 @@ export function ProductTable({
                     lifted={lifted?.id === row.id}
                     onHandleKey={(event) => onHandleKey(event, row)}
                   >
-                    <td className="py-3 pr-4">
+                    {/* Closer together on a phone, so the table fits its screen
+                        rather than scrolling sideways. */}
+                    <td className="py-3 pr-2 sm:pr-4">
                       <input
                         type="checkbox"
                         aria-label={row.name}
@@ -385,19 +388,20 @@ export function ProductTable({
                         className={`size-4 align-middle ${ui.checkbox}`}
                       />
                     </td>
-                    <td className="py-2 pr-3">
+                    <td className="py-2 pr-2 sm:pr-3">
                       {/* The photo opens the product too. The name is the link a
                           keyboard or screen reader meets; this is the same place
                           again, for the mouse, so it is kept out of their way. */}
                       <Link href={`/admin/products/${row.id}`} tabIndex={-1} aria-hidden="true" className="block w-fit">
-                        <ProductThumbnail image={row.image} size="large" />
+                        <ProductThumbnail image={row.image} size="list" />
                       </Link>
                     </td>
-                    <td className="py-3 pr-4">
+                    <td className="py-3 pr-2 sm:pr-4">
                       <Link href={`/admin/products/${row.id}`} className="font-medium underline-offset-4 hover:underline">
                         {row.name}
                       </Link>
                       {row.oneOfAKind ? <span className={`ml-2 text-xs ${ui.mutedOnPage}`}>one of a kind</span> : null}
+                      <span className={`mt-0.5 block text-xs sm:hidden ${ui.mutedOnPage}`}>{STATUS_LABEL[row.status]}</span>
                       {/* Filled, not outlined like the filter's pills above, which are links: these only say. */}
                       {row.categories.length > 0 ? (
                         <ul aria-label={`Categories of ${row.name}`} className="mt-1.5 flex flex-wrap gap-1.5">
@@ -411,9 +415,9 @@ export function ProductTable({
                         <p className={`mt-1.5 text-xs ${ui.mutedOnPage}`}>In no category</p>
                       )}
                     </td>
-                    <td className={`py-3 pr-4 ${ui.mutedOnPage}`}>{STATUS_LABEL[row.status]}</td>
-                    <td className="py-3 pr-4 text-right tabular-nums">{formatPence(row.pricePence)}</td>
-                    <td className="py-3 pr-4 text-right tabular-nums">
+                    <td className={`hidden py-3 pr-4 sm:table-cell ${ui.mutedOnPage}`}>{STATUS_LABEL[row.status]}</td>
+                    <td className="py-3 pr-2 text-right tabular-nums sm:pr-4">{formatPence(row.pricePence)}</td>
+                    <td className="py-3 pr-2 text-right tabular-nums sm:pr-4">
                       {row.madeToOrder ? (
                         "made to order"
                       ) : (

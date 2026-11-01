@@ -1,5 +1,6 @@
 import { saveHome, uploadHomePhoto } from "@/app/admin/(protected)/home/actions";
 import { HomeForm, type PhotoOption } from "@/components/admin/home-form";
+import { requireAdmin } from "@/lib/auth/dal";
 import { ui } from "@/lib/brand/ui";
 import { categoryPaths, pathsOf } from "@/lib/categories/path";
 import { db } from "@/lib/db";
@@ -9,6 +10,10 @@ import { tileProducts } from "@/lib/storefront/queries";
 import { leadPhotos } from "@/lib/storefront/tiles";
 
 export default async function AdminHomePage() {
+  // Checked here as well as in the admin layout, which moving between
+  // admin pages does not render again.
+  await requireAdmin();
+
   const [{ page, tiles }, categories, images, products] = await Promise.all([
     loadHome(),
     db.category.findMany({ select: { id: true, slug: true, name: true, parentId: true } }),

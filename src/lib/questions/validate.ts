@@ -1,4 +1,5 @@
 import { normaliseEmail } from "@/lib/auth/authenticate";
+import { looksLikeEmail } from "@/lib/email";
 
 /**
  * A shopper's question, as the Ask a question form posts it.
@@ -20,9 +21,6 @@ export const HONEYPOT = "website";
 
 /** How many questions one address may send in an hour, before being asked to wait. */
 export const QUESTIONS_PER_HOUR = 5;
-
-// Deliberately loose, as registration's: something@something.something.
-const LOOKS_LIKE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export interface QuestionInput {
   name: string;
@@ -52,7 +50,7 @@ export function parseQuestion(form: FormData): QuestionValidation {
 
   const email = normaliseEmail(text(form, "email"));
   if (email === "") errors.email = "Please give the email address we should reply to.";
-  else if (!LOOKS_LIKE_EMAIL.test(email)) errors.email = "That does not look like an email address.";
+  else if (!looksLikeEmail(email)) errors.email = "That does not look like an email address.";
 
   const message = text(form, "message");
   if (message === "") errors.message = "Please write your question.";

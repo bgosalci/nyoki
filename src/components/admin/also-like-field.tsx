@@ -67,7 +67,8 @@ export function AlsoLikeField({
   const smallButton = `rounded-md px-2.5 py-1 text-xs ${ui.buttonSecondary}`;
 
   return (
-    <div role="group" aria-labelledby={labelId} className="flex flex-col gap-3">
+    // Marked for a save turned down, which goes to the row (`useFocusFirstError`).
+    <div role="group" aria-labelledby={labelId} data-invalid={error ? "" : undefined} className="flex flex-col gap-3">
       <p id={labelId} className="text-sm font-semibold">
         You may also like
       </p>

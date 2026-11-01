@@ -3,6 +3,7 @@ import { PinnedHeight } from "@/components/admin/pinned-height";
 import { QuestionSoundToggle } from "@/components/admin/question-alerts";
 import { QuestionList } from "@/components/admin/question-list";
 import { PINNED_BLOCK_CLASS } from "@/components/admin/th";
+import { requireAdmin } from "@/lib/auth/dal";
 import { ui } from "@/lib/brand/ui";
 import { db } from "@/lib/db";
 
@@ -10,6 +11,10 @@ import { db } from "@/lib/db";
 const RECENT_ANSWERED = 100;
 
 export default async function QuestionsPage() {
+  // Checked here as well as in the admin layout, which moving between
+  // admin pages does not render again.
+  await requireAdmin();
+
   const [waiting, answered, answeredCount] = await Promise.all([
     db.question.findMany({ where: { answeredAt: null }, orderBy: { createdAt: "desc" } }),
     db.question.findMany({ where: { answeredAt: { not: null } }, orderBy: { answeredAt: "desc" }, take: RECENT_ANSWERED }),

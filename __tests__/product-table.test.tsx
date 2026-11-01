@@ -269,6 +269,37 @@ describe("ProductTable", () => {
     const table = screen.getByRole("table");
     expect(within(table).getByText("Snowflake Card")).toBeInTheDocument();
     expect(within(table).getByText("£18.00")).toBeInTheDocument();
-    expect(within(table).getByText("Archived")).toBeInTheDocument();
+    expect(within(table).getAllByText("Archived").length).toBeGreaterThan(0);
+  });
+});
+
+describe("ProductTable, on a phone", () => {
+  // At 375px the table was 511px wide: the page scrolled sideways and Price
+  // and Stock started off the screen. It cannot be put in a scrolling box,
+  // which its pinned column headers would stick to instead of the page.
+  const rowOf = (name: string) => screen.getByRole("checkbox", { name }).closest("tr")!;
+
+  it("draws the photo half size until there is room for the large one", () => {
+    setup({ rows: [{ ...rows[0], image: { url: "/uploads/card.jpg", alt: null } }] });
+
+    expect(rowOf("Snowflake Card").querySelector("img")).toHaveClass("size-14", "sm:size-28");
+  });
+
+  it("says the status under the name, in place of a column of its own", () => {
+    setup();
+
+    expect(screen.getByRole("columnheader", { name: "Status" })).toHaveClass("hidden", "sm:table-cell");
+    const vase = rowOf("Bud Vase");
+    const [nameCell, statusCell] = [within(vase).getByRole("link", { name: "Bud Vase" }).closest("td")!, within(vase).getAllByRole("cell")[4]];
+    expect(within(nameCell).getByText("Archived")).toHaveClass("sm:hidden");
+    expect(statusCell).toHaveTextContent("Archived");
+    expect(statusCell).toHaveClass("hidden", "sm:table-cell");
+  });
+
+  it("sets the columns closer together, and keeps the handle a finger reorders by", () => {
+    setup();
+
+    for (const header of screen.getAllByRole("columnheader")) expect(header).toHaveClass("pr-2", "sm:pr-4");
+    expect(within(rowOf("Snowflake Card")).getByRole("button", { name: "Move Snowflake Card" })).toBeInTheDocument();
   });
 });

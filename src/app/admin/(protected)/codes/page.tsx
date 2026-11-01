@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { PINNED_BLOCK_CLASS, Th } from "@/components/admin/th";
 import { PinnedHeight } from "@/components/admin/pinned-height";
+import { requireAdmin } from "@/lib/auth/dal";
 import { ui } from "@/lib/brand/ui";
 import { db } from "@/lib/db";
 import { formatPence } from "@/lib/money";
@@ -22,6 +23,10 @@ function isLive(code: { active: boolean; startsAt: Date; endsAt: Date | null; us
 }
 
 export default async function CodesPage() {
+  // Checked here as well as in the admin layout, which moving between
+  // admin pages does not render again.
+  await requireAdmin();
+
   const now = new Date();
   const codes = await db.discountCode.findMany({ orderBy: [{ active: "desc" }, { startsAt: "desc" }] });
 

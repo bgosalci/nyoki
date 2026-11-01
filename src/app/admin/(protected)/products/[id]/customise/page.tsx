@@ -2,12 +2,17 @@ import { notFound } from "next/navigation";
 
 import { saveCustomisation } from "@/app/admin/(protected)/products/[id]/customise/actions";
 import { CustomiseForm } from "@/components/admin/customise-form";
+import { requireAdmin } from "@/lib/auth/dal";
 import { ui } from "@/lib/brand/ui";
 import { customisationGroup } from "@/lib/customisation/group";
 import { customiseValues } from "@/lib/customisation/settings";
 import { db } from "@/lib/db";
 
 export default async function ProductCustomisePage({ params }: { params: Promise<{ id: string }> }) {
+  // Checked here as well as in the admin layout, which moving between
+  // admin pages does not render again.
+  await requireAdmin();
+
   const { id } = await params;
 
   const [product, categories] = await Promise.all([

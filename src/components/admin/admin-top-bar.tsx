@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { AdminMenuButton } from "@/components/admin/admin-sidebar";
 import { ThemeToggle } from "@/components/admin/theme-toggle";
 import { sectionTitle } from "@/lib/admin/nav";
 import { LOGO_SMALL } from "@/lib/brand/logo";
@@ -18,7 +19,7 @@ export function AdminTopBar() {
   return (
     <header
       role="banner"
-      className={`fixed inset-x-0 top-0 z-30 flex ${TOP_BAR_HEIGHT_CLASS} items-center gap-4 border-b px-4 md:px-6 ${ui.panel} ${ui.rule}`}
+      className={`fixed inset-x-0 top-0 z-30 flex ${TOP_BAR_HEIGHT_CLASS} items-center gap-3 border-b px-4 md:gap-4 md:px-6 ${ui.panel} ${ui.rule}`}
     >
       <Link href="/admin" className="flex shrink-0 items-center">
         <Image
@@ -31,10 +32,13 @@ export function AdminTopBar() {
         />
       </Link>
       <span aria-hidden="true" className={ui.mutedOnPanel}>/</span>
-      <h2 className="text-sm font-medium">{sectionTitle(pathname)}</h2>
+      {/* Cut short before the controls are pushed off a phone's screen. */}
+      <h2 className="min-w-0 truncate text-sm font-medium">{sectionTitle(pathname)}</h2>
 
-      <div className="ml-auto">
+      <div className="ml-auto flex shrink-0 items-center gap-2">
         <ThemeToggle />
+        {/* A phone's way to the pages, which the sidebar shows on a computer. */}
+        <AdminMenuButton />
       </div>
     </header>
   );

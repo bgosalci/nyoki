@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/auth/dal";
 import { ui } from "@/lib/brand/ui";
 import { PinnedHeight } from "@/components/admin/pinned-height";
 import { PINNED_BLOCK_CLASS, Th } from "@/components/admin/th";
@@ -20,6 +21,10 @@ function isRunning(sale: { active: boolean; startsAt: Date; endsAt: Date | null 
 const dateFormat = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short" });
 
 export default async function SalesPage() {
+  // Checked here as well as in the admin layout, which moving between
+  // admin pages does not render again.
+  await requireAdmin();
+
   const now = new Date();
   const sales = await db.sale.findMany({
     orderBy: [{ active: "desc" }, { startsAt: "desc" }],

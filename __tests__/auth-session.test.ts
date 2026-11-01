@@ -4,6 +4,7 @@
 
 import {
   createSessionToken,
+  signedBefore,
   verifySessionToken,
   type SessionPayload,
 } from "@/lib/auth/session";
@@ -62,5 +63,37 @@ describe("session tokens", () => {
     await expect(createSessionToken(session, "short")).rejects.toThrow(
       /secret/i,
     );
+  });
+});
+
+describe("when a session was signed", () => {
+  it("comes back out of the token, in whole seconds", async () => {
+    const before = Math.floor(Date.now() / 1000);
+    const token = await createSessionToken(session, SECRET);
+
+    const verified = await verifySessionToken(token, SECRET);
+
+    expect(verified?.issuedAt).toBeGreaterThanOrEqual(before);
+    expect(verified?.issuedAt).toBeLessThanOrEqual(Math.ceil(Date.now() / 1000));
+  });
+});
+
+describe("signedBefore", () => {
+  const changed = new Date("2026-11-01T12:00:00.750Z");
+  const second = Math.floor(changed.getTime() / 1000);
+
+  it("is never true for an account whose password has not changed", () => {
+    expect(signedBefore(0, null)).toBe(false);
+  });
+
+  it("is true for a session signed in an earlier second than the change", () => {
+    expect(signedBefore(second - 1, changed)).toBe(true);
+  });
+
+  // A token records whole seconds, and the session signed afresh by the
+  // change itself is signed in the same second as it.
+  it("is false for a session signed in the second of the change, or after", () => {
+    expect(signedBefore(second, changed)).toBe(false);
+    expect(signedBefore(second + 60, changed)).toBe(false);
   });
 });

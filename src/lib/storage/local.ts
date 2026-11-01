@@ -58,6 +58,13 @@ export class LocalDiskStorage implements ImageStorage {
   }
 }
 
-/** The location the factory uses for local development. */
-export const LOCAL_UPLOAD_ROOT = join(process.cwd(), "public", "uploads");
+/**
+ * The location the factory uses for local development.
+ *
+ * Told to Turbopack to leave alone: it otherwise follows the path into the
+ * build and takes every photo in the folder with it - and a worktree's
+ * folder is a link to the main checkout's, outside the project, which
+ * stopped the build outright.
+ */
+export const LOCAL_UPLOAD_ROOT = join(/* turbopackIgnore: true */ process.cwd(), "public", "uploads");
 export const LOCAL_UPLOAD_PUBLIC_BASE = "/uploads";

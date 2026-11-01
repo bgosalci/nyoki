@@ -5,6 +5,7 @@ import { saveCategoryCosts, saveCategoryPostage } from "@/app/admin/(protected)/
 import { CategoryCostsForm } from "@/components/admin/category-costs-form";
 import { CategoryPostageForm } from "@/components/admin/category-postage-form";
 import { EditCategoryForm } from "@/components/admin/edit-category-form";
+import { requireAdmin } from "@/lib/auth/dal";
 import { ui } from "@/lib/brand/ui";
 import type { CategoryInput } from "@/lib/categories/validate";
 import { db } from "@/lib/db";
@@ -12,6 +13,10 @@ import { postageCategories } from "@/lib/delivery/store";
 import { usualFor } from "@/lib/delivery/usual";
 
 export default async function EditCategoryPage({ params }: { params: Promise<{ id: string }> }) {
+  // Checked here as well as in the admin layout, which moving between
+  // admin pages does not render again.
+  await requireAdmin();
+
   const { id } = await params;
 
   const [category, categories, postage, live] = await Promise.all([

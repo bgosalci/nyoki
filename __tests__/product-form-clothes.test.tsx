@@ -185,4 +185,15 @@ describe("ProductForm, for clothes", () => {
       "Stock has to be a whole number, zero or more.",
     );
   });
+
+  it("goes to the list a turned-down save names, though the error is the whole list's", async () => {
+    const refused = async () => ({ errors: { sizes: "Name every size, or remove the empty one." } });
+    render(<ProductForm action={refused} product={dress} categories={categories} clothing={saved} />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    await screen.findByText("Name every size, or remove the empty one.");
+
+    expect(screen.getByRole("textbox", { name: "Size 1" })).toHaveFocus();
+  });
 });

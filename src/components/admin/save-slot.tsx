@@ -37,15 +37,36 @@ export function SaveSlot() {
  * shares the form's pending state - "Saving…", and no second press - though
  * it sits outside the form's markup; `form` ties it back so it submits
  * exactly as the Save at the bottom does. With no slot, nothing.
+ *
+ * `status`, for a form that says so beside it - "Saved." - is said in a live
+ * region there, which a pinned header keeps in sight from either Save. Kept
+ * on the page while empty, so a screen reader hears it when it fills.
  */
-export function TopSaveButton({ form, pending, label }: { form: string; pending: boolean; label: string }) {
+export function TopSaveButton({
+  form,
+  pending,
+  label,
+  status,
+}: {
+  form: string;
+  pending: boolean;
+  label: string;
+  status?: string | null;
+}) {
   const slot = useContext(SlotContext)?.[0];
   if (!slot) return null;
 
   return createPortal(
-    <button type="submit" form={form} disabled={pending} className={`rounded-md px-4 py-2 text-sm font-medium ${ui.buttonPrimary}`}>
-      {pending ? "Saving…" : label}
-    </button>,
+    <>
+      {status !== undefined ? (
+        <span role="status" className="mr-3 text-sm font-medium empty:mr-0">
+          {status}
+        </span>
+      ) : null}
+      <button type="submit" form={form} disabled={pending} className={`rounded-md px-4 py-2 text-sm font-medium ${ui.buttonPrimary}`}>
+        {pending ? "Saving…" : label}
+      </button>
+    </>,
     slot,
   );
 }

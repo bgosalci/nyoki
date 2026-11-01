@@ -15,6 +15,11 @@ export interface CustomerSession {
   email: string;
 }
 
+/** A session as its token carries it back: who, and when it was signed (whole seconds). */
+export interface VerifiedCustomerSession extends CustomerSession {
+  issuedAt: number;
+}
+
 export const CUSTOMER_SESSION_COOKIE = "nyoki_customer_session";
 
 const KIND = "customer";
@@ -60,7 +65,7 @@ export async function verifyCustomerToken(
   token: string,
   secret: string,
   options: { now?: Date } = {},
-): Promise<CustomerSession | null> {
+): Promise<VerifiedCustomerSession | null> {
   if (!token) return null;
 
   try {
@@ -69,12 +74,13 @@ export async function verifyCustomerToken(
       currentDate: options.now,
     });
 
-    const { customerId, email, kind } = payload as unknown as CustomerSession & { kind?: string };
+    const { customerId, email, kind, iat } = payload as unknown as CustomerSession & { kind?: string; iat?: number };
 
     if (kind !== KIND) return null;
     if (typeof customerId !== "string" || typeof email !== "string") return null;
+    if (typeof iat !== "number") return null;
 
-    return { customerId, email };
+    return { customerId, email, issuedAt: iat };
   } catch {
     return null;
   }

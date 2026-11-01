@@ -12,6 +12,7 @@ import { db } from "@/lib/db";
 import { codeRedeemability, normaliseCode } from "@/lib/discounts/validate";
 import { formatPence } from "@/lib/money";
 import { orderingOpen } from "@/lib/ordering";
+import { CODE_MISSES_PER_ADDRESS, WAIT_A_WHILE, isLimited, recordAttempt, requestAddress } from "@/lib/rate-limit";
 
 const CLOSED = "Online ordering opens soon.";
 const EMPTY = "Your basket is empty.";
@@ -46,11 +47,18 @@ export async function applyCode(raw: string): Promise<CodeResult> {
   if (!basketId) return { ok: false, message: EMPTY };
   const { subtotalPence } = await reviewAndSave(basketId);
 
-  const row = await db.discountCode.findUnique({ where: { code } });
-  if (!row) return { ok: false, message: "That code is not available." };
+  // Codes are words, and words can be guessed: an address that has missed
+  // too often is not looked up for a while.
+  const address = await requestAddress();
+  if (await isLimited(CODE_MISSES_PER_ADDRESS, address)) return { ok: false, message: WAIT_A_WHILE };
 
-  const result = codeRedeemability(row, { now: new Date(), subtotalPence });
-  return result.ok ? { ok: true, code, discountPence: result.discountPence, label: describe(row) } : { ok: false, message: result.reason };
+  const row = await db.discountCode.findUnique({ where: { code } });
+  const result = row ? codeRedeemability(row, { now: new Date(), subtotalPence }) : null;
+  if (!row || !result?.ok) {
+    await recordAttempt(CODE_MISSES_PER_ADDRESS, address);
+    return { ok: false, message: result && !result.ok ? result.reason : "That code is not available." };
+  }
+  return { ok: true, code, discountPence: result.discountPence, label: describe(row) };
 }
 
 /**
@@ -104,9 +112,16 @@ export async function continueToPayment(_state: CheckoutState, formData: FormDat
 
   let discount = { pence: 0, codeId: null as string | null };
   if (input.code) {
+    // Held to the same limit as trying a code, or this would be the way round it.
+    const address = await requestAddress();
+    if (await isLimited(CODE_MISSES_PER_ADDRESS, address)) return { errors: { code: WAIT_A_WHILE } };
+
     const row = await db.discountCode.findUnique({ where: { code: input.code } });
     const result = row ? codeRedeemability(row, { now: new Date(), subtotalPence: review.subtotalPence }) : null;
-    if (!row || !result?.ok) return { errors: { code: result && !result.ok ? result.reason : "That code is not available." } };
+    if (!row || !result?.ok) {
+      await recordAttempt(CODE_MISSES_PER_ADDRESS, address);
+      return { errors: { code: result && !result.ok ? result.reason : "That code is not available." } };
+    }
     discount = { pence: result.discountPence, codeId: row.id };
   }
 
@@ -134,6 +149,7 @@ export async function continueToPayment(_state: CheckoutState, formData: FormDat
       basketId,
       customerId,
       email: input.email,
+      signedIn: shopper !== null,
       subtotalPence: totals.subtotalPence,
       discountPence: totals.discountPence,
       shippingPence: totals.deliveryPence ?? 0,

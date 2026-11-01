@@ -5,7 +5,7 @@ import { requireCustomer } from "@/lib/account/dal";
 import { ui } from "@/lib/brand/ui";
 import { db } from "@/lib/db";
 import { formatPence } from "@/lib/money";
-import { ORDER_STATUSES, customerOrderStatusLabel, formatOrderDate, seenByShopper } from "@/lib/orders/status";
+import { customerOrderStatusLabel, formatOrderDate, shopperOrders } from "@/lib/orders/status";
 
 export const metadata: Metadata = {
   title: "Your orders",
@@ -16,7 +16,7 @@ export default async function AccountOrdersPage() {
   const shopper = await requireCustomer();
 
   const orders = await db.order.findMany({
-    where: { customerId: shopper.id, status: { in: ORDER_STATUSES.filter(seenByShopper) } },
+    where: shopperOrders(shopper.id),
     orderBy: { createdAt: "desc" },
     include: { items: { select: { id: true, productName: true, quantity: true, totalPence: true } } },
   });

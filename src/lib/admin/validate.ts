@@ -1,11 +1,8 @@
 import { normaliseEmail } from "@/lib/auth/authenticate";
+import { looksLikeEmail } from "@/lib/email";
 import type { AdminRole } from "@/lib/auth/session";
 
 const ROLES: readonly AdminRole[] = ["OWNER", "STAFF"];
-
-// Deliberately loose: something@something.something. The point is to catch a
-// name typed into the wrong box, not to validate deliverability.
-const LOOKS_LIKE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const MIN_PASSWORD_LENGTH = 12;
 
@@ -39,7 +36,7 @@ export function validateNewAdminInput(form: FormData): NewAdminValidation {
   const errors: NewAdminErrors = {};
 
   const email = normaliseEmail(text(form, "email"));
-  if (!LOOKS_LIKE_EMAIL.test(email)) {
+  if (!looksLikeEmail(email)) {
     errors.email = "Enter the email address they will sign in with.";
   }
 

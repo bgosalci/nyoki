@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { QuestionState } from "@/components/shop/question-form";
 import { db } from "@/lib/db";
 import { QUESTIONS_PER_HOUR, isBot, parseQuestion } from "@/lib/questions/validate";
+import { EVERYONE, QUESTIONS_IN_ALL, QUESTIONS_PER_ADDRESS, isLimited, recordAttempt, requestAddress } from "@/lib/rate-limit";
 
 const HOUR = 60 * 60 * 1000;
 
@@ -21,8 +22,12 @@ export async function askQuestion(_state: QuestionState, formData: FormData): Pr
   if (!parsed.ok) return { errors: parsed.errors };
   const { productId, ...question } = parsed.data;
 
+  // Five an hour from one email, from one address whatever email it gives,
+  // and a ceiling for everyone together. All three read alike: which one was
+  // reached is nothing a shopper can act on.
+  const address = await requestAddress();
   const recent = await db.question.count({ where: { email: question.email, createdAt: { gte: new Date(Date.now() - HOUR) } } });
-  if (recent >= QUESTIONS_PER_HOUR) {
+  if (recent >= QUESTIONS_PER_HOUR || (await isLimited(QUESTIONS_PER_ADDRESS, address)) || (await isLimited(QUESTIONS_IN_ALL, EVERYONE))) {
     return { errors: {}, notice: "You have sent several questions in the last hour. Please wait a little before sending another." };
   }
 
@@ -33,6 +38,8 @@ export async function askQuestion(_state: QuestionState, formData: FormData): Pr
     : null;
 
   await db.question.create({ data: { ...question, productId: product?.id ?? null, productName: product?.name ?? null } });
+  await recordAttempt(QUESTIONS_PER_ADDRESS, address);
+  await recordAttempt(QUESTIONS_IN_ALL, EVERYONE);
 
   revalidatePath("/admin/questions");
   revalidatePath("/admin");

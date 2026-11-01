@@ -1,9 +1,14 @@
 import { SaleForm } from "@/components/admin/sale-form";
 import { createSale } from "@/app/admin/(protected)/sales/actions";
+import { requireAdmin } from "@/lib/auth/dal";
 import { categoryPaths, pathsOf } from "@/lib/categories/path";
 import { db } from "@/lib/db";
 
 export default async function NewSalePage() {
+  // Checked here as well as in the admin layout, which moving between
+  // admin pages does not render again.
+  await requireAdmin();
+
   // Archived products are hidden from the shop, so they cannot be on sale.
   const [found, categories] = await Promise.all([
     db.product.findMany({

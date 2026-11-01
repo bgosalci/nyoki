@@ -204,9 +204,24 @@ describe("missingChoices", () => {
 
   it("asks for each thing to personalise once personalising, in order", () => {
     expect(missingChoices(offer, { ...complete, personalisation: {} })).toEqual([
-      { key: "field:f1", message: "Please fill in the name.", short: "Fill in the name" },
-      { key: "field:f2", message: "Please choose the zodiac sign.", short: "Choose the zodiac sign" },
+      { key: "field:f1", message: "Please fill in “Name”.", short: "Fill in “Name”" },
+      { key: "field:f2", message: "Please choose one for “Zodiac sign”.", short: "Choose one for “Zodiac sign”" },
     ]);
+  });
+
+  it("names a thing to personalise as the shop wrote it, so a label that is a sentence still reads", () => {
+    // Lowercased into "Fill in the ...", a real label read "Fill in the type your character".
+    const asked = (label: string, kind: "TEXT" | "CHOICE" = "TEXT") => {
+      const field = { ...name, label, kind, choices: kind === "CHOICE" ? ["A"] : [] };
+      const card = { ...offer, personalisation: { ...offer.personalisation!, fields: [field] } };
+      return missingChoices(card, { ...complete, personalisation: {} })[0];
+    };
+
+    expect(asked("Type your character")).toMatchObject({ message: "Please fill in “Type your character”.", short: "Fill in “Type your character”" });
+    expect(asked("Choose your initial", "CHOICE")).toMatchObject({ message: "Please choose one for “Choose your initial”." });
+    // A colon or full stop of its own is left out; a question keeps its mark and needs no other.
+    expect(asked("  Their name:  ").message).toBe("Please fill in “Their name”.");
+    expect(asked("Who is it for?").message).toBe("Please fill in “Who is it for?”");
   });
 
   it("does not accept a choice that is not on the list", () => {
@@ -223,6 +238,32 @@ describe("missingChoices", () => {
 
   it("asks for everything to personalise when it is required, switch or not", () => {
     expect(keys(required, { ...complete, personalise: false, personalisation: {} })).toEqual(["field:f1", "field:f2"]);
+  });
+
+  it("refuses a printed message longer than the card takes, as the basket must when the page is bypassed", () => {
+    // The box stops at its limit; a request made without the page does not.
+    expect(missingChoices(offer, { ...complete, messageText: "x".repeat(301) })).toEqual([
+      { key: "messageText", message: "Please keep the message to 300 characters.", short: "Shorten your message" },
+    ]);
+    expect(missingChoices(offer, { ...complete, messageText: "x".repeat(300) })).toEqual([]);
+  });
+
+  it("refuses anything typed to personalise that is longer than its limit", () => {
+    expect(missingChoices(offer, { ...complete, personalisation: { f1: "x".repeat(21), f2: "♌ Leo" } })).toEqual([
+      { key: "field:f1", message: "Please keep “Name” to 20 characters.", short: "Shorten “Name”" },
+    ]);
+    expect(keys(offer, { ...complete, personalisation: { f1: "x".repeat(20), f2: "♌ Leo" } })).toEqual([]);
+  });
+
+  it("counts what is kept, not the spaces around it, and says a limit of one plainly", () => {
+    const initial = { ...name, label: "Initial", maxLength: 1 };
+    const card = { ...offer, message: { pricePence: 80, maxLength: 1000 }, personalisation: { ...offer.personalisation!, fields: [initial] } };
+
+    expect(keys(card, { ...complete, personalisation: { f1: "  A  " } })).toEqual([]);
+    expect(missingChoices(card, { ...complete, personalisation: { f1: "AB" } })[0].message).toBe("Please keep “Initial” to 1 character.");
+    expect(missingChoices(card, { ...complete, messageText: "x".repeat(1001), personalisation: { f1: "A" } })[0].message).toBe(
+      "Please keep the message to 1,000 characters.",
+    );
   });
 
   it("lists everything missing in page order", () => {

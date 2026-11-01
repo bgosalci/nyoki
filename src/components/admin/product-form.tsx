@@ -18,6 +18,7 @@ import { UnsavedChanges } from "@/components/admin/unsaved-changes";
 import { formatPence } from "@/lib/money";
 import type { ProductErrors, ProductInput } from "@/lib/products/validate";
 import { useActionForm } from "@/lib/forms/action-form";
+import { useFocusFirstError } from "@/lib/forms/first-error";
 import { isClothes } from "@/lib/clothes/group";
 import { editorFrom, totalStock } from "@/lib/clothes/editor";
 import type { StockRow } from "@/lib/clothes/stock";
@@ -88,8 +89,18 @@ export function ProductForm({
   initialState?: ProductFormState;
   submitLabel?: string;
 }) {
-  const { state, formAction, isPending, formRef, onSubmit } = useActionForm(action, initialState, (result) => Object.keys(result.errors).length > 0);
+  const { state, formAction, isPending, formRef, onSubmit, rejection } = useActionForm(
+    action,
+    initialState,
+    (result) => Object.keys(result.errors).length > 0,
+  );
   const errors = state.errors;
+  // Saved from the top of a long form, an error further down was out of
+  // sight, and a rejected save looked just like one that went through.
+  useFocusFirstError(formRef, rejection);
+  // Only an edit comes back from a save that went through: a new product
+  // leaves for its own page instead.
+  const saved = state !== initialState && Object.keys(errors).length === 0;
 
   // What the piece is follows the categories as they are ticked.
   const [categoryIds, setCategoryIds] = useState(product?.categoryIds ?? []);
@@ -117,7 +128,8 @@ export function ProductForm({
     <form id="product-details" ref={formRef} action={formAction} onSubmit={onSubmit} className="flex max-w-2xl flex-col gap-8">
       {/* A new product is saved by leaving for its page, so only an edit reports a save. */}
       <UnsavedChanges formRef={formRef} saved={Object.keys(errors).length === 0 ? state : null} />
-      <TopSaveButton form="product-details" pending={isPending} label={submitLabel} />
+      {/* Said beside the Save at the top, which the pinned header keeps in sight from either button. */}
+      <TopSaveButton form="product-details" pending={isPending} label={submitLabel} status={saved ? "Saved." : null} />
 
       <section className="flex flex-col gap-5">
         <Field label="Name" name="name" error={errors.name}>

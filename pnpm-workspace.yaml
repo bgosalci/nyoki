@@ -16,3 +16,18 @@ allowBuilds:
   prisma: true
   unrs-resolver: true
   workerd: true
+
+# Patched versions of packages only other packages depend on, each within the
+# major version its dependents ask for. `pnpm audit --prod` flagged them; the
+# next upgrade of whatever pulls them in may make an entry unnecessary.
+#   undici        - via @vercel/blob (TLS check bypass, DoS)
+#   lodash        - via the prisma CLI's Studio (code injection, pollution)
+#   mysql2        - via the prisma CLI (credential leak, inflate bomb)
+#   zod, fast-uri, source-map-js - via @vercel/blob, prisma, the build
+overrides:
+  undici@6: ^6.29.1
+  lodash@4: ^4.18.1
+  mysql2@3: ^3.23.1
+  zod@4: ^4.6.6
+  fast-uri@3: ^3.1.9
+  source-map-js@1: ^1.2.2

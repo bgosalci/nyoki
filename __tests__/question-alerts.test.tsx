@@ -8,6 +8,7 @@ jest.mock("next/navigation", () => ({
 }));
 
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
+import { AdminTopBar } from "@/components/admin/admin-top-bar";
 import { POLL_MS, QuestionAlertsProvider, QuestionSoundToggle } from "@/components/admin/question-alerts";
 import { arrivalMessage } from "@/lib/questions/alerts";
 
@@ -65,6 +66,20 @@ describe("question alerts", () => {
     setup({ waiting: 0 });
 
     expect(questionsLink()).toHaveAccessibleName("Questions");
+  });
+
+  it("shows the count on the phone's Menu button too, where the sidebar is shut away", () => {
+    setup({ waiting: 3, children: <AdminTopBar /> });
+
+    const menu = screen.getByRole("button", { name: /^menu/i });
+    expect(menu).toHaveTextContent("3");
+    expect(menu).toHaveAccessibleName("Menu, 3 questions waiting");
+  });
+
+  it("says one question as one", () => {
+    setup({ waiting: 1, children: <AdminTopBar /> });
+
+    expect(screen.getByRole("button", { name: /^menu/i })).toHaveAccessibleName("Menu, 1 question waiting");
   });
 
   it("asks every ten seconds whether any have arrived since it last looked", async () => {

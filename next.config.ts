@@ -1,5 +1,43 @@
 import type { NextConfig } from "next";
 
+/**
+ * The host the shop's own Vercel Blob store serves photos from. The store is
+ * named in its token (vercel_blob_rw_<store>_<secret>), and the Blob SDK
+ * builds every photo's address from it the same way. No token, no store:
+ * local photos live under public/uploads, the shop's own address.
+ */
+function blobHost(token = process.env.BLOB_READ_WRITE_TOKEN): string | null {
+  const store = token?.split("_")[3];
+  return store ? `${store.toLowerCase()}.public.blob.vercel-storage.com` : null;
+}
+
+const BLOB_HOST = blobHost();
+
+/**
+ * Sent with every page and file, the shop's and the CMS's alike.
+ *
+ * The Content-Security-Policy carries only what cannot break a page: no
+ * framing by other websites (the CMS's buttons could otherwise be laid under
+ * someone else's), no <base> tag or plugin slipped in, and forms that post
+ * only here. Limiting scripts as well needs a nonce on every one Next writes,
+ * a bigger change than this. When payment is built, a form that hands over to
+ * a payment page elsewhere needs that page's origin in form-action.
+ */
+const SECURITY_HEADERS = [
+  { key: "Content-Security-Policy", value: "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'" },
+  // frame-ancestors for browsers too old to read it.
+  { key: "X-Frame-Options", value: "DENY" },
+  // A file is what its type says, never what a browser guesses from its bytes.
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  // Other websites learn the shop sent someone, never which page.
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  // Two years; browsers ignore it over plain http, so local and LAN testing are untouched.
+  { key: "Strict-Transport-Security", value: "max-age=63072000" },
+  // Nothing on the shop uses these. Payment is left alone: Apple Pay and
+  // Google Pay go through the Payment Request API.
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), browsing-topics=()" },
+];
+
 const nextConfig: NextConfig = {
   // jose ships ESM only, with no CommonJS build. Listing it here is what lets
   // `next/jest` transform it for the test runner: next/jest PREPENDS its own
@@ -30,13 +68,17 @@ const nextConfig: NextConfig = {
     },
   },
 
+  async headers() {
+    return [{ source: "/:path*", headers: SECURITY_HEADERS }];
+  },
+
   images: {
-    // Product photos are served from Vercel Blob in production. Local
-    // development writes to public/uploads, which is same-origin and needs no
-    // entry here.
-    remotePatterns: [
-      { protocol: "https", hostname: "**.public.blob.vercel-storage.com" },
-    ],
+    // Product photos are served from Vercel Blob in production; only the
+    // shop's own store is let through. A wildcard over the Blob domain let
+    // any stranger's store through the image optimiser, on the shop's quota.
+    // Local development writes to public/uploads, which is same-origin and
+    // needs no entry here.
+    remotePatterns: BLOB_HOST ? [{ protocol: "https", hostname: BLOB_HOST }] : [],
   },
 
   devIndicators: {

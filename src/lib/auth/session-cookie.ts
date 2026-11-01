@@ -7,6 +7,7 @@ import {
   createSessionToken,
   verifySessionToken,
   type SessionPayload,
+  type VerifiedSession,
 } from "@/lib/auth/session";
 
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
@@ -46,7 +47,7 @@ export async function startSession(session: SessionPayload): Promise<void> {
 }
 
 /** The current admin session, or null if not signed in. */
-export async function readSession(): Promise<SessionPayload | null> {
+export async function readSession(): Promise<VerifiedSession | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
 

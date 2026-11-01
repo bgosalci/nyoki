@@ -59,6 +59,18 @@ export function seenByShopper(status: OrderStatus): boolean {
   return status !== "PENDING";
 }
 
+/**
+ * Which orders a shopper's own account lists: paid for, and placed while
+ * signed in to it. A guest order is joined to whichever Customer row holds
+ * its email, and nothing yet proves an email belongs to whoever registers it
+ * - so listing those would show anyone who claimed an address the orders its
+ * owner placed as a guest, now and later. They stay joined, for the shop's
+ * own records; they can be listed once an email can be confirmed.
+ */
+export function shopperOrders(customerId: string) {
+  return { customerId, signedIn: true, status: { in: ORDER_STATUSES.filter(seenByShopper) } };
+}
+
 /** Sage draws the eye, and exactly one status has earned it. */
 export function orderStatusBadge(status: OrderStatus): string {
   return isAwaitingFulfilment(status) ? ui.badgeSale : ui.badgeQuiet;

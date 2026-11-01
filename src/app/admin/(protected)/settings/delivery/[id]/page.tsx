@@ -2,9 +2,14 @@ import { notFound } from "next/navigation";
 
 import { BackLink } from "@/components/admin/back-link";
 import { EditDeliveryRateForm } from "@/components/admin/edit-delivery-rate-form";
+import { requireAdmin } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
 
 export default async function EditDeliveryRatePage({ params }: { params: Promise<{ id: string }> }) {
+  // Checked here as well as in the admin layout, which moving between
+  // admin pages does not render again.
+  await requireAdmin();
+
   const { id } = await params;
   const rate = await db.shippingRate.findUnique({
     where: { id },

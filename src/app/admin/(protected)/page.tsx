@@ -1,10 +1,15 @@
 import Link from "next/link";
 
 import { overviewStats } from "@/lib/admin/overview";
+import { requireAdmin } from "@/lib/auth/dal";
 import { ui } from "@/lib/brand/ui";
 import { db } from "@/lib/db";
 
 export default async function AdminOverviewPage() {
+  // Checked here as well as in the admin layout, which moving between
+  // admin pages does not render again.
+  await requireAdmin();
+
   const [live, drafts, toFulfil, questions, sales, codes] = await Promise.all([
     db.product.count({ where: { status: "ACTIVE" } }),
     db.product.count({ where: { status: "DRAFT" } }),

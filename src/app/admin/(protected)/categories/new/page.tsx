@@ -1,8 +1,13 @@
 import { CategoryForm } from "@/components/admin/category-form";
 import { createCategory } from "@/app/admin/(protected)/categories/actions";
+import { requireAdmin } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
 
 export default async function NewCategoryPage() {
+  // Checked here as well as in the admin layout, which moving between
+  // admin pages does not render again.
+  await requireAdmin();
+
   const categories = await db.category.findMany({
     orderBy: { name: "asc" },
     select: { id: true, name: true, parentId: true },

@@ -8,6 +8,7 @@ import {
   orderStatusBadge,
   orderStatusLabel,
   seenByShopper,
+  shopperOrders,
 } from "@/lib/orders/status";
 
 describe("order statuses", () => {
@@ -84,5 +85,18 @@ describe("seenByShopper", () => {
   it("leaves out an order never paid for, which a shopper did not finish", () => {
     expect(seenByShopper("PENDING")).toBe(false);
     for (const status of ["PAID", "FULFILLED", "CANCELLED", "REFUNDED"] as const) expect(seenByShopper(status)).toBe(true);
+  });
+});
+
+describe("shopperOrders", () => {
+  // A guest order joins whichever Customer row holds its email, and nothing
+  // proves an email belongs to whoever registers it. Listing those would show
+  // anyone who claimed an address the orders its owner placed as a guest.
+  it("lists only orders placed signed in to the account, and never an unpaid one", () => {
+    expect(shopperOrders("c1")).toEqual({
+      customerId: "c1",
+      signedIn: true,
+      status: { in: ORDER_STATUSES.filter((status) => status !== "PENDING") },
+    });
   });
 });

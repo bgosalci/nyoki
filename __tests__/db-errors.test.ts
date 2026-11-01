@@ -1,4 +1,4 @@
-import { isUniqueViolationOn } from "@/lib/db-errors";
+import { isSerializationFailure, isUniqueViolationOn } from "@/lib/db-errors";
 
 /** The shape Prisma 7's driver adapter actually produces: no meta.target, the constraint only in the message. */
 function adapterP2002(constraint: string, modelName: string) {
@@ -37,5 +37,28 @@ describe("isUniqueViolationOn", () => {
     expect(isUniqueViolationOn({ code: "P2025" }, { table: "admin_users", column: "email" })).toBe(false);
     expect(isUniqueViolationOn(new Error("boom"), { table: "admin_users", column: "email" })).toBe(false);
     expect(isUniqueViolationOn(null, { table: "admin_users", column: "email" })).toBe(false);
+  });
+});
+
+describe("isSerializationFailure", () => {
+  // What Prisma 7 + pg actually threw when two serializable transactions on
+  // the sandbox database raced: no code at all, the kind on its cause.
+  it("knows the driver adapter's write conflict", () => {
+    const error = Object.assign(new Error("TransactionWriteConflict"), {
+      name: "DriverAdapterError",
+      cause: { kind: "TransactionWriteConflict" },
+    });
+
+    expect(isSerializationFailure(error)).toBe(true);
+  });
+
+  it("knows Prisma's own code for it", () => {
+    expect(isSerializationFailure(Object.assign(new Error("Transaction failed due to a write conflict"), { code: "P2034" }))).toBe(true);
+  });
+
+  it("is nothing else", () => {
+    expect(isSerializationFailure(new Error("boom"))).toBe(false);
+    expect(isSerializationFailure(Object.assign(new Error("x"), { cause: { kind: "UniqueConstraintViolation" } }))).toBe(false);
+    expect(isSerializationFailure(null)).toBe(false);
   });
 });

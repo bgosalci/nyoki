@@ -193,6 +193,103 @@ describe("checkout", () => {
       expect(screen.getByText("Enter a UK postcode, like LS29 9AA.")).toBeInTheDocument();
       expect(screen.getByRole("alert")).toHaveTextContent("Your basket has changed.");
     });
+
+    it("marks the address's second line and the county when they are too long", () => {
+      setup({ initialState: { errors: { line2: "Keep this line to 100 characters.", county: "Keep the county to 100 characters." } } });
+
+      expect(screen.getByLabelText(/second line/i)).toHaveAttribute("aria-invalid", "true");
+      expect(screen.getByText("Keep this line to 100 characters.")).toBeInTheDocument();
+      expect(screen.getByLabelText(/county/i)).toHaveAttribute("aria-invalid", "true");
+      expect(screen.getByText("Keep the county to 100 characters.")).toBeInTheDocument();
+    });
+
+    it("moves nowhere on arrival, whatever the page starts with", () => {
+      setup({ initialState: { errors: { postcode: "Enter a UK postcode, like LS29 9AA." } } });
+
+      expect(document.body).toHaveFocus();
+    });
+  });
+
+  describe("when Continue is turned down", () => {
+    // jsdom has no scrollIntoView; this records where the page was asked to scroll.
+    const scrolled = jest.fn();
+    beforeEach(() => {
+      scrolled.mockClear();
+      Element.prototype.scrollIntoView = function (this: Element, options?: boolean | ScrollIntoViewOptions) {
+        scrolled(this, options);
+      };
+    });
+
+    const refused = (state: Awaited<ReturnType<CheckoutFormProps["action"]>>) => jest.fn().mockResolvedValue(state);
+
+    it("goes to the first problem in page order, in the middle of the screen, clear of the header and the bar", async () => {
+      const { user } = setup({ action: refused({ errors: { postcode: "Enter a UK postcode, like LS29 9AA.", city: "Enter the town or city." } }) });
+
+      await user.click(screen.getAllByRole("button", { name: /continue/i })[0]);
+
+      await screen.findByText("Enter the town or city.");
+      expect(screen.getByLabelText("Town or city")).toHaveFocus();
+      expect(scrolled).toHaveBeenCalledWith(screen.getByLabelText("Town or city"), { block: "center" });
+    });
+
+    it("goes to it from the phone's slim bar too, where the postcode is far down the page", async () => {
+      const { user } = setup({ action: refused({ errors: { postcode: "Enter a UK postcode, like LS29 9AA." } }) });
+
+      await user.click(screen.getByRole("button", { name: "Continue" }));
+
+      await screen.findByText("Enter a UK postcode, like LS29 9AA.");
+      expect(screen.getByLabelText("Postcode")).toHaveFocus();
+    });
+
+    it("goes to the way of sending it when none was chosen", async () => {
+      const { user } = setup({
+        rates: [{ ...tracked48, freeOverPence: null }, tracked24],
+        action: refused({ errors: { rate: "Choose how it should be sent." } }),
+      });
+
+      await user.click(screen.getByRole("button", { name: "Continue" }));
+
+      await screen.findByText("Choose how it should be sent.");
+      expect(screen.getByRole("radio", { name: /tracked 48/i })).toHaveFocus();
+    });
+
+    it("goes to the saved address the order could not find, with why beside the addresses", async () => {
+      const saved = [{ id: "a1", name: "Ella Morgan", line1: "3 Mill Yard", line2: null, city: "Leeds", county: null, postcode: "LS1 4AB" }];
+      const { user } = setup({
+        shopper: { name: "Ella", email: "ella@example.com" },
+        savedAddresses: saved,
+        action: refused({ errors: { address: "Choose where it should go." } }),
+      });
+
+      await user.click(screen.getByRole("button", { name: "Continue" }));
+
+      await screen.findByText("Choose where it should go.");
+      expect(screen.getByRole("radiogroup", { name: "Where should it go?" })).toHaveAttribute("aria-invalid", "true");
+      expect(screen.getByRole("radio", { name: /3 mill yard/i })).toHaveFocus();
+    });
+
+    it("goes to what was said about the whole order when no box is wrong", async () => {
+      const { user } = setup({ action: refused({ errors: {}, notice: "Your basket has changed. Reindeer Card has sold out." }) });
+
+      await user.click(screen.getByRole("button", { name: "Continue" }));
+
+      expect(await screen.findByRole("alert")).toHaveFocus();
+    });
+
+    it("takes off a code the order would not take, and says why beside the box, unfolding the order on a phone", async () => {
+      const { user } = setup({ action: refused({ errors: { code: "That code has been used up." } }) });
+      await user.type(within(summary()).getByLabelText("Promo code"), "winter10");
+      await user.click(within(summary()).getByRole("button", { name: "Apply" }));
+
+      await user.click(screen.getByRole("button", { name: "Continue" }));
+
+      expect(await within(summary()).findByText("That code has been used up.")).toBeInTheDocument();
+      expect(within(summary()).getByTestId("checkout-total")).toHaveTextContent("£74.90");
+      expect(document.querySelector<HTMLInputElement>('form input[name="code"]')!.value).toBe("");
+      const folded = screen.getByText("Show your order").closest("details")!;
+      expect(folded).toHaveAttribute("open");
+      expect(within(folded).getByLabelText("Promo code")).toHaveFocus();
+    });
   });
 
   describe("coming back to change something", () => {
