@@ -1,5 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
 
+import { CUSTOMER_SESSION_COOKIE, CUSTOMER_SESSION_DAYS } from "@/lib/account/cookie";
+
 /**
  * Shopper session tokens.
  *
@@ -20,11 +22,11 @@ export interface VerifiedCustomerSession extends CustomerSession {
   issuedAt: number;
 }
 
-export const CUSTOMER_SESSION_COOKIE = "nyoki_customer_session";
+export { CUSTOMER_SESSION_COOKIE, CUSTOMER_SESSION_DAYS };
 
 const KIND = "customer";
 const ALGORITHM = "HS256";
-const SESSION_DURATION = "30d";
+const SESSION_DURATION = `${CUSTOMER_SESSION_DAYS}d`;
 
 // HS256 keys shorter than the 256-bit hash buy no extra security and signal a
 // placeholder secret that escaped into a real environment.

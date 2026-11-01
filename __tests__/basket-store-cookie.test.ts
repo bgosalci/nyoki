@@ -18,7 +18,7 @@ jest.mock("../src/lib/db", () => ({
   db: { basket: { findFirst: (args: unknown) => findFirst(args), create: (args: unknown) => create(args) } },
 }));
 
-import { signBasketId } from "@/lib/basket/cookie";
+import { signBasketId } from "@/lib/basket/cookie-signature";
 import { BASKET_COOKIE, basketIdForWriting, findBasketId } from "@/lib/basket/store";
 
 const SECRET = "test-secret-at-least-32-bytes-long-for-hs256";

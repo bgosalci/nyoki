@@ -2,6 +2,7 @@ import { CATEGORY_ORDER } from "@/lib/categories/ordering";
 import { db } from "@/lib/db";
 import { ALSO_LIKE_LIMIT } from "@/lib/products/also-like";
 import { toCardProduct, type CardProduct, type CardSource } from "@/lib/storefront/card";
+import { stockedDepartments } from "@/lib/storefront/departments";
 import type { TileProduct } from "@/lib/storefront/tiles";
 
 /** Everything a card needs, in one shape, for every storefront query. */
@@ -40,20 +41,27 @@ export async function activeProducts(where = {}, take?: number) {
 
 /**
  * The departments and the types in each, in the order set by dragging them
- * on the admin's categories page: the header's menu, the footer and the home
- * page all read this. `take` caps the types per department, first first.
+ * on the admin's categories page: the header's menu and the footer read
+ * this. Only those with a piece on the shop in them, or anywhere beneath
+ * them, are listed (`stockedDepartments`). `take` caps the types per
+ * department, first first.
  */
 export async function departments(take?: number) {
-  return db.category.findMany({
-    where: { parentId: null },
-    orderBy: CATEGORY_ORDER,
-    select: {
-      slug: true,
-      name: true,
-      labelColour: true,
-      children: { orderBy: CATEGORY_ORDER, take, select: { slug: true, name: true, labelColour: true } },
-    },
-  });
+  const [categories, links] = await Promise.all([
+    db.category.findMany({
+      orderBy: CATEGORY_ORDER,
+      select: { id: true, slug: true, name: true, labelColour: true, parentId: true },
+    }),
+    // Which categories a piece on the shop is filed in directly; the tree
+    // above them is filled in from `categories`, however deep it goes.
+    db.categoryProduct.findMany({
+      where: { product: { status: "ACTIVE" } },
+      distinct: ["categoryId"],
+      select: { categoryId: true },
+    }),
+  ]);
+
+  return stockedDepartments(categories, links.map((link) => link.categoryId), take);
 }
 
 /** Every category in that same order, so the tiles a page builds from them follow it. */

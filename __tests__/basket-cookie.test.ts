@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  */
-import { basketIdFrom, signBasketId } from "@/lib/basket/cookie";
+import { basketIdFrom, signBasketId } from "@/lib/basket/cookie-signature";
 
 const SECRET = "test-secret-at-least-32-bytes-long-for-hs256";
 

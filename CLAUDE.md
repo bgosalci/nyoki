@@ -246,6 +246,15 @@ TypeScript, deployed to Vercel.
   follow it, through `departments()` and
   `shopCategories()` (`src/lib/storefront/queries.ts`); the product page's
   category chooser and the products list's pills read it too.
+- **The shop lists only categories with a piece on it**: the header's row,
+  its menus and the footer leave out any with no active piece in it or
+  anywhere beneath it (`stockedDepartments`,
+  `src/lib/storefront/departments.ts`), as the tiles already did
+  (`categoryTiles`). A draft fills nothing; a piece filed only in a type
+  fills the department above it, however deep. It first listed every
+  category, and half of Clothing's menu led to empty pages. An empty
+  category's page still opens, saying "Nothing here just yet", so a
+  bookmark or a home page tile leading there is not broken.
 - `Category.position` is a **sequence read lowest first**, compared only
   among siblings (`CATEGORY_ORDER`, ties by name), so a new category - from
   the admin or the Shopify import - lands last in its group with no code of
@@ -903,7 +912,7 @@ TypeScript, deployed to Vercel.
 - Kept on the server (`Basket`, `BasketLine`; `src/lib/basket/store.ts`). A
   guest's is named by the httpOnly `nyoki_basket` cookie, which only a
   server action can set, and which holds the basket's id **signed** with
-  `AUTH_SECRET` (`src/lib/basket/cookie.ts`) - whoever holds a basket's id
+  `AUTH_SECRET` (`src/lib/basket/cookie-signature.ts`) - whoever holds a basket's id
   holds the order waiting for it, and a cuid is unique, not secret. An
   unsigned cookie from before opens nothing; a signed-in shopper's is joined to the account, and
   a guest basket is folded into it the next time the basket is looked at -
@@ -1091,6 +1100,62 @@ TypeScript, deployed to Vercel.
   the parcel onto the order (`parcelSize`, `parcelGrams`, `parcelMm`), and the
   order page says it, so the postage bought is the postage charged for. The
   basket says delivery is "from" the cheapest option for its parcel.
+
+## Policies
+
+- **Five policies under `/policies`**: Delivery, Returns and refunds, Terms
+  and conditions, Privacy notice, Cookies, and an index. One list,
+  `POLICIES` (`src/lib/policies/pages.ts`), names them for the footer's
+  Help column, checkout's footer and each page's "other policies"; each page
+  is a `PolicyPage`. Change `POLICIES_UPDATED` with the words.
+- Researched against NOTHS, Amazon and small UK makers on 1 November 2026
+  and kept to UK law as it then stood, but to what a small maker can honour:
+  the legal 14 days to change your mind (NOTHS gives 28), the shopper paying
+  for a change-of-mind return, the outbound delivery refunded only up to the
+  least expensive way (Tracked 48, free), a refund within 14 days of the
+  piece or proof of postage.
+- **Only a personalised piece is kept back from a change of mind** (printed
+  words, a name, anything chosen for it: CCR reg 28(1)(b)). A piece made to
+  order exactly as shown - a listed size, colour or pack - is not, and the
+  page says so; "made to order" must never read as "no returns". The
+  customiser says it beside the words too (`MadeForYouNote`), since the law
+  wants it said before the order. Faults are never time-barred short of the
+  law, and wear is a deduction, never a refusal.
+- **Whose shop it is** comes from `BUSINESS` (`src/lib/policies/business.ts`):
+  Nyoki Limited, company 06758218, registered in England and Wales, VAT
+  GB 979 8673 25. **Every page's footer ends with that one sentence and
+  nothing more** (`legalLine`) - the copyright line, the registered office
+  and the address were taken out of it as too much. The registered office
+  (82 Containerville, from Companies House; a company's website must show
+  it) and the address shoppers write to and send returns to - the trading
+  address, Unit 302, 3A Howick Place, never a home - are in full at the foot
+  of every policy (`BusinessDetails`) and in the terms. The
+  `email` is still null, and the pages send people to Contact meanwhile;
+  **it is needed before ordering opens**, since the regulations ask for an
+  email address, not just a form.
+- The cookies page lists `SITE_COOKIES`, every cookie a shopper can be
+  given, built from the constants that set each one (`basket/cookie.ts`,
+  `account/cookie.ts` - apart from the jose code, which jsdom cannot load),
+  so it cannot fall behind. Every one is strictly necessary, so there is no
+  banner (PECR Schedule A1). A cookie for anything else needs this page
+  first.
+- **The public pages say nothing of the admin.** The team's own sign-in
+  cookie is set only on their browsers and is not listed; a test fails on
+  any policy that mentions the admin, the team or staff.
+- The delivery page's table is the options checkout offers
+  (`deliveryOptions`, from `rateSources`), so it cannot promise a price
+  checkout does not charge.
+- **The Channel Islands are refused at checkout** (`isChannelIslands`):
+  outside the UK for VAT and customs. The Isle of Man goes as the UK does.
+- The regulator is the **Information Commission** (it replaced the ICO on 30
+  September 2026); a shopper complains to us first (DPA 2018 s.164A, from 19
+  June 2026). With no ADR scheme joined, the terms say nothing about ADR
+  (DMCC Act, from 6 April 2026).
+- **Promised, not yet built**: deleting unpaid orders after six months and
+  answered questions after a year (the privacy notice says so); a written
+  confirmation of each order by the time it arrives (CCR reg 16 - email, or
+  printed in the parcel); and a pay button that says paying, such as "Pay
+  now" (CCR reg 14(3)).
 
 ## Shoppers' questions
 

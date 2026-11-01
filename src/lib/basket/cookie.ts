@@ -1,29 +1,11 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
-
 /**
- * What a guest's basket cookie holds: the basket's id and a signature over
- * it, made with the shop's secret.
- *
- * Whoever holds a basket's id holds the basket, and the order waiting for it -
- * checkout fills its form from that order's email, phone and address. An id
- * is a cuid (a timestamp, a counter and a little randomness), made to be
- * unique, never to be secret; signed, a guessed or altered one opens nothing.
+ * The cookie that names a guest's basket. Apart from the store, which is
+ * server-only, so the cookies page can say what it is called and how long it
+ * lasts from the same constants that set it.
  */
 
-function signatureOf(id: string, secret: string): string {
-  return createHmac("sha256", secret).update(`basket:${id}`).digest("base64url");
-}
+export const BASKET_COOKIE = "nyoki_basket";
 
-export function signBasketId(id: string, secret: string): string {
-  return `${id}.${signatureOf(id, secret)}`;
-}
-
-/** The basket a cookie names, or null for one not signed by this shop - an unsigned id included. */
-export function basketIdFrom(value: string, secret: string): string | null {
-  const [id, signature, ...rest] = value.split(".");
-  if (!id || !signature || rest.length > 0) return null;
-
-  const expected = Buffer.from(signatureOf(id, secret));
-  const given = Buffer.from(signature);
-  return given.length === expected.length && timingSafeEqual(given, expected) ? id : null;
-}
+// Long, as a shopper's session is: a basket filled in November is often
+// bought from in December.
+export const BASKET_COOKIE_DAYS = 60;

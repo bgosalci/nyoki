@@ -3,7 +3,8 @@ import "server-only";
 import { cookies } from "next/headers";
 
 import { currentCustomer } from "@/lib/account/dal";
-import { basketIdFrom, signBasketId } from "@/lib/basket/cookie";
+import { BASKET_COOKIE, BASKET_COOKIE_DAYS } from "@/lib/basket/cookie";
+import { basketIdFrom, signBasketId } from "@/lib/basket/cookie-signature";
 import type { StoredChoices, VariantRow } from "@/lib/basket/lines";
 import { reviewBasket, type BasketReview, type ReviewLine, type ReviewProduct } from "@/lib/basket/review";
 import type { MessageChoice } from "@/lib/customisation/choices";
@@ -26,11 +27,9 @@ import { productOffer, type OfferSource } from "@/lib/storefront/offer";
  * looked at, which covers signing in and registering alike.
  */
 
-export const BASKET_COOKIE = "nyoki_basket";
+export { BASKET_COOKIE };
 
-// Long, as a shopper's session is: a basket filled in November is often
-// bought from in December.
-const BASKET_COOKIE_MS = 60 * 24 * 60 * 60 * 1000;
+const BASKET_COOKIE_MS = BASKET_COOKIE_DAYS * 24 * 60 * 60 * 1000;
 
 /** Everything about a piece the basket prices it by - the product page's own. */
 export const BASKET_PRODUCT = {

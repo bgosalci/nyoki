@@ -31,6 +31,16 @@ export function normalisePostcode(raw: string): string | null {
   return match ? `${match[1]} ${match[2]}` : null;
 }
 
+/**
+ * Jersey and Guernsey: outside the UK for VAT and customs, so a parcel there
+ * needs a customs form and its price no VAT, neither of which the shop does
+ * yet - the delivery policy says so. The Isle of Man is inside both, and goes
+ * as anywhere in the UK does.
+ */
+export function isChannelIslands(postcode: string): boolean {
+  return /^(JE|GY)\d/.test(postcode);
+}
+
 export type CheckoutAddress =
   | { kind: "saved"; id: string }
   | { kind: "new"; name: string; line1: string; line2: string | null; city: string; county: string | null; postcode: string };
@@ -100,6 +110,7 @@ export function parseCheckout(form: FormData, { shopperEmail }: { shopperEmail: 
     else if (tooLong(city)) errors.city = `Keep the town or city to ${ADDRESS_LINE_MAX} characters.`;
     if (tooLong(county)) errors.county = `Keep the county to ${ADDRESS_LINE_MAX} characters.`;
     if (postcode === null) errors.postcode = "Enter a UK postcode, like LS29 9AA.";
+    else if (isChannelIslands(postcode)) errors.postcode = "We can't send to the Channel Islands yet, sorry.";
     address = { kind: "new", name, line1, line2, city, county, postcode: postcode ?? "" };
   }
 
