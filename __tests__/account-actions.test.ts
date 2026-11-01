@@ -6,8 +6,10 @@ const update = jest.fn();
 const create = jest.fn();
 const startCustomerSession = jest.fn();
 const requireCustomer = jest.fn();
-const isLimited = jest.fn();
-const recordAttempt = jest.fn();
+const attempt = jest.fn();
+const forget = jest.fn();
+const isKnownBrowser = jest.fn();
+const rememberBrowser = jest.fn();
 
 // jest.mock() does not go through the @/ alias, so these are relative.
 jest.mock("../src/lib/db", () => ({
@@ -33,13 +35,16 @@ jest.mock("next/navigation", () => ({
 }));
 jest.mock("../src/lib/rate-limit", () => ({
   ...jest.requireActual("../src/lib/rate-limit"),
-  isLimited: (...args: unknown[]) => isLimited(...args),
-  recordAttempt: (...args: unknown[]) => recordAttempt(...args),
+  attempt: (...args: unknown[]) => attempt(...args),
   requestAddress: async () => "address-hash",
+}));
+jest.mock("../src/lib/auth/known-browser", () => ({
+  isKnownBrowser: (...args: unknown[]) => isKnownBrowser(...args),
+  rememberBrowser: (...args: unknown[]) => rememberBrowser(...args),
 }));
 
 import { changePassword, register, signIn } from "@/app/(shop)/account/actions";
-import { REGISTER_PER_ADDRESS, SIGN_IN_PER_ADDRESS, SIGN_IN_PER_EMAIL, WAIT_A_WHILE } from "@/lib/rate-limit";
+import { REGISTER_PER_ADDRESS, SIGN_IN_PER_ADDRESS, SIGN_IN_PER_EMAIL, WAIT_A_WHILE, emailKey } from "@/lib/rate-limit";
 
 function form(entries: Record<string, string>): FormData {
   const data = new FormData();
@@ -49,7 +54,9 @@ function form(entries: Record<string, string>): FormData {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  isLimited.mockResolvedValue(false);
+  process.env.AUTH_SECRET = "test-secret-at-least-32-bytes-long-for-hs256";
+  attempt.mockResolvedValue({ over: false, forget });
+  isKnownBrowser.mockResolvedValue(false);
   findUnique.mockResolvedValue(null);
   update.mockResolvedValue({ id: "c1" });
   create.mockResolvedValue({ id: "c1" });
@@ -58,28 +65,39 @@ beforeEach(() => {
 describe("signIn's limit on failed attempts", () => {
   const tried = form({ email: "Ada@Example.com", password: "not the one" });
 
-  it("counts a failure against the address and the email", async () => {
+  it("counts a failure against the address and a hash of the email", async () => {
     await expect(signIn({ error: null }, tried)).resolves.toEqual({ error: "Those details are not right. Please try again.", email: "Ada@Example.com" });
 
-    expect(recordAttempt).toHaveBeenCalledWith(SIGN_IN_PER_ADDRESS, "address-hash");
-    expect(recordAttempt).toHaveBeenCalledWith(SIGN_IN_PER_EMAIL, "ada@example.com");
+    expect(attempt).toHaveBeenCalledWith(SIGN_IN_PER_ADDRESS, "address-hash");
+    expect(attempt).toHaveBeenCalledWith(SIGN_IN_PER_EMAIL, emailKey("ada@example.com"));
+    expect(forget).not.toHaveBeenCalled();
   });
 
   it.each([
     ["the address", SIGN_IN_PER_ADDRESS],
     ["the email", SIGN_IN_PER_EMAIL],
-  ])("asks for a wait once %s has failed too often, without looking the account up", async (_, reached) => {
-    isLimited.mockImplementation(async (limit) => limit === reached);
+  ])("asks for a wait once %s has had too many, without looking the account up", async (_, reached) => {
+    attempt.mockImplementation(async (limit) => ({ over: limit === reached, forget }));
 
     await expect(signIn({ error: null }, tried)).resolves.toEqual({ error: WAIT_A_WHILE, email: "Ada@Example.com" });
     expect(findUnique).not.toHaveBeenCalled();
   });
 
-  it("counts nothing when the password is right", async () => {
+  it("takes a sign-in that works back off the counts, and knows the browser from then on", async () => {
     findUnique.mockResolvedValue({ id: "c1", email: "ada@example.com", passwordHash: "hashed:not the one" });
 
     await expect(signIn({ error: null }, tried)).rejects.toThrow("NEXT_REDIRECT");
-    expect(recordAttempt).not.toHaveBeenCalled();
+    expect(forget).toHaveBeenCalledTimes(2);
+    expect(rememberBrowser).toHaveBeenCalledWith("shopper", "ada@example.com");
+  });
+
+  it("lets a browser that has signed in to the account past the email's limit", async () => {
+    isKnownBrowser.mockResolvedValue(true);
+
+    await signIn({ error: null }, tried);
+
+    expect(isKnownBrowser).toHaveBeenCalledWith("shopper", "ada@example.com");
+    expect(attempt).not.toHaveBeenCalledWith(SIGN_IN_PER_EMAIL, expect.anything());
   });
 });
 
@@ -89,11 +107,12 @@ describe("register's limit", () => {
   it("counts each registration against the address it came from", async () => {
     await expect(register({ errors: {} }, filled)).rejects.toThrow("NEXT_REDIRECT /account");
 
-    expect(recordAttempt).toHaveBeenCalledWith(REGISTER_PER_ADDRESS, "address-hash");
+    expect(attempt).toHaveBeenCalledWith(REGISTER_PER_ADDRESS, "address-hash");
+    expect(rememberBrowser).toHaveBeenCalledWith("shopper", "ada@example.com");
   });
 
   it("asks an address that has registered too often to wait", async () => {
-    isLimited.mockImplementation(async (limit) => limit === REGISTER_PER_ADDRESS);
+    attempt.mockImplementation(async (limit) => ({ over: limit === REGISTER_PER_ADDRESS, forget }));
 
     await expect(register({ errors: {} }, filled)).resolves.toEqual({
       errors: { email: WAIT_A_WHILE },

@@ -132,7 +132,8 @@ export interface RedeemableCode {
 
 export type Redeemability =
   | { ok: true; discountPence: number }
-  | { ok: false; reason: string };
+  /** `shortOfMinimum` marks the one refusal that says the code exists: the basket is too small for it. */
+  | { ok: false; reason: string; shortOfMinimum?: true };
 
 /**
  * Whether a code can be used on this basket, and what it takes off.
@@ -168,7 +169,7 @@ export function codeRedeemability(
   if (!codeIsLive(code, now)) return unavailable;
 
   if (code.minSpendPence !== null && subtotalPence < code.minSpendPence) {
-    return { ok: false, reason: `That code needs a basket of ${formatPence(code.minSpendPence)} or more.` };
+    return { ok: false, reason: `That code needs a basket of ${formatPence(code.minSpendPence)} or more.`, shortOfMinimum: true };
   }
 
   const raw = code.type === "PERCENTAGE" ? Math.round((subtotalPence * code.value) / 100) : code.value;

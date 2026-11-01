@@ -125,7 +125,9 @@ describe("codeRedeemability", () => {
 
   it("says plainly when the basket is too small, which the shopper can act on", () => {
     const result = codeRedeemability({ ...code, minSpendPence: 6000 }, { now: NOW, subtotalPence: 5000 });
-    expect(result).toEqual({ ok: false, reason: "That code needs a basket of £60.00 or more." });
+    // Marked, since it is the one refusal that says the code exists: trying
+    // it again as the basket grows is not guessing at codes.
+    expect(result).toEqual({ ok: false, reason: "That code needs a basket of £60.00 or more.", shortOfMinimum: true });
   });
 
   it("never discounts more than the basket", () => {

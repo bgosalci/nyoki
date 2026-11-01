@@ -99,8 +99,13 @@ export function ProductForm({
   // sight, and a rejected save looked just like one that went through.
   useFocusFirstError(formRef, rejection);
   // Only an edit comes back from a save that went through: a new product
-  // leaves for its own page instead.
-  const saved = state !== initialState && Object.keys(errors).length === 0;
+  // leaves for its own page instead. Edited again since, "Saved." would claim
+  // the new edits were safe too, so it goes until the next save. A button
+  // counts as an edit: some - taking a category off, choosing a piece by its
+  // photo - change the form without a change event.
+  const [editedSince, setEditedSince] = useState<ProductFormState | null>(null);
+  const saved = state !== initialState && Object.keys(errors).length === 0 && editedSince !== state;
+  const noteEdit = () => setEditedSince(state);
 
   // What the piece is follows the categories as they are ticked.
   const [categoryIds, setCategoryIds] = useState(product?.categoryIds ?? []);
@@ -125,7 +130,17 @@ export function ProductForm({
   const usual = postage ? usualFor(categoryIds, postage.categories) : null;
 
   return (
-    <form id="product-details" ref={formRef} action={formAction} onSubmit={onSubmit} className="flex max-w-2xl flex-col gap-8">
+    <form
+      id="product-details"
+      ref={formRef}
+      action={formAction}
+      onSubmit={onSubmit}
+      onChange={noteEdit}
+      onClick={(event) => {
+        if ((event.target as HTMLElement).closest('button:not([type="submit"])')) noteEdit();
+      }}
+      className="flex max-w-2xl flex-col gap-8"
+    >
       {/* A new product is saved by leaving for its page, so only an edit reports a save. */}
       <UnsavedChanges formRef={formRef} saved={Object.keys(errors).length === 0 ? state : null} />
       {/* Said beside the Save at the top, which the pinned header keeps in sight from either button. */}

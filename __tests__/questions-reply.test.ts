@@ -47,3 +47,12 @@ describe("replyLink with an address the form would now refuse", () => {
     expect(replyLink(asked)).toMatch(/^mailto:ada@example\.com\?/);
   });
 });
+
+describe("replyLink with a plus in the address", () => {
+  // Encoded whole, jo+shop@ became jo%2Bshop@ - and a mail program that does
+  // not decode the address, as some do not decode an @, would write to the
+  // wrong one. Only what could change who it goes to, or what it says, is.
+  it("writes the plus as it is", () => {
+    expect(replyLink({ ...asked, email: "jo+shop@example.com" })).toMatch(/^mailto:jo\+shop@example\.com\?/);
+  });
+});

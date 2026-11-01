@@ -1,7 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import type { ReactElement } from "react";
 
-import { CUSTOMER_SESSION_COOKIE, CUSTOMER_SESSION_DAYS } from "@/lib/account/cookie";
+import { CUSTOMER_SESSION_COOKIE, CUSTOMER_SESSION_DAYS, KNOWN_BROWSER_COOKIE, KNOWN_BROWSER_DAYS } from "@/lib/account/cookie";
 import { BASKET_COOKIE, BASKET_COOKIE_DAYS } from "@/lib/basket/cookie";
 import { POLICIES, POLICIES_UPDATED, policyHref } from "@/lib/policies/pages";
 import type { RateSource } from "@/lib/delivery/parcel";
@@ -331,6 +331,7 @@ describe("cookies", () => {
     expect(rows.map((row) => [within(row).getAllByRole("cell")[0].textContent, within(row).getAllByRole("cell")[2].textContent])).toEqual([
       [BASKET_COOKIE, `${BASKET_COOKIE_DAYS} days`],
       [CUSTOMER_SESSION_COOKIE, `${CUSTOMER_SESSION_DAYS} days`],
+      [KNOWN_BROWSER_COOKIE, `${KNOWN_BROWSER_DAYS} days`],
     ]);
   });
 
@@ -338,7 +339,7 @@ describe("cookies", () => {
     render(<CookiesPage />);
 
     const text = section("The cookies we use");
-    expect(text).toHaveTextContent(/We use only two/);
+    expect(text).toHaveTextContent(/We use only three/);
     expect(text).toHaveTextContent(/no advertising cookies/);
     expect(text).toHaveTextContent(/no cookie banner/);
   });
@@ -359,7 +360,7 @@ describe("privacy, on what the shop counts to stop attacks", () => {
     render(PrivacyPage());
 
     expect(screen.getByText(/counts attempts to sign in/i)).toBeInTheDocument();
-    expect(screen.getByText(/scrambled form of your internet address/i)).toBeInTheDocument();
+    expect(screen.getByText(/scrambled form of the email given or of your internet address/i)).toBeInTheDocument();
     expect(screen.getByText(/Counts of attempts .*: a day\./)).toBeInTheDocument();
   });
 });

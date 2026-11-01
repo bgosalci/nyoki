@@ -96,3 +96,16 @@ describe("a session signed before the password last changed", () => {
     await expect(requireAdmin()).resolves.toEqual({ userId: "u_1", email: "burim@nyoki.co.uk", role: "STAFF" });
   });
 });
+
+describe("requireAdmin's reading of the cookie", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("reads and verifies the session once, not again to look the account up", async () => {
+    readSession.mockResolvedValue({ ...cookieSession, issuedAt: 1 });
+    findUnique.mockResolvedValue({ id: "u_1", email: "burim@nyoki.co.uk", role: "STAFF", sessionsValidFrom: null });
+
+    await requireAdmin();
+
+    expect(readSession).toHaveBeenCalledTimes(1);
+  });
+});
