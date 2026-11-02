@@ -13,6 +13,7 @@ function product(overrides: Partial<Parameters<typeof toCardProduct>[0]> = {}) {
     madeToOrder: false,
     leadTimeDays: null,
     images: [{ url: "/uploads/a.jpg", alt: "Front" }],
+    colours: [] as string[],
     sales: [],
     ...overrides,
   };
@@ -97,5 +98,14 @@ describe("toCardProduct", () => {
   it("takes the first photo, or none", () => {
     expect(toCardProduct(product(), NOW).image).toEqual({ url: "/uploads/a.jpg", alt: "Front" });
     expect(toCardProduct(product({ images: [] }), NOW).image).toBeNull();
+  });
+
+  it("says how many colours a piece comes in", () => {
+    expect(toCardProduct(product({ colours: ["Pink", "Quarry Tile", "Glacier"] }), NOW).colours).toBe(3);
+  });
+
+  it("says nothing of colour for a piece in one colour, or none - there is nothing to choose", () => {
+    expect(toCardProduct(product({ colours: ["Pink"] }), NOW).colours).toBeNull();
+    expect(toCardProduct(product(), NOW).colours).toBeNull();
   });
 });

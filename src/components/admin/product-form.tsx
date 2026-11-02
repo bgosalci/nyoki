@@ -19,8 +19,8 @@ import { formatPence } from "@/lib/money";
 import type { ProductErrors, ProductInput } from "@/lib/products/validate";
 import { useActionForm } from "@/lib/forms/action-form";
 import { useFocusFirstError } from "@/lib/forms/first-error";
-import { isClothes } from "@/lib/clothes/group";
-import { editorFrom, totalStock } from "@/lib/clothes/editor";
+import { isClothes, offeredAxes } from "@/lib/clothes/group";
+import { editorFrom, totalStock, type ClothingEditor } from "@/lib/clothes/editor";
 import type { StockRow } from "@/lib/clothes/stock";
 import { SIZE_NAMES } from "@/lib/delivery/royal-mail";
 import { usualFor, type UsualCategory } from "@/lib/delivery/usual";
@@ -42,7 +42,7 @@ export interface ProductFormCategory {
   parentId: string | null;
 }
 
-/** A piece of clothing's colours and sizes, and the stock of each colour in each size, as saved. */
+/** A piece's colours and sizes, and the stock of each colour in each size, as saved. */
 export interface ProductFormClothing {
   colours: string[];
   sizes: string[];
@@ -82,7 +82,7 @@ export function ProductForm({
   categories?: ProductFormCategory[];
   /** The pieces to suggest under "You may also like": what can be, and what is. */
   alsoLike?: { options: PickerProduct[]; automatic: PickerProduct[]; chosen: ChosenPiece[] };
-  /** Kept whatever the piece is, and offered while it is in Clothes. */
+  /** The colours are offered whatever the piece is; the sizes are kept whatever it is, and offered while it is in Clothes. */
   clothing?: ProductFormClothing;
   /** Absent, the Postage section has no figures to work out. */
   postage?: ProductPostage;
@@ -120,7 +120,11 @@ export function ProductForm({
     setBasis(savedClothing);
     setEditor(editorFrom(clothing));
   }
-  const stockPerVariant = clothes && (editor.colours.length > 0 || editor.sizes.length > 0);
+  // Anything but clothing is edited by its colours alone. Its sizes stay in
+  // the editor, out of sight, for if it goes back into Clothes.
+  const shown = offeredAxes(editor, clothes);
+  const edit = (next: ClothingEditor) => setEditor(clothes ? next : { ...next, sizes: editor.sizes });
+  const stockPerVariant = shown.colours.length > 0 || shown.sizes.length > 0;
 
   // Postage, as typed; whatever is left empty comes from the usual of the
   // categories as they are ticked.
@@ -215,9 +219,9 @@ export function ProductForm({
               Stock
             </p>
             <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm">
-              <span className="text-base font-medium tabular-nums">{totalStock(editor)} in all</span>
+              <span className="text-base font-medium tabular-nums">{totalStock(shown)} in all</span>
               <a href={`#${CLOTHING_STOCK_ID}`} className={ui.link}>
-                Set for each colour and size
+                {clothes ? "Set for each colour and size" : "Set for each colour"}
               </a>
             </p>
           </div>
@@ -298,7 +302,7 @@ export function ProductForm({
           </Field>
         </div>
 
-        <ClothingFields editor={editor} onChange={setEditor} errors={errors} hidden={!clothes} />
+        <ClothingFields editor={shown} onChange={edit} errors={errors} sizes={clothes} />
 
         <Field
           label="Care instructions"

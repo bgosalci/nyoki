@@ -29,7 +29,7 @@ export interface ChooserCategory {
  * filtered out of view is still saved.
  *
  * `onChange` hears every tick, for a form that changes with what a piece is -
- * colours and sizes for clothes.
+ * sizes for clothes.
  */
 export function CategoryChooser({
   categories,

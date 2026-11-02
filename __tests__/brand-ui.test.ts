@@ -19,7 +19,8 @@ describe("CMS surfaces", () => {
 describe("CMS class recipes", () => {
   it("every recipe references only brand tokens that exist", () => {
     for (const [name, classes] of Object.entries(ui)) {
-      const tokens = [...classes.matchAll(/(?:bg|text|border|accent)-(nyoki-[a-z-]+)/g)].map((m) => m[1]);
+      // A token in an arbitrary value is named by its variable: var(--color-nyoki-red).
+      const tokens = [...classes.matchAll(/(?:bg|text|border|accent|--color)-(nyoki-[a-z-]+)/g)].map((m) => m[1]);
       expect({ name, tokens }).toMatchObject({ tokens: expect.any(Array) });
       for (const token of tokens) {
         expect(hexOfToken.has(token)).toBe(true);
@@ -49,6 +50,15 @@ describe("CMS class recipes", () => {
       expect({ name, classes }).toMatchObject({ name });
       expect(classes).not.toMatch(/\bdark:bg-nyoki-navy\b/);
     }
+  });
+
+  it("marks a piece in colours with a dot of the brand's red, sage and navy - never the switch's green", () => {
+    // A sign there are colours, not which: the yarns' own names, Tarn or
+    // Quarry Tile, cannot be drawn.
+    const colours = [...ui.shopColoursDot.matchAll(/--color-(nyoki-[a-z-]+)/g)].map((m) => m[1]);
+
+    expect(colours).toEqual(["nyoki-red", "nyoki-sage", "nyoki-navy"]);
+    expect(ui.shopColoursDot).toMatch(/\brounded-full\b/);
   });
 
   it("ticks a checkbox in the brand's own colour", () => {

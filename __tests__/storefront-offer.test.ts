@@ -85,6 +85,61 @@ describe("productOffer", () => {
     expect(offer.clothing?.unlimited).toBe(true);
   });
 
+  it("offers any piece's colours, with their stock - a hairband as much as a coat", () => {
+    const { offer, clothes } = productOffer(
+      source({
+        categoryIds: ["home"],
+        colours: ["Pink", "Quarry Tile"],
+        variants: [
+          { colour: "Pink", size: null, stock: 2 },
+          { colour: "Quarry Tile", size: null, stock: 0 },
+        ],
+      }),
+      categories,
+      now,
+    );
+
+    expect(clothes).toBe(false);
+    expect(offer.clothing).toEqual({
+      colours: ["Pink", "Quarry Tile"],
+      sizes: [],
+      stock: [
+        { colour: "Pink", size: null, stock: 2 },
+        { colour: "Quarry Tile", size: null, stock: 0 },
+      ],
+      unlimited: false,
+    });
+  });
+
+  it("offers sizes only on clothing: a piece outside Clothes is sold in its colours alone, its sizes kept for nobody", () => {
+    const { offer } = productOffer(
+      source({
+        categoryIds: ["home"],
+        colours: ["Tarn"],
+        sizes: ["80 x 70 cm"],
+        variants: [
+          { colour: "Tarn", size: "80 x 70 cm", stock: 4 },
+          { colour: "Tarn", size: null, stock: 1 },
+        ],
+      }),
+      categories,
+      now,
+    );
+
+    expect(offer.clothing?.sizes).toEqual([]);
+    expect(offer.clothing?.stock).toEqual([{ colour: "Tarn", size: null, stock: 1 }]);
+  });
+
+  it("offers nothing to choose for a piece outside Clothes in sizes alone", () => {
+    const { offer } = productOffer(
+      source({ categoryIds: ["home"], sizes: ["1-2 years"], variants: [{ colour: null, size: "1-2 years", stock: 1 }] }),
+      categories,
+      now,
+    );
+
+    expect(offer.clothing).toBeNull();
+  });
+
   it("offers nothing to choose for anything else, at its price in a live sale", () => {
     const sale = { id: "s", type: "PERCENTAGE" as const, value: 20, startsAt: new Date("2026-10-01"), endsAt: null, active: true };
     const { offer } = productOffer(source({ categoryIds: ["home"], sales: [sale] }), categories, now);

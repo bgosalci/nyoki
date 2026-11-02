@@ -47,14 +47,51 @@ const saved = {
 const noop = async () => ({ errors: {} });
 const dimensions = () => screen.queryByRole("textbox", { name: /dimensions/i });
 const colours = () => screen.queryByRole("group", { name: "Colours" });
+const sizes = () => screen.queryByRole("group", { name: "Sizes" });
 const stockBox = () => screen.queryByRole("textbox", { name: /^stock$/i });
 
 describe("ProductForm, for clothes", () => {
-  it("describes anything that is not clothing by its dimensions", () => {
+  it("describes anything that is not clothing by its dimensions, and its colours, but never sizes", () => {
     render(<ProductForm action={noop} product={piece(["cat_mugs"])} categories={categories} />);
 
     expect(dimensions()).toBeInTheDocument();
-    expect(colours()).not.toBeInTheDocument();
+    expect(colours()).toBeInTheDocument();
+    expect(sizes()).not.toBeInTheDocument();
+  });
+
+  it("keeps the stock of each colour for a piece that is not clothing, and their total in place of the Stock box", async () => {
+    const hairband = { colours: ["Pink", "Quarry Tile"], sizes: [], variants: [{ colour: "Pink", size: null, stock: 2 }] };
+    render(<ProductForm action={noop} product={piece(["cat_mugs"])} categories={categories} clothing={hairband} />);
+    const user = userEvent.setup();
+
+    expect(screen.getByRole("region", { name: "Stock of each colour" })).toBeInTheDocument();
+    expect(stockBox()).not.toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Stock" })).toHaveTextContent("2 in all");
+    expect(screen.getByRole("link", { name: "Set for each colour" })).toBeInTheDocument();
+
+    await user.type(screen.getByRole("textbox", { name: "Stock of Quarry Tile" }), "3");
+    expect(screen.getByRole("group", { name: "Stock" })).toHaveTextContent("5 in all");
+  });
+
+  it("posts only the colours of a piece that is not clothing, keeping its sizes for if it goes back", async () => {
+    const action = jest.fn(async (_state: unknown, _data: FormData) => ({ errors: {} }));
+    render(<ProductForm action={action} product={piece(["cat_mugs"])} categories={categories} clothing={saved} />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "Add a colour" }));
+    await user.keyboard("Moss");
+    await user.click(screen.getAllByRole("button", { name: /save/i })[0]);
+
+    const posted = action.mock.calls[0][1];
+    expect(posted.getAll("colour")).toEqual(["Lupin", "Gypsum", "Moss"]);
+    expect(posted.getAll("size")).toEqual([]);
+    expect(posted.get(stockFieldName(2, null))).toBe("");
+
+    // Back in Clothes, the sizes are there as they were.
+    await user.click(screen.getByRole("button", { name: "Change categories" }));
+    await user.click(screen.getByRole("checkbox", { name: "Dresses" }));
+    expect(screen.getAllByRole("textbox", { name: /^Size \d+$/ }).map((box) => (box as HTMLInputElement).value)).toEqual(["3-4 years", "4-5 years"]);
+    expect(screen.getByRole("textbox", { name: "Stock of Lupin in 3-4 years" })).toHaveValue("2");
   });
 
   it("asks for colours and sizes in place of the dimensions for clothing", () => {
@@ -79,7 +116,7 @@ describe("ProductForm, for clothes", () => {
     await user.click(screen.getByRole("checkbox", { name: "Dresses" }));
 
     expect(dimensions()).not.toBeInTheDocument();
-    expect(colours()).toBeInTheDocument();
+    expect(sizes()).toBeInTheDocument();
   });
 
   it("adds a colour and a size, and a box for the stock of that colour in that size", async () => {

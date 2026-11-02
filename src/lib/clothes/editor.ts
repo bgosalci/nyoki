@@ -1,7 +1,8 @@
 import type { StockRow } from "@/lib/clothes/stock";
 
 /**
- * The Details form's colours, sizes and stock while they are edited.
+ * The Details form's colours, sizes and stock while they are edited - a
+ * piece that is not clothing is edited without its sizes (`offeredAxes`).
  *
  * Pure, so the rules are tested apart from the page. Rows are known by a key
  * that never changes, so the stock typed against a colour stays with it while
@@ -56,9 +57,13 @@ export function editorFrom({
   const row = (name: string): AxisRow => ({ key: nextKey++, name, was: name });
   const editor = { colours: colours.map(row), sizes: sizes.map(row) };
 
-  /** A variant's place on one side of the grid: a row's key, NONE's null, or undefined where it has none. */
-  const placeOn = (rows: AxisRow[], value: string | null) =>
-    rows.length === 0 ? (value === null ? null : undefined) : rows.find((r) => r.name === value)?.key;
+  /**
+   * A variant's place on one side of the grid: a row's key, NONE's null, or
+   * undefined where it has none. One in no size is at NONE even beside
+   * sizes: it is a colour's own stock, for a piece out of Clothes and sold
+   * by colour alone.
+   */
+  const placeOn = (rows: AxisRow[], value: string | null) => (value === null ? null : rows.find((r) => r.name === value)?.key);
 
   const stock: Record<string, string> = {};
   for (const variant of variants) {

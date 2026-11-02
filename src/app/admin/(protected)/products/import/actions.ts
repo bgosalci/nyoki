@@ -8,7 +8,7 @@ import type { ImportResult } from "@/components/admin/import-products";
 import { requireAdmin } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
 import { isUniqueViolationOn } from "@/lib/db-errors";
-import { isClothes } from "@/lib/clothes/group";
+import { isClothes, stockByVariant } from "@/lib/clothes/group";
 import { planImport, planSignature, toPreview, type ExistingProduct, type ImportPlan, type ImportPreview } from "@/lib/import/products";
 
 /** A CSV is a few hundred KB for the whole catalogue; this is a guard, not a target. */
@@ -51,14 +51,14 @@ async function planFor(csv: string): Promise<ImportPlan> {
     lines: product.costLines.map(({ label, unitPence, quantityHundredths }) => ({ label, unitPence, quantityHundredths })),
   }));
 
-  // Clothing in colours or sizes: its stock is theirs, changed on its Details tab.
-  const stockByVariant = new Set(
+  // A piece in colours, or clothing in sizes: its stock is theirs, changed on its Details tab.
+  const byVariant = new Set(
     products
-      .filter((product) => (product.colours.length > 0 || product.sizes.length > 0) && isClothes(product.categories.map((link) => link.categoryId), categories))
+      .filter((product) => stockByVariant(product, isClothes(product.categories.map((link) => link.categoryId), categories)))
       .map((product) => product.id),
   );
 
-  return planImport(csv, existing, categories, { stockByVariant });
+  return planImport(csv, existing, categories, { stockByVariant: byVariant });
 }
 
 const hash = (plan: ImportPlan) => createHash("sha256").update(planSignature(plan)).digest("hex");

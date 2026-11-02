@@ -1,4 +1,4 @@
-import { isClothes } from "@/lib/clothes/group";
+import { isClothes, offeredAxes, stockByVariant } from "@/lib/clothes/group";
 
 const categories = [
   { id: "clothes", slug: "clothes", parentId: null },
@@ -32,5 +32,37 @@ describe("isClothes", () => {
 
   it("does not hang on a tree that loops", () => {
     expect(isClothes(["a"], categories)).toBe(false);
+  });
+});
+
+describe("offeredAxes", () => {
+  const coat = { colours: ["Lupin", "Gypsum"], sizes: ["2-3 years", "3-4 years"] };
+
+  it("offers clothing's colours and sizes", () => {
+    expect(offeredAxes(coat, true)).toEqual(coat);
+  });
+
+  it("offers anything else's colours alone: sizes are clothing's", () => {
+    expect(offeredAxes(coat, false)).toEqual({ colours: ["Lupin", "Gypsum"], sizes: [] });
+  });
+
+  it("keeps whatever else the piece carries", () => {
+    expect(offeredAxes({ ...coat, stock: 3 }, false)).toMatchObject({ stock: 3 });
+  });
+});
+
+describe("stockByVariant", () => {
+  it("keeps the stock of a piece in colours per colour, whatever it is", () => {
+    expect(stockByVariant({ colours: ["Pink", "Cream"], sizes: [] }, false)).toBe(true);
+    expect(stockByVariant({ colours: ["Pink"], sizes: [] }, true)).toBe(true);
+  });
+
+  it("keeps clothing's stock per size", () => {
+    expect(stockByVariant({ colours: [], sizes: ["S"] }, true)).toBe(true);
+  });
+
+  it("keeps it in the Stock box for a piece in neither, or in sizes it no longer offers", () => {
+    expect(stockByVariant({ colours: [], sizes: [] }, true)).toBe(false);
+    expect(stockByVariant({ colours: [], sizes: ["1-2 years"] }, false)).toBe(false);
   });
 });

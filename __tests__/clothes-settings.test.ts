@@ -105,4 +105,20 @@ describe("parseClothing", () => {
       expect(result).toEqual({ ok: false, errors: { variantStock: "Stock has to be a whole number, zero or more." } });
     }
   });
+
+  it("reads no sizes for a piece that is not clothing, whatever is posted, so it keeps those it has", () => {
+    const result = parseClothing(form([...colour("Pink"), ...colour("Cream"), ...size("S"), [stockFieldName(0, null), "2"], [stockFieldName(1, null), "1"]]), false);
+
+    expect(result).toMatchObject({ ok: true, data: { colours: ["Pink", "Cream"], sizes: null } });
+    expect(triples(result)).toEqual([
+      ["Pink", null, 2],
+      ["Cream", null, 1],
+    ]);
+  });
+
+  it("does not hold a size posted for a piece that is not clothing against it", () => {
+    const result = parseClothing(form([...colour("Pink"), ...size("")]), false);
+
+    expect(result.ok).toBe(true);
+  });
 });

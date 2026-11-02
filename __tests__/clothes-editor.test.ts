@@ -36,6 +36,20 @@ describe("the colours and sizes editor", () => {
     expect(new Set(keys).size).toBe(keys.length);
   });
 
+  it("keeps a colour's own stock beside its sizes, for when the piece is out of Clothes and sold by colour alone", () => {
+    const editor = editorFrom({
+      colours: ["Tarn"],
+      sizes: ["80 x 70 cm"],
+      variants: [
+        { colour: "Tarn", size: "80 x 70 cm", stock: 4 },
+        { colour: "Tarn", size: null, stock: 1 },
+      ],
+    });
+
+    expect(stockAt(editor, editor.colours[0].key, editor.sizes[0].key)).toBe("4");
+    expect(stockAt(editor, editor.colours[0].key, null)).toBe("1");
+  });
+
   it("leaves the box blank for a combination never stocked", () => {
     const editor = editorFrom({ colours: ["Red"], sizes: ["S"], variants: [] });
 

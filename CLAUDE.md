@@ -573,15 +573,20 @@ TypeScript, deployed to Vercel.
   not here. An emailed receipt waits on an email service.
 - Not in the CSV/JSON/XML export or import yet.
 
-## Clothes: colours, sizes and stock
+## Colours, clothing's sizes, and stock
 
-- **Clothing is anything under Clothes** (`isClothes`,
-  `src/lib/clothes/group.ts`), itself or anywhere above, told the way cards
-  are (`findInLineage`, `src/lib/categories/lineage.ts`). Its Details tab has
-  **Colours and Sizes in place of Dimensions**, switching the moment a
-  Clothes category is ticked. Dimensions stay in the form, hidden and posted,
-  so neither is lost by saving the other, and the shop leaves a clothing
-  piece's dimensions off too.
+- **Any piece can come in colours; only clothing in sizes**
+  (`offeredAxes`, `src/lib/clothes/group.ts`). A hairband in Pink and Quarry
+  Tile is chosen by colour as a coat is; sizes were left to clothing,
+  chosen on 2 November 2026. The shop's offer, the save, the Details form and
+  the products import all ask `offeredAxes` (or `stockByVariant`).
+- **Clothing is anything under Clothes** (`isClothes`), itself or anywhere
+  above, told the way cards are (`findInLineage`,
+  `src/lib/categories/lineage.ts`). Its Details tab has **Sizes, and no
+  Dimensions**, switching the moment a Clothes category is ticked; anything
+  else has Dimensions and Colours. Dimensions stay in the form, hidden and
+  posted, so neither is lost by saving the other, and the shop leaves a
+  clothing piece's dimensions off too.
 - `Product.colours` and `Product.sizes` are ordered lists, and **each colour
   in each size is a `ProductVariant`** with `colour`, `size` and `stock` (null
   where the piece has no colours, or no sizes). A shopper must choose a colour
@@ -589,7 +594,8 @@ TypeScript, deployed to Vercel.
 - **Stock is kept per colour and size**, in the grid beneath the lists. The
   Stock box at the top becomes their total, and `Product.stock` is that total,
   written on every save, so the products list and the export read one number.
-  Clothes in no colours or sizes keep the plain Stock box.
+  A piece in no colours (or clothing in no colours or sizes) keeps the plain
+  Stock box.
 - **A variant is updated, never replaced** (`planVariants`,
   `src/lib/clothes/variants.ts`): every row posts the name it was saved under
   (`colourWas`, `sizeWas`), so a stock change or a rename keeps the variant -
@@ -609,15 +615,20 @@ TypeScript, deployed to Vercel.
   tile, its name struck through, that cannot be chosen. **Made to order is
   never out of stock.** The only colour, or only size, starts chosen; a piece
   with nothing left at all says "Out of stock for now".
-- A piece moved out of Clothes keeps its colours, sizes and variants but
-  offers none of them, and has the plain Stock box again; saving anything
-  that is not clothing never touches them.
+- **A piece outside Clothes keeps any sizes it has, offered to nobody**, for
+  if it goes back: about 25 imported bonnets, hat-and-bootie sets and a
+  blanket carry Shopify's sizes outside Clothes. Its Details tab edits its
+  colours alone, the sizes held in the editor out of sight; the save never
+  writes `sizes` and plans only its variants in no size (`size` null), so
+  the sized ones wait untouched. Such a piece sells each colour by its
+  variant in no size, so moving a sized coat out of Clothes starts its
+  colours at none in stock until they are set.
 - The migration turned Shopify's `options` (Colour or Color, and Size) into
   the columns, set each product's lists in variant order, and set its stock
   to its variants' total - the import had left it at 0. The Shopify import
   script now writes them the same way.
-- **The products import refuses a Stock change** on clothing in colours or
-  sizes, whose total is theirs; its total as it stands is no change, so an
+- **The products import refuses a Stock change** on a piece in colours, or
+  clothing in sizes, whose total is theirs; its total as it stands is no change, so an
   untouched export still imports. Colours and sizes themselves are not in the
   CSV/JSON/XML export or import yet.
 
@@ -899,6 +910,12 @@ TypeScript, deployed to Vercel.
   would actually be charged.
 - The "Need to know" panel is built by `productFacts` and hides itself when
   nothing is filled in - most imported cards have no dimensions or care notes.
+- **A card says how many colours a piece comes in** ("4 colours"), under the
+  price, beside a dot in thirds of the brand's red, sage and navy
+  (`ui.shopColoursDot`): only with two or more. One generic dot was chosen
+  over a swatch per colour, since the colours are yarns' names (Tarn, Quarry
+  Tile) that cannot be drawn without someone picking each one. Not the
+  switch's green, which is the switch's alone.
 - While ordering is closed, product pages say ordering is coming soon rather
   than showing a button that does nothing.
 
@@ -974,8 +991,8 @@ TypeScript, deployed to Vercel.
   `addedPricePence` exists only to tell the shopper a price moved.
 - **Stock is checked, not held**: on adding, on the basket and on Continue to
   payment. Lines of one piece share its stock in the order they went in; a
-  pack of three takes three cards of it; clothing counts by variant; made
-  to order never runs out; one of a kind is one in all. Taking stock off
+  pack of three takes three cards of it; a piece in colours or sizes counts
+  by variant; made to order never runs out; one of a kind is one in all. Taking stock off
   waits for payment, so an unpaid order cannot empty the shelf. 10 active
   pieces had stock 0 when this landed, and read as out of stock.
 - **A piece's page asks no more than there are**, as the basket's stepper

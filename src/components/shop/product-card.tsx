@@ -14,7 +14,8 @@ const TONE: Record<BadgeTone, string> = {
 
 /**
  * One product in a grid or rail, drawn as the theme board has it: a white
- * panel with a square photo, then the name, the price and the badges.
+ * panel with a square photo, then the name, the price, how many colours it
+ * comes in, and the badges.
  *
  * The link stretches over the whole card rather than wrapping it, so the
  * photo, name and price are one target - while the heart on the photo stays a
@@ -76,6 +77,13 @@ export function ProductCard({
             </>
           ) : null}
         </p>
+
+        {product.colours !== null ? (
+          <p className={`flex items-center gap-2 text-sm ${ui.shopMuted}`}>
+            <span data-colours-dot aria-hidden="true" className={`size-3.5 shrink-0 ${ui.shopColoursDot}`} />
+            {product.colours} colours
+          </p>
+        ) : null}
 
         {product.badges.length > 0 ? (
           <ul className="mt-auto flex flex-wrap gap-1.5 pt-1">

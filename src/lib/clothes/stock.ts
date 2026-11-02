@@ -1,6 +1,7 @@
 /**
- * What a piece of clothing offers a shopper: the colours and sizes to choose
- * from, and which of them are in stock.
+ * What a piece in colours, or clothing in sizes, offers a shopper - named
+ * for clothing, where it began: the colours and sizes to choose from, and
+ * which of them are in stock.
  *
  * Built on the server from the piece's colours, sizes and variants, and
  * handed to the page. Pure, so the basket can check by the same rules.

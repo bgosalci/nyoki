@@ -1,5 +1,5 @@
 import { toClothingOffer, type StockRow } from "@/lib/clothes/stock";
-import { isClothes } from "@/lib/clothes/group";
+import { isClothes, offeredAxes } from "@/lib/clothes/group";
 import { customisationGroup, type CategoryNode } from "@/lib/customisation/group";
 import { toOffer, type CustomisationRow, type Offer, type PersonalisationFieldOffer } from "@/lib/customisation/offer";
 import type { PricingSale } from "@/lib/pricing";
@@ -9,8 +9,8 @@ import type { PricingSale } from "@/lib/pricing";
  * the basket alike, so the basket prices a line exactly as the page did.
  *
  * Every piece has an offer: a card or bookmark's packs, message and
- * personalisation, clothing's colours and sizes, or - for anything else -
- * nothing to choose, just its price as the shop sells it now.
+ * personalisation, its colours - and clothing's sizes - or, with none of
+ * them, nothing to choose, just its price as the shop sells it now.
  */
 export interface OfferSource {
   pricePence: number;
@@ -41,7 +41,7 @@ export function productOffer(source: OfferSource, categories: readonly CategoryN
     sales: source.sales,
     noun: noun ?? PIECE,
     now,
-    clothing: clothes ? toClothingOffer(source) : null,
+    clothing: toClothingOffer(offeredAxes(source, clothes)),
   });
 
   return { offer, clothes };

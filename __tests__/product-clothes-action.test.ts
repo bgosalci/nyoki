@@ -120,14 +120,47 @@ describe("saving a piece of clothing's details", () => {
     expect(steps("productVariant.deleteMany")).toEqual([{ where: { id: { in: ["v-old"] } } }]);
   });
 
-  it("leaves the colours, sizes and variants of anything that is not clothing alone, whatever is posted", async () => {
-    await updateProduct("p1", { errors: {} }, form([["categoryIds", "mugs"], ["stock", "7"], ...colour("Red"), [stockFieldName(0, null), "1"]]));
+  it("saves the colours of a piece that is not clothing, and its stock as theirs, but never its sizes", async () => {
+    await updateProduct(
+      "p1",
+      { errors: {} },
+      form([["categoryIds", "mugs"], ["stock", "7"], ...colour("Pink"), ...colour("Cream", ""), ...size("S"), [stockFieldName(0, null), "2"], [stockFieldName(1, null), "1"]]),
+    );
 
-    expect(productData()).not.toHaveProperty("colours");
+    expect(productData()).toMatchObject({ colours: ["Pink", "Cream"], stock: 3 });
     expect(productData()).not.toHaveProperty("sizes");
-    expect(productData()).toMatchObject({ stock: 7 });
-    expect(variantsStored).not.toHaveBeenCalled();
-    expect(steps("productVariant.update")).toEqual([]);
+    expect(steps("productVariant.createMany")).toEqual([
+      {
+        data: [
+          { productId: "p1", colour: "Pink", size: null, name: "Pink", stock: 2, position: 0 },
+          { productId: "p1", colour: "Cream", size: null, name: "Cream", stock: 1, position: 1 },
+        ],
+      },
+    ]);
+  });
+
+  it("leaves a piece that is not clothing its sized variants, kept for if it goes back to Clothes", async () => {
+    variantsStored.mockResolvedValue([
+      { id: "v-sized", colour: "Tarn", size: "80 x 70 cm" },
+      { id: "v-tarn", colour: "Tarn", size: null },
+    ]);
+
+    await updateProduct("p1", { errors: {} }, form([["categoryIds", "mugs"], ...colour("Tarn"), [stockFieldName(0, null), "4"]]));
+
+    expect(steps("productVariant.update")).toEqual([
+      { where: { id: "v-tarn" }, data: { colour: "Tarn", size: null, name: "Tarn", stock: 4, position: 0 } },
+    ]);
+    expect(steps("productVariant.deleteMany")).toEqual([]);
+  });
+
+  it("takes the Stock box for a piece that is not clothing in no colours, and leaves its sizes alone", async () => {
+    variantsStored.mockResolvedValue([{ id: "v-sized", colour: null, size: "1-2 years" }]);
+
+    await updateProduct("p1", { errors: {} }, form([["categoryIds", "mugs"], ["stock", "7"]]));
+
+    expect(productData()).toMatchObject({ colours: [], stock: 7 });
+    expect(productData()).not.toHaveProperty("sizes");
+    expect(steps("productVariant.deleteMany")).toEqual([]);
   });
 
   it("reports every problem at once, the clothing's with the rest, and saves nothing", async () => {
@@ -164,5 +197,15 @@ describe("creating a piece of clothing", () => {
         }),
       }),
     );
+  });
+});
+
+describe("creating a piece that is not clothing", () => {
+  it("creates it with a variant for each colour, and no sizes", async () => {
+    await createProduct({ errors: {} }, form([["categoryIds", "mugs"], ...colour("Pink", ""), [stockFieldName(0, null), "2"]]));
+
+    const data = (productCreate.mock.calls[0][0] as { data: Record<string, unknown> }).data;
+    expect(data).toMatchObject({ colours: ["Pink"], stock: 2, variants: { create: [{ colour: "Pink", size: null, name: "Pink", stock: 2, position: 0 }] } });
+    expect(data).not.toHaveProperty("sizes");
   });
 });

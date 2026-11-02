@@ -24,6 +24,8 @@ export interface CardProduct {
   wasPence: number | null;
   badges: CardBadge[];
   image: CardImage | null;
+  /** How many colours it comes in, or null with no choice of colour to make. */
+  colours: number | null;
 }
 
 export interface CardSource {
@@ -36,6 +38,7 @@ export interface CardSource {
   madeToOrder: boolean;
   leadTimeDays: number | null;
   images: CardImage[];
+  colours: readonly string[];
   sales: PricingSale[];
 }
 
@@ -74,5 +77,7 @@ export function toCardProduct(product: CardSource, now: Date): CardProduct {
     wasPence: sale ? product.pricePence : product.compareAtPence,
     badges,
     image: product.images[0] ?? null,
+    // Any piece can come in colours, so the count needs no categories.
+    colours: product.colours.length > 1 ? product.colours.length : null,
   };
 }

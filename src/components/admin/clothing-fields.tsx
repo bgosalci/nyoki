@@ -27,8 +27,8 @@ const errorText = "text-sm text-red-600 dark:text-red-400";
 const nameOf = (row: AxisRow | null, index: number | null, one: string) => (row ? row.name.trim() || `${one} ${(index ?? 0) + 1}` : "");
 
 /**
- * A piece of clothing's colours, its sizes, and the stock of each colour in
- * each size - in the Details form where anything else has its dimensions.
+ * A piece's colours, clothing's sizes, and the stock of each colour in each
+ * size - in the Details form, where clothing would have its dimensions.
  *
  * Controlled: the form holds the editor, since the Stock slot at its top
  * shows the total. Every row posts its name and the name it was saved under,
@@ -38,15 +38,16 @@ export function ClothingFields({
   editor,
   onChange,
   errors,
-  hidden,
+  sizes,
 }: {
   editor: ClothingEditor;
   onChange: (editor: ClothingEditor) => void;
   errors: ClothingErrors;
-  hidden: boolean;
+  /** Offered on clothing alone. */
+  sizes: boolean;
 }) {
   return (
-    <div hidden={hidden} className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <AxisList
         axis="colours"
         legend="Colours"
@@ -57,16 +58,18 @@ export function ClothingFields({
         onChange={onChange}
         error={errors.colours}
       />
-      <AxisList
-        axis="sizes"
-        legend="Sizes"
-        one="size"
-        hint="A shopper must choose one. The shop lists them in this order."
-        placeholder="0-3 months"
-        editor={editor}
-        onChange={onChange}
-        error={errors.sizes}
-      />
+      {sizes ? (
+        <AxisList
+          axis="sizes"
+          legend="Sizes"
+          one="size"
+          hint="A shopper must choose one. The shop lists them in this order."
+          placeholder="0-3 months"
+          editor={editor}
+          onChange={onChange}
+          error={errors.sizes}
+        />
+      ) : null}
       <StockGrid editor={editor} onChange={onChange} error={errors.variantStock} />
     </div>
   );

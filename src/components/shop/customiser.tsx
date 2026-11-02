@@ -99,7 +99,7 @@ function useCustomiser(): Customiser {
 
 /**
  * A piece's choices - a card or bookmark's single or pack, printed message
- * and personalisation, or a piece of clothing's colour and size - shared
+ * and personalisation, or a piece's colour and clothing's size - shared
  * between the panels, which sit with the product's details, and the bar held
  * at the bottom of the screen, which sits at the end of the page so it holds
  * over all of it.

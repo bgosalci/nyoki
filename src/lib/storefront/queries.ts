@@ -20,6 +20,7 @@ export const CARD_SELECT = {
   madeToOrder: true,
   leadTimeDays: true,
   images: { orderBy: { position: "asc" }, take: 1, select: { url: true, alt: true } },
+  colours: true,
   sales: { select: { sale: true } },
 } as const;
 

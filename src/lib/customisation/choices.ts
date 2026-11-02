@@ -5,7 +5,7 @@ import { TEXT_LENGTH_LIMIT } from "@/lib/customisation/settings";
 import { formatPence } from "@/lib/money";
 
 /**
- * A shopper's choices - on a card or bookmark, or a piece of clothing - and
+ * A shopper's choices - on a card or bookmark, or a piece in colours or sizes - and
  * what they come to.
  *
  * Pure, so the page works from the same rules the basket checks by. Each

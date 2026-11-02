@@ -4,8 +4,8 @@ import { effectivePricePence, type PricingSale } from "@/lib/pricing";
 
 /**
  * What a piece offers a shopper to choose, priced as the shop sells it now:
- * a card or bookmark's packs, message and personalisation, or a piece of
- * clothing's colours and sizes.
+ * a card or bookmark's packs, message and personalisation, or a piece's
+ * colours and clothing's sizes.
  *
  * Built from the product's rows by `toOffer`, on the server, and handed to
  * the page. A live sale comes off the single card and every pack - what the

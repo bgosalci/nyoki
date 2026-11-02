@@ -1,6 +1,6 @@
 /**
- * A piece of clothing's colours, sizes and stock, as the Details form posts
- * them.
+ * A piece's colours, and clothing's sizes, and the stock of each, as the
+ * Details form posts them.
  *
  * Each colour row posts its name as `colour` and the name it was saved under
  * as `colourWas` (blank for a row added since), in the order they stand;
@@ -23,7 +23,8 @@ export interface ClothingCombo {
 
 export interface ClothingInput {
   colours: string[];
-  sizes: string[];
+  /** Null for a piece that is not clothing: none are read, and it keeps those it has. */
+  sizes: string[] | null;
   /** Every colour in every size, colour by colour; empty with neither. */
   combos: ClothingCombo[];
 }
@@ -67,11 +68,12 @@ function readNames(form: FormData, key: "colour" | "size", noun: { one: string; 
   return { names, was: names.map((_, index) => was[index] || null), error };
 }
 
-export function parseClothing(form: FormData): ClothingValidation {
+/** `offersSizes` is false for anything but clothing, whose sizes are not read whatever is posted. */
+export function parseClothing(form: FormData, offersSizes = true): ClothingValidation {
   const errors: ClothingErrors = {};
 
   const colours = readNames(form, "colour", { one: "colour", many: "colours" });
-  const sizes = readNames(form, "size", { one: "size", many: "sizes" });
+  const sizes = offersSizes ? readNames(form, "size", { one: "size", many: "sizes" }) : { names: [], was: [], error: undefined };
   if (colours.error) errors.colours = colours.error;
   if (sizes.error) errors.sizes = sizes.error;
 
@@ -101,5 +103,5 @@ export function parseClothing(form: FormData): ClothingValidation {
   }
 
   if (Object.keys(errors).length > 0) return { ok: false, errors };
-  return { ok: true, data: { colours: colours.names, sizes: sizes.names, combos } };
+  return { ok: true, data: { colours: colours.names, sizes: offersSizes ? sizes.names : null, combos } };
 }

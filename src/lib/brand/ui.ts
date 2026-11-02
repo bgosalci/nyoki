@@ -102,6 +102,11 @@ export const ui = {
   shopBadgeMade: "rounded-[3px] bg-nyoki-accent-beige text-nyoki-navy",
   shopBadgeOne: "rounded-[3px] bg-nyoki-ink text-nyoki-beige",
   shopCard: "overflow-hidden rounded-lg border border-nyoki-light-slate bg-nyoki-white",
+  // A piece that comes in colours, on its card: a dot in thirds of the
+  // brand's red, sage and navy. It says there are colours, not which - the
+  // yarns' names, Tarn or Quarry Tile, cannot be drawn. Decorative only.
+  shopColoursDot:
+    "rounded-full bg-[conic-gradient(var(--color-nyoki-red)_0_33.4%,var(--color-nyoki-sage)_0_66.7%,var(--color-nyoki-navy)_0)]",
   // The home page's photo tiles. A photograph is no approved ground, so the
   // words bring their own: white, over a fade to plain black at the tile's
   // foot - black for the reason the modal scrim is, since a brand colour

@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 
 import { ProductCard } from "@/components/shop/product-card";
+import { ui } from "@/lib/brand/ui";
 
 const base = {
   id: "p1",
@@ -10,6 +11,7 @@ const base = {
   wasPence: null,
   badges: [] as { label: string; tone: "sale" | "made" | "one" }[],
   image: { url: "/uploads/a.jpg", alt: "Front of the card" },
+  colours: null as number | null,
 };
 
 describe("ProductCard", () => {
@@ -115,5 +117,23 @@ describe("ProductCard", () => {
 
     expect(container.querySelector("img")).toBeNull();
     expect(screen.getByRole("link", { name: /easter bunny/i })).toBeInTheDocument();
+  });
+
+  it("marks a piece that comes in colours with a dot of many colours, and how many", () => {
+    const { container } = render(<ProductCard product={{ ...base, colours: 4 }} />);
+
+    const note = screen.getByText("4 colours");
+    expect(screen.getByText("£6.50").compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // The dot only decorates the words, so it is not read out.
+    const dot = container.querySelector('[data-colours-dot]')!;
+    expect(dot).toHaveAttribute("aria-hidden", "true");
+    expect(dot.className).toContain(ui.shopColoursDot);
+  });
+
+  it("says nothing of colour for a piece with no choice of it", () => {
+    const { container } = render(<ProductCard product={base} />);
+
+    expect(screen.queryByText(/colours/)).not.toBeInTheDocument();
+    expect(container.querySelector("[data-colours-dot]")).toBeNull();
   });
 });
