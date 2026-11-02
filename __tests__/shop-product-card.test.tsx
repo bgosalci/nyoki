@@ -130,6 +130,16 @@ describe("ProductCard", () => {
     expect(dot.className).toContain(ui.shopColoursDot);
   });
 
+  it("says how many colours on the price's line, at its far end, and beneath it on a card too narrow for both", () => {
+    render(<ProductCard product={{ ...base, colours: 5 }} />);
+
+    const price = screen.getByText("£6.50");
+    const row = screen.getByText("5 colours").parentElement!;
+    expect(row).toBe(price.parentElement);
+    expect(row.className).toMatch(/\bflex-wrap\b/);
+    expect(row.className).toMatch(/\bjustify-between\b/);
+  });
+
   it("says nothing of colour for a piece with no choice of it", () => {
     const { container } = render(<ProductCard product={base} />);
 

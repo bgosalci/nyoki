@@ -14,8 +14,8 @@ const TONE: Record<BadgeTone, string> = {
 
 /**
  * One product in a grid or rail, drawn as the theme board has it: a white
- * panel with a square photo, then the name, the price, how many colours it
- * comes in, and the badges.
+ * panel with a square photo, then the name, the price with how many colours
+ * it comes in, and the badges.
  *
  * The link stretches over the whole card rather than wrapping it, so the
  * photo, name and price are one target - while the heart on the photo stays a
@@ -68,22 +68,28 @@ export function ProductCard({
           </Link>
         </h3>
 
-        <p className="flex items-baseline gap-2 tabular-nums text-nyoki-ink">
-          {formatPence(product.pricePence)}
-          {product.wasPence !== null ? (
-            <>
-              <span className="sr-only">was</span>
-              <s className="text-sm text-nyoki-text-dark/70">{formatPence(product.wasPence)}</s>
-            </>
-          ) : null}
-        </p>
-
-        {product.colours !== null ? (
-          <p className={`flex items-center gap-2 text-sm ${ui.shopMuted}`}>
-            <span data-colours-dot aria-hidden="true" className={`size-3.5 shrink-0 ${ui.shopColoursDot}`} />
-            {product.colours} colours
+        {/* How many colours sits at the far end of the price's line, and
+            wraps beneath it on a card too narrow for both. */}
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+          <p className="flex items-baseline gap-2 tabular-nums text-nyoki-ink">
+            {formatPence(product.pricePence)}
+            {product.wasPence !== null ? (
+              <>
+                <span className="sr-only">was</span>
+                <s className="text-sm text-nyoki-text-dark/70">{formatPence(product.wasPence)}</s>
+              </>
+            ) : null}
           </p>
-        ) : null}
+
+          {product.colours !== null ? (
+            // Not flex, so the line's baseline is the words' and they sit
+            // level with the price.
+            <p className={`text-sm whitespace-nowrap ${ui.shopMuted}`}>
+              <span data-colours-dot aria-hidden="true" className={`mr-1.5 inline-block size-3.5 align-[-0.2em] ${ui.shopColoursDot}`} />
+              {product.colours} colours
+            </p>
+          ) : null}
+        </div>
 
         {product.badges.length > 0 ? (
           <ul className="mt-auto flex flex-wrap gap-1.5 pt-1">

@@ -910,8 +910,9 @@ TypeScript, deployed to Vercel.
   would actually be charged.
 - The "Need to know" panel is built by `productFacts` and hides itself when
   nothing is filled in - most imported cards have no dimensions or care notes.
-- **A card says how many colours a piece comes in** ("4 colours"), under the
-  price, beside a dot in thirds of the brand's red, sage and navy
+- **A card says how many colours a piece comes in** ("4 colours"), at the
+  far end of the price's line - beneath it on a card too narrow for both -
+  beside a dot in thirds of the brand's red, sage and navy
   (`ui.shopColoursDot`): only with two or more. One generic dot was chosen
   over a swatch per colour, since the colours are yarns' names (Tarn, Quarry
   Tile) that cannot be drawn without someone picking each one. Not the
