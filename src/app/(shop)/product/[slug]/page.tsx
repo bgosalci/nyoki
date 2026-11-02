@@ -304,7 +304,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         <section className="mt-20">
           <h2 className={`text-2xl tracking-tight ${ui.shopHeading}`}>You may also like</h2>
           <div className="mt-8">
-            <ProductGrid products={toCards(related)} />
+            <ProductGrid products={await toCards(related)} />
           </div>
         </section>
       ) : null}

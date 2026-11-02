@@ -24,7 +24,7 @@ export default async function FavouritesPage() {
 
   // A piece saved and later taken off the shop is no longer something to buy,
   // so it drops off the list rather than leading to a page that is not there.
-  const products = toCards(saved.map((row) => row.product).filter((product) => product.status === "ACTIVE"));
+  const products = await toCards(saved.map((row) => row.product).filter((product) => product.status === "ACTIVE"));
 
   return (
     <div className="mx-auto max-w-shop px-4 py-12 sm:px-6">

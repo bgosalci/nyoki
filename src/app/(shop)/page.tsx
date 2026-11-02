@@ -79,7 +79,7 @@ export default async function HomePage() {
         )}
 
         <div className="mt-10">
-          <ProductGrid products={toCards(pieces)} signedIn={shopper !== null} savedIds={savedIds} toggleFavourite={toggleFavourite} />
+          <ProductGrid products={await toCards(pieces)} signedIn={shopper !== null} savedIds={savedIds} toggleFavourite={toggleFavourite} />
         </div>
 
         <div className="mt-10 flex justify-center">

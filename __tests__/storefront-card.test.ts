@@ -14,6 +14,10 @@ function product(overrides: Partial<Parameters<typeof toCardProduct>[0]> = {}) {
     leadTimeDays: null,
     images: [{ url: "/uploads/a.jpg", alt: "Front" }],
     colours: [] as string[],
+    sizes: [] as string[],
+    madeOnOrder: false,
+    variants: [] as { colour: string | null; size: string | null; stock: number }[],
+    clothes: false,
     sales: [],
     ...overrides,
   };
@@ -100,12 +104,60 @@ describe("toCardProduct", () => {
     expect(toCardProduct(product({ images: [] }), NOW).image).toBeNull();
   });
 
-  it("says how many colours a piece comes in", () => {
-    expect(toCardProduct(product({ colours: ["Pink", "Quarry Tile", "Glacier"] }), NOW).colours).toBe(3);
+  /** A hairband in these colours, with this many of each. */
+  const hairband = (stock: Record<string, number>, overrides: Parameters<typeof product>[0] = {}) =>
+    product({
+      colours: Object.keys(stock),
+      variants: Object.entries(stock).map(([colour, count]) => ({ colour, size: null, stock: count })),
+      ...overrides,
+    });
+
+  it("says how many colours a piece can be bought in now", () => {
+    expect(toCardProduct(hairband({ Pink: 1, Blue: 1, Grey: 2 }), NOW).colours).toBe(3);
   });
 
-  it("says nothing of colour for a piece in one colour, or none - there is nothing to choose", () => {
-    expect(toCardProduct(product({ colours: ["Pink"] }), NOW).colours).toBeNull();
+  it("leaves out a colour with none in stock, as the product page will not let it be chosen", () => {
+    expect(toCardProduct(hairband({ Pink: 1, Blue: 0, Grey: 1, Purple: 0 }), NOW).colours).toBe(2);
+  });
+
+  it("says nothing of colour once only one is left to choose, or for a piece in one colour, or none", () => {
+    expect(toCardProduct(hairband({ Pink: 1, Blue: 0 }), NOW).colours).toBeNull();
+    expect(toCardProduct(hairband({ Pink: 3 }), NOW).colours).toBeNull();
     expect(toCardProduct(product(), NOW).colours).toBeNull();
+  });
+
+  it("counts every colour of a piece that never runs out - made to order, or made on order", () => {
+    expect(toCardProduct(hairband({ Pink: 0, Blue: 0 }, { madeOnOrder: true }), NOW).colours).toBe(2);
+    expect(toCardProduct(hairband({ Pink: 0, Blue: 0 }, { madeToOrder: true }), NOW).colours).toBe(2);
+  });
+
+  it("counts a clothing colour while it is in stock in any size", () => {
+    const coat = product({
+      clothes: true,
+      colours: ["grey", "tundra", "moss"],
+      sizes: ["2-3 years", "3-4 years"],
+      variants: [
+        { colour: "grey", size: "2-3 years", stock: 0 },
+        { colour: "grey", size: "3-4 years", stock: 2 },
+        { colour: "tundra", size: "2-3 years", stock: 1 },
+        { colour: "moss", size: "3-4 years", stock: 0 },
+      ],
+    });
+
+    expect(toCardProduct(coat, NOW).colours).toBe(2);
+  });
+
+  it("does not count sized stock a piece outside Clothes no longer offers, as its page does not", () => {
+    const blanket = {
+      colours: ["Tarn", "Frost"],
+      sizes: ["80 x 70 cm"],
+      variants: [
+        { colour: "Tarn", size: "80 x 70 cm", stock: 4 },
+        { colour: "Frost", size: "80 x 70 cm", stock: 4 },
+      ],
+    };
+
+    expect(toCardProduct(product({ ...blanket, clothes: false }), NOW).colours).toBeNull();
+    expect(toCardProduct(product({ ...blanket, clothes: true }), NOW).colours).toBe(2);
   });
 });

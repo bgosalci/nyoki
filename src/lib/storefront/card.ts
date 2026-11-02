@@ -1,3 +1,5 @@
+import { offeredAxes } from "@/lib/clothes/group";
+import { inStock, toClothingOffer, type StockRow } from "@/lib/clothes/stock";
 import { formatPence } from "@/lib/money";
 import { effectivePricePence, type PricingSale } from "@/lib/pricing";
 
@@ -24,7 +26,7 @@ export interface CardProduct {
   wasPence: number | null;
   badges: CardBadge[];
   image: CardImage | null;
-  /** How many colours it comes in, or null with no choice of colour to make. */
+  /** How many colours it can be bought in now, or null with no choice of colour to make. */
   colours: number | null;
 }
 
@@ -36,9 +38,14 @@ export interface CardSource {
   compareAtPence: number | null;
   oneOfAKind: boolean;
   madeToOrder: boolean;
+  madeOnOrder: boolean;
   leadTimeDays: number | null;
   images: CardImage[];
   colours: readonly string[];
+  sizes: readonly string[];
+  variants: readonly StockRow[];
+  /** Told by its categories (`isClothes`): only clothing's sizes count. */
+  clothes: boolean;
   sales: PricingSale[];
 }
 
@@ -47,6 +54,17 @@ function saleBadge(sale: PricingSale): CardBadge {
     label: sale.type === "PERCENTAGE" ? `${sale.value}% off` : `${formatPence(sale.value)} off`,
     tone: "sale",
   };
+}
+
+/**
+ * How many colours a shopper can choose on the piece's page now, by the
+ * page's own rules (`offeredAxes`, `inStock`), so the card never promises a
+ * colour the page has struck through: one in stock in any size, or every
+ * colour of a piece that never runs out.
+ */
+function coloursToChoose(product: CardSource): number {
+  const offer = toClothingOffer(offeredAxes(product, product.clothes));
+  return offer ? offer.colours.filter((colour) => inStock(offer, colour, null)).length : 0;
 }
 
 /**
@@ -69,6 +87,8 @@ export function toCardProduct(product: CardSource, now: Date): CardProduct {
   }
   if (product.oneOfAKind) badges.push({ label: "One of a kind", tone: "one" });
 
+  const colours = coloursToChoose(product);
+
   return {
     id: product.id,
     href: `/product/${product.slug}`,
@@ -77,7 +97,7 @@ export function toCardProduct(product: CardSource, now: Date): CardProduct {
     wasPence: sale ? product.pricePence : product.compareAtPence,
     badges,
     image: product.images[0] ?? null,
-    // Any piece can come in colours, so the count needs no categories.
-    colours: product.colours.length > 1 ? product.colours.length : null,
+    // One colour left is no choice to make.
+    colours: colours > 1 ? colours : null,
   };
 }

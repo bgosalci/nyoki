@@ -48,7 +48,7 @@ export default async function ShopAllPage() {
           <h2 className={`text-2xl tracking-tight ${ui.shopHeading}`}>Everything, newest first</h2>
           <div className="mt-6">
             <ProductGrid
-              products={toCards(products)}
+              products={await toCards(products)}
               signedIn={shopper !== null}
               savedIds={savedIds}
               toggleFavourite={toggleFavourite}

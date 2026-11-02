@@ -1,5 +1,8 @@
+import { cache } from "react";
+
 import { CATEGORY_ORDER } from "@/lib/categories/ordering";
 import { onShop } from "@/lib/categories/visibility";
+import { isClothes } from "@/lib/clothes/group";
 import { db } from "@/lib/db";
 import { ALSO_LIKE_LIMIT } from "@/lib/products/also-like";
 import { toCardProduct, type CardProduct, type CardSource } from "@/lib/storefront/card";
@@ -18,17 +21,41 @@ export const CARD_SELECT = {
   compareAtPence: true,
   oneOfAKind: true,
   madeToOrder: true,
+  madeOnOrder: true,
   leadTimeDays: true,
   images: { orderBy: { position: "asc" }, take: 1, select: { url: true, alt: true } },
+  // How many colours it can be bought in now, which turns on its stock and
+  // whether it is clothing.
   colours: true,
+  sizes: true,
+  variants: { select: { colour: true, size: true, stock: true } },
+  categories: { select: { categoryId: true } },
   sales: { select: { sale: true } },
 } as const;
 
-type CardRow = Omit<CardSource, "sales"> & { sales: { sale: CardSource["sales"][number] }[] };
+type CardRow = Omit<CardSource, "sales" | "clothes"> & {
+  categories: { categoryId: string }[];
+  sales: { sale: CardSource["sales"][number] }[];
+};
+
+/**
+ * Every category, inactive ones too - what a piece is does not change with
+ * what is on the shop - to tell clothing by. Once a request, however many
+ * grids a page draws.
+ */
+const kindCategories = cache(() => db.category.findMany({ select: { id: true, slug: true, parentId: true } }));
 
 /** Flattens the join rows and turns each product into what a card shows. */
-export function toCards(rows: CardRow[], now = new Date()): CardProduct[] {
-  return rows.map((row) => toCardProduct({ ...row, sales: row.sales.map((link) => link.sale) }, now));
+export async function toCards(rows: CardRow[], now = new Date()): Promise<CardProduct[]> {
+  if (rows.length === 0) return [];
+  const categories = await kindCategories();
+
+  return rows.map(({ categories: links, ...row }) =>
+    toCardProduct(
+      { ...row, clothes: isClothes(links.map((link) => link.categoryId), categories), sales: row.sales.map((link) => link.sale) },
+      now,
+    ),
+  );
 }
 
 /** Products on sale to the public: active only, in the order set by dragging them in the admin. */

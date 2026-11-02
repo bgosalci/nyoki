@@ -40,7 +40,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
     savedProductIds(shopper?.id ?? null),
   ]);
 
-  const cards = toCards(products);
+  const cards = await toCards(products);
   const inside = categoryTiles(categories, category.id, forTiles);
 
   // Breadcrumb, minus the category itself, which is the heading.

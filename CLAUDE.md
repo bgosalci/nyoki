@@ -910,10 +910,18 @@ TypeScript, deployed to Vercel.
   would actually be charged.
 - The "Need to know" panel is built by `productFacts` and hides itself when
   nothing is filled in - most imported cards have no dimensions or care notes.
-- **A card says how many colours a piece comes in** ("4 colours"), at the
-  far end of the price's line - beneath it on a card too narrow for both -
-  beside a dot in thirds of the brand's red, sage and navy
-  (`ui.shopColoursDot`): only with two or more. One generic dot was chosen
+- **A card says how many colours a piece can be bought in now** ("4
+  colours"), at the far end of the price's line - beneath it on a card too
+  narrow for both - beside a dot in thirds of the brand's red, sage and navy
+  (`ui.shopColoursDot`): only with two or more. **Counted by the product
+  page's own rules** (`offeredAxes`, `inStock`; `coloursToChoose` in
+  `src/lib/storefront/card.ts`), so a colour the page strikes through is
+  never counted: one in stock in any size counts, and every colour of a
+  piece made to order or made on order. It first counted every colour
+  listed, and with one of each hairband colour, the first sale would have
+  left the card promising one the page would not sell. Telling clothing
+  needs every category, inactive too, so `toCards` reads them itself, once
+  a request, and is async. One generic dot was chosen
   over a swatch per colour, since the colours are yarns' names (Tarn, Quarry
   Tile) that cannot be drawn without someone picking each one. Not the
   switch's green, which is the switch's alone.
