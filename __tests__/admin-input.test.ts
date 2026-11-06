@@ -1,5 +1,7 @@
 import { validateAdminEdit, validateNewAdminInput, validatePasswordChange } from "@/lib/admin/validate";
 
+import { QUICK_MS, fastestRun } from "./helpers/fastest-run";
+
 function form(fields: Record<string, string>): FormData {
   const data = new FormData();
   for (const [key, value] of Object.entries(fields)) {
@@ -104,8 +106,9 @@ describe("validateAdminEdit", () => {
 
 describe("validateNewAdminInput's email check", () => {
   it("is the shared one, which answers crafted input at once", () => {
-    const start = performance.now();
-    expect(validateNewAdminInput(form({ email: `a@${".".repeat(100_000)}@`, name: "A" })).ok).toBe(false);
-    expect(performance.now() - start).toBeLessThan(50);
+    const crafted = form({ email: `a@${".".repeat(100_000)}@`, name: "A" });
+
+    expect(fastestRun(() => validateNewAdminInput(crafted))).toBeLessThan(QUICK_MS);
+    expect(validateNewAdminInput(crafted).ok).toBe(false);
   });
 });

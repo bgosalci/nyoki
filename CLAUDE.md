@@ -1815,6 +1815,14 @@ Pass `-C <project path>` to run it from another directory.
   seconds for 80,000 dots through the public Contact form, four times as
   long for each doubling, on a form that takes eleven megabytes. It also
   refuses the characters a mailto: link reads as more than an address.
+- **The tests that a crafted address is answered at once time the fastest of
+  three runs** (`fastestRun`, `__tests__/helpers/fastest-run.ts`), the input
+  built outside the timer. A single timed run failed about one full test run in
+  three on a busy machine, and most of what it timed was building a form holding
+  100,000 characters: up to 42ms under load, against 0.2ms to check it. A busy
+  machine only adds time; a backtracking pattern takes seconds every time (5.5s
+  for 100,000 dots). Checked by putting the old pattern back, with and without
+  the length cap, and by giving one form a pattern of its own: each fails.
 - **Rate limits** live in `src/lib/rate-limit.ts`: named limits, counted as
   `RateLimitHit` rows in the database (Vercel runs many instances, and a
   counter in memory knows nothing of the others), by a keyed hash of an

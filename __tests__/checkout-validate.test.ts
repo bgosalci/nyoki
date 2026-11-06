@@ -3,6 +3,8 @@
  */
 import { GIFT_NOTE_MAX, normalisePostcode, parseCheckout } from "@/lib/checkout/validate";
 
+import { QUICK_MS, fastestRun } from "./helpers/fastest-run";
+
 function form(entries: Record<string, string>): FormData {
   const data = new FormData();
   for (const [key, value] of Object.entries(entries)) data.append(key, value);
@@ -118,10 +120,10 @@ describe("parseCheckout", () => {
 
 describe("parseCheckout's limits", () => {
   it("refuses a long crafted address at once", () => {
-    const start = performance.now();
-    const result = parseCheckout(form({ ...guest, email: `a@${".".repeat(100_000)}@` }), { shopperEmail: null });
-    expect(performance.now() - start).toBeLessThan(50);
-    expect(result).toMatchObject({ ok: false, errors: { email: "Enter an email address we can reach you at." } });
+    const crafted = form({ ...guest, email: `a@${".".repeat(100_000)}@` });
+
+    expect(fastestRun(() => parseCheckout(crafted, { shopperEmail: null }))).toBeLessThan(QUICK_MS);
+    expect(parseCheckout(crafted, { shopperEmail: null })).toMatchObject({ ok: false, errors: { email: "Enter an email address we can reach you at." } });
   });
 
   // The browser's boxes set no limit, and anything posted is kept on the

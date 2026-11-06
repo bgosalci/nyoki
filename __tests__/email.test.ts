@@ -1,11 +1,6 @@
 import { EMAIL_MAX, EMAIL_PATTERN, looksLikeEmail } from "@/lib/email";
 
-/** Milliseconds a call takes. */
-function timed(run: () => void): number {
-  const start = performance.now();
-  run();
-  return performance.now() - start;
-}
+import { QUICK_MS, fastestRun } from "./helpers/fastest-run";
 
 describe("looksLikeEmail", () => {
   it.each(["jo@example.com", "jo.bloggs+cards@mail.example.co.uk", "o'brien@example.ie", "a@b.co"])("takes %s", (email) => {
@@ -45,7 +40,8 @@ describe("looksLikeEmail", () => {
   // doubling, and the form accepts eleven megabytes.
   it("answers a long crafted input at once", () => {
     const crafted = `a@${".".repeat(100_000)}@`;
-    expect(timed(() => expect(looksLikeEmail(crafted)).toBe(false))).toBeLessThan(50);
+    expect(fastestRun(() => looksLikeEmail(crafted))).toBeLessThan(QUICK_MS);
+    expect(looksLikeEmail(crafted)).toBe(false);
   });
 
   it.each([
@@ -54,6 +50,6 @@ describe("looksLikeEmail", () => {
     ["a long local part", `${"a".repeat(200_000)}`],
     ["at signs", `${"a@".repeat(100_000)}`],
   ])("matches in a single pass even uncapped: %s", (_, crafted) => {
-    expect(timed(() => EMAIL_PATTERN.test(crafted))).toBeLessThan(100);
+    expect(fastestRun(() => EMAIL_PATTERN.test(crafted))).toBeLessThan(QUICK_MS);
   });
 });

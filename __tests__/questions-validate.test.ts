@@ -1,5 +1,7 @@
 import { HONEYPOT, isBot, parseQuestion } from "@/lib/questions/validate";
 
+import { QUICK_MS, fastestRun } from "./helpers/fastest-run";
+
 function form(entries: Record<string, string>): FormData {
   const data = new FormData();
   for (const [key, value] of Object.entries(entries)) data.append(key, value);
@@ -59,10 +61,10 @@ describe("parseQuestion's email check", () => {
   // The Contact form is open to anyone and takes eleven megabytes; the old
   // pattern needed seconds for a long run of dots.
   it("refuses a long crafted address at once", () => {
-    const start = performance.now();
-    const result = parseQuestion(form({ ...good, email: `a@${".".repeat(100_000)}@` }));
-    expect(performance.now() - start).toBeLessThan(50);
-    expect(result).toMatchObject({ ok: false, errors: { email: "That does not look like an email address." } });
+    const crafted = form({ ...good, email: `a@${".".repeat(100_000)}@` });
+
+    expect(fastestRun(() => parseQuestion(crafted))).toBeLessThan(QUICK_MS);
+    expect(parseQuestion(crafted)).toMatchObject({ ok: false, errors: { email: "That does not look like an email address." } });
   });
 
   it("refuses an address that would add recipients to the reply", () => {
