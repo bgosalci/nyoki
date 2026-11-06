@@ -14,6 +14,7 @@ const row = (id: string, name: string, status: ProductRow["status"]): ProductRow
   oneOfAKind: false,
   image: null,
   categories: [],
+  categoryIds: [],
 });
 
 // As the page sends them: drafts first, then active, each in the set order.
@@ -68,6 +69,9 @@ function setup(move = jest.fn(async (_id: string, _target: string, _place: strin
       remove={jest.fn(async () => {})}
       reprice={jest.fn(async () => {})}
       move={move}
+      categories={[]}
+      addToCategories={jest.fn(async () => ({ ok: true as const, said: [] }))}
+      removeFromCategories={jest.fn(async () => ({ ok: true as const, said: [] }))}
     />,
   );
   return { move, user: userEvent.setup() };

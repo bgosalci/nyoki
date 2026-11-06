@@ -15,6 +15,15 @@ export interface ChooserItem {
   searchText: string;
 }
 
+/** A tile's square photograph, or a plain square for an item with none. */
+export function TilePhoto({ url }: { url: string | null }) {
+  return (
+    <span className="relative block aspect-square w-full overflow-hidden rounded bg-nyoki-soft-ash dark:bg-nyoki-navy">
+      {url ? <Image src={url} alt="" fill sizes="(min-width: 640px) 13rem, 45vw" className="object-cover" /> : null}
+    </span>
+  );
+}
+
 /**
  * Choosing one thing from many by looking at it: a modal of photographs with
  * a search.
@@ -118,11 +127,7 @@ export function PhotoChooser({
                   item.id === selectedId ? ui.navActive : ""
                 }`}
               >
-                <span className="relative block aspect-square w-full overflow-hidden rounded bg-nyoki-soft-ash dark:bg-nyoki-navy">
-                  {item.imageUrl ? (
-                    <Image src={item.imageUrl} alt="" fill sizes="(min-width: 640px) 13rem, 45vw" className="object-cover" />
-                  ) : null}
-                </span>
+                <TilePhoto url={item.imageUrl} />
                 <span className="text-xs leading-snug font-medium">{item.title}</span>
                 {item.details.map((detail) => (
                   <span key={detail} className={`text-xs ${ui.mutedOnPage}`}>

@@ -21,9 +21,17 @@ const rows: ProductRow[] = [
     oneOfAKind: false,
     image: null,
     categories: ["Cards › Christmas Cards", "Gifts"],
+    categoryIds: ["christmas", "gifts"],
   },
-  { id: "p2", name: "Stocking Card", status: "DRAFT", pricePence: 500, stock: 0, madeToOrder: false, madeOnOrder: false, oneOfAKind: true, image: null, categories: [] },
-  { id: "p3", name: "Bud Vase", status: "ARCHIVED", pricePence: 1800, stock: 1, madeToOrder: true, madeOnOrder: false, oneOfAKind: false, image: null, categories: ["Home"] },
+  { id: "p2", name: "Stocking Card", status: "DRAFT", pricePence: 500, stock: 0, madeToOrder: false, madeOnOrder: false, oneOfAKind: true, image: null, categories: [], categoryIds: [] },
+  { id: "p3", name: "Bud Vase", status: "ARCHIVED", pricePence: 1800, stock: 1, madeToOrder: true, madeOnOrder: false, oneOfAKind: false, image: null, categories: ["Home"], categoryIds: ["home"] },
+];
+
+const categories = [
+  { id: "cards", name: "Cards", parentId: null },
+  { id: "christmas", name: "Christmas Cards", parentId: "cards" },
+  { id: "gifts", name: "Gifts", parentId: null },
+  { id: "home", name: "Home", parentId: null },
 ];
 
 /** The page's own notices: not the region dragging announces itself through. */
@@ -33,6 +41,8 @@ function setup(overrides: Partial<React.ComponentProps<typeof ProductTable>> = {
   const setStatus = jest.fn(async () => ({ unpriced: [] as string[] }));
   const remove = jest.fn(async () => {});
   const reprice = jest.fn(async () => {});
+  const addToCategories = jest.fn(async () => ({ ok: true as const, said: ["Added 2 products to Gifts."] }));
+  const removeFromCategories = jest.fn(async () => ({ ok: true as const, said: ["Took 1 product out of Gifts."] }));
   render(
     <ProductTable
       rows={rows}
@@ -41,10 +51,13 @@ function setup(overrides: Partial<React.ComponentProps<typeof ProductTable>> = {
       remove={remove}
       reprice={reprice}
       move={jest.fn(async () => ({ ok: true }))}
+      categories={categories}
+      addToCategories={addToCategories}
+      removeFromCategories={removeFromCategories}
       {...overrides}
     />,
   );
-  return { setStatus, remove, reprice, user: userEvent.setup() };
+  return { setStatus, remove, reprice, addToCategories, removeFromCategories, user: userEvent.setup() };
 }
 
 describe("ProductTable", () => {
@@ -122,6 +135,9 @@ describe("ProductTable", () => {
         remove={jest.fn()}
         reprice={jest.fn()}
         move={jest.fn()}
+        categories={categories}
+        addToCategories={jest.fn()}
+        removeFromCategories={jest.fn()}
       />,
     );
 
@@ -224,6 +240,98 @@ describe("ProductTable", () => {
     expect(reprice).toHaveBeenCalledWith(["p1", "p3"], { mode: "INCREASE", unit: "PERCENT", value: "10", rounding: "EXACT" });
   });
 
+  it("adds what is chosen to a category, through a dialog that says how many", async () => {
+    const { user, addToCategories } = setup();
+
+    await user.click(screen.getByRole("checkbox", { name: /snowflake card/i }));
+    await user.click(screen.getByRole("checkbox", { name: /stocking card/i }));
+    await user.click(screen.getByRole("button", { name: "Add to category" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Add 2 products to a category" });
+    await user.click(within(dialog).getByRole("checkbox", { name: /home/i }));
+    expect(addToCategories).not.toHaveBeenCalled();
+    await user.click(within(dialog).getByRole("button", { name: "Add 2 products" }));
+
+    expect(addToCategories).toHaveBeenCalledWith(["p1", "p2"], ["home"]);
+  });
+
+  it("says what was done, shuts the dialog and clears the selection", async () => {
+    const { user } = setup();
+
+    await user.click(screen.getByRole("checkbox", { name: /stocking card/i }));
+    await user.click(screen.getByRole("button", { name: "Add to category" }));
+    await user.click(within(screen.getByRole("dialog")).getByRole("checkbox", { name: /gifts/i }));
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Add 1 product" }));
+
+    await screen.findByText("Added 2 products to Gifts.");
+    expect(notices()).toHaveLength(1);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.queryByText(/selected/i)).not.toBeInTheDocument();
+  });
+
+  it("takes the notice away once something else is chosen", async () => {
+    const { user } = setup();
+
+    await user.click(screen.getByRole("checkbox", { name: /stocking card/i }));
+    await user.click(screen.getByRole("button", { name: "Add to category" }));
+    await user.click(within(screen.getByRole("dialog")).getByRole("checkbox", { name: /gifts/i }));
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Add 1 product" }));
+    await screen.findByText("Added 2 products to Gifts.");
+
+    await user.click(screen.getByRole("checkbox", { name: /bud vase/i }));
+
+    expect(screen.queryByText("Added 2 products to Gifts.")).not.toBeInTheDocument();
+  });
+
+  it("offers only the categories the chosen pieces are in when taking them out", async () => {
+    const { user, removeFromCategories } = setup();
+
+    await user.click(screen.getByRole("checkbox", { name: /snowflake card/i }));
+    await user.click(screen.getByRole("button", { name: "Remove from category" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Remove 1 product from a category" });
+    expect(within(dialog).queryByRole("checkbox", { name: /home/i })).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole("checkbox", { name: /gifts/i }));
+    await user.click(within(dialog).getByRole("button", { name: "Remove 1 product" }));
+
+    expect(removeFromCategories).toHaveBeenCalledWith(["p1"], ["gifts"]);
+  });
+
+  it("does not offer to take out of a category what is in none", async () => {
+    const { user } = setup();
+
+    await user.click(screen.getByRole("checkbox", { name: /stocking card/i }));
+
+    expect(screen.getByRole("button", { name: "Add to category" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Remove from category" })).not.toBeInTheDocument();
+  });
+
+  it("keeps the selection and says so when a category change cannot be saved", async () => {
+    const addToCategories = jest.fn(async () => ({ ok: false as const }));
+    const { user } = setup({ addToCategories });
+
+    await user.click(screen.getByRole("checkbox", { name: /stocking card/i }));
+    await user.click(screen.getByRole("button", { name: "Add to category" }));
+    await user.click(within(screen.getByRole("dialog")).getByRole("checkbox", { name: /gifts/i }));
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Add 1 product" }));
+
+    await screen.findByText(/could not be saved/i);
+    expect(screen.getByText(/1 selected/i)).toBeInTheDocument();
+  });
+
+  it("says so when a category change fails outright", async () => {
+    const addToCategories = jest.fn(async () => { throw new Error("network"); });
+    const { user } = setup({ addToCategories });
+
+    await user.click(screen.getByRole("checkbox", { name: /stocking card/i }));
+    await user.click(screen.getByRole("button", { name: "Add to category" }));
+    await user.click(within(screen.getByRole("dialog")).getByRole("checkbox", { name: /gifts/i }));
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Add 1 product" }));
+
+    await screen.findByText(/could not be saved/i);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
   it("says which pieces it could not put on the shop, and why", async () => {
     const setStatus = jest.fn(async () => ({ unpriced: ["Stocking Card"] }));
     const { user } = setup({ setStatus });
@@ -278,6 +386,21 @@ describe("ProductTable, on a phone", () => {
   // and Stock started off the screen. It cannot be put in a scrolling box,
   // which its pinned column headers would stick to instead of the page.
   const rowOf = (name: string) => screen.getByRole("checkbox", { name }).closest("tr")!;
+
+  it("pins only the bulk bar while something is chosen, or the block would fill the screen and hide the rows", async () => {
+    // At 375x812 the header and the bar together left 28px for the rows, and
+    // the next piece to tick could not be seen. From md up there is room for both.
+    const { user } = setup();
+    const heading = screen.getByRole("heading", { name: "Products" });
+    expect(heading.closest(".hidden")).toBeNull();
+
+    await user.click(screen.getByRole("checkbox", { name: /snowflake card/i }));
+    expect(heading.closest(".hidden")).toHaveClass("md:block");
+    expect(screen.getByRole("button", { name: "Add to category" }).closest(".hidden")).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: /clear selection/i }));
+    expect(heading.closest(".hidden")).toBeNull();
+  });
 
   it("draws the photo half size until there is room for the large one", () => {
     setup({ rows: [{ ...rows[0], image: { url: "/uploads/card.jpg", alt: null } }] });

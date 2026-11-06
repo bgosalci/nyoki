@@ -573,6 +573,44 @@ TypeScript, deployed to Vercel.
   not here. An emailed receipt waits on an email service.
 - Not in the CSV/JSON/XML export or import yet.
 
+## Filing many products in a category
+
+- **It works from either side**: the products list's bulk bar has "Add to
+  category" and "Remove from category" (`BulkCategoryDialog`), and a category's
+  own page has "Products in ..." with "Choose products" or "Change products"
+  (`CategoryProducts`), the whole catalogue by photo, what is in it ticked and
+  first. All go through `changeCategories` (`src/lib/categories/assign.ts`), by
+  the rules in `assignment.ts`, pure. Only one piece at a time, from its Details
+  tab, was too slow. Removing is there because a mistake made in bulk has to be
+  undone in bulk.
+- **Only the links asked about change.** A piece keeps every other category
+  it is in, and the category's page sends what changed, never the whole set
+  (a sale replaces its set; this does not), so a page left open cannot undo
+  what was filed since. One transaction; `skipDuplicates`, since the same link
+  added from another tab is no reason to fail. A category or piece deleted
+  since the page opened is left out; with none left, it is refused.
+- **Each says what it did, and anything that did to how a piece sells**, in a
+  notice: there is no form to show it, as a Details tab has. Only pieces on
+  the shop are named. A piece crossing into or out of clothing can go sold out,
+  since its stock is by different variants there (`outOfStock`: in stock before
+  and not after, by the product page's own rules); one that stops being a card
+  or bookmark stops offering its options, which are kept (`uncustomised`). A
+  coat taken out of Clothes shows "Out of stock" on its page until its Details
+  tab sets it: found on a real hat.
+- The list's dialog offers the whole tree to add to, one holding them all shut
+  ("all in it"), and to remove from only the categories they are in. Selection
+  stays if a save fails, to try again.
+- **A category's page lists only what is filed directly in it**; what is in
+  the types inside it is counted, linking to the products list filtered there.
+- **Whatever a tile says, it can be found by**, so searching "no category"
+  finds what is waiting to be filed (44 pieces when this landed), and "vest no
+  category" narrows it; Select these 5 then ticks them.
+- **On a phone, only the bulk bar stays pinned while something is chosen**
+  (below md the page's header is hidden, filters keeping what was typed):
+  header and bar together were 640px of an 812px screen, leaving the rows 28px,
+  so the next piece to tick could not be seen. It was 67px before the category
+  buttons, and the same fault.
+
 ## Colours, clothing's sizes, and stock
 
 - **Any piece can come in colours; only clothing in sizes**
@@ -1595,6 +1633,14 @@ TypeScript, deployed to Vercel.
   fetched as it scrolls into view - so the cap saved nothing and left most
   of the catalogue findable only by guessing a word from its name. A test
   pins the lazy loading, since it is what makes showing them all cheap.
+- `PhotoMultiChooser` (`photo-multi-chooser.tsx`) is the same tiles and search
+  for choosing **many**: ticks, Select and Clear for what the search shows, and
+  a save handing back what was added and removed. One Escape will not throw
+  ticks away. **Chrome lets a page refuse Escape only once**: a second shuts the
+  dialog itself, firing `close` and no `cancel`, so `onClose` tells the parent.
+  Unheard, the dialog was shut while React held it open, and nothing could open
+  it again; jsdom has no such rule, so a test fires the `close`. A save that
+  fails stays open with its ticks.
 - `PhotoField` (`photo-field.tsx`) is the form field around it: a box showing
   what is chosen by its photo and name, Choose, and Clear. **Every
   choose-by-photo field is one**, so they all look alike - a home page tile's

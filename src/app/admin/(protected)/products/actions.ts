@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 
 import type { ProductFormState } from "@/components/admin/product-form";
 import { requireAdmin } from "@/lib/auth/dal";
+import { changeCategories } from "@/lib/categories/assign";
+import type { CategoryChangeResult } from "@/lib/categories/assignment";
 import { db } from "@/lib/db";
 import { repriceProduct, validateRepriceInput, type RepriceFields } from "@/lib/products/repricing";
 import { activationBlockedBecause } from "@/lib/products/activation";
@@ -236,6 +238,18 @@ export async function setProductsStatus(ids: string[], status: ProductStatus): P
   revalidatePath("/admin/products");
 
   return { unpriced: unpriced.map((product) => product.name) };
+}
+
+/** Files products in categories, from the list's bulk actions. They stay in any others they are in. */
+export async function addProductsToCategories(productIds: string[], categoryIds: string[]): Promise<CategoryChangeResult> {
+  await requireAdmin();
+  return changeCategories({ add: { productIds, categoryIds } });
+}
+
+/** Takes products out of categories, from the list's bulk actions. They stay in any others, and on the shop. */
+export async function removeProductsFromCategories(productIds: string[], categoryIds: string[]): Promise<CategoryChangeResult> {
+  await requireAdmin();
+  return changeCategories({ remove: { productIds, categoryIds } });
 }
 
 /**

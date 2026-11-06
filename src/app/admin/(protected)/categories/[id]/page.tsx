@@ -1,17 +1,22 @@
 import { BackLink } from "@/components/admin/back-link";
 import { notFound } from "next/navigation";
 
-import { saveCategoryCosts, saveCategoryPostage } from "@/app/admin/(protected)/categories/actions";
+import { changeCategoryProducts, saveCategoryCosts, saveCategoryPostage } from "@/app/admin/(protected)/categories/actions";
 import { CategoryCostsForm } from "@/components/admin/category-costs-form";
 import { CategoryPostageForm } from "@/components/admin/category-postage-form";
+import { CategoryProducts } from "@/components/admin/category-products";
 import { EditCategoryForm } from "@/components/admin/edit-category-form";
 import { requireAdmin } from "@/lib/auth/dal";
 import { ui } from "@/lib/brand/ui";
 import type { CategoryInput } from "@/lib/categories/validate";
+import { categoryPaths, pathsOf } from "@/lib/categories/path";
+import { descendantIds } from "@/lib/categories/validate";
 import { offShopBecause } from "@/lib/categories/visibility";
 import { db } from "@/lib/db";
 import { postageCategories } from "@/lib/delivery/store";
 import { usualFor } from "@/lib/delivery/usual";
+import { PRODUCT_LIST_ORDER } from "@/lib/products/filter";
+import { filterHref } from "@/lib/products/filter-href";
 
 export default async function EditCategoryPage({ params }: { params: Promise<{ id: string }> }) {
   // Checked here as well as in the admin layout, which moving between
@@ -20,11 +25,22 @@ export default async function EditCategoryPage({ params }: { params: Promise<{ i
 
   const { id } = await params;
 
-  const [category, categories, postage, live] = await Promise.all([
+  const [category, categories, postage, live, products] = await Promise.all([
     db.category.findUnique({ where: { id }, include: { costLines: { orderBy: { position: "asc" } } } }),
     db.category.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, parentId: true, active: true } }),
     postageCategories(),
     db.product.findMany({ where: { status: "ACTIVE" }, select: { weightGrams: true, categories: { select: { categoryId: true } } } }),
+    db.product.findMany({
+      orderBy: PRODUCT_LIST_ORDER,
+      select: {
+        id: true,
+        name: true,
+        sku: true,
+        status: true,
+        images: { orderBy: { position: "asc" }, take: 1, select: { url: true, alt: true } },
+        categories: { select: { categoryId: true } },
+      },
+    }),
   ]);
 
   if (!category) notFound();
@@ -32,6 +48,11 @@ export default async function EditCategoryPage({ params }: { params: Promise<{ i
   // The live pieces this category's usual postage reaches: nothing nearer has one of its own.
   const reached = live.filter((piece) => usualFor(piece.categories.map((link) => link.categoryId), postage)?.categoryId === category.id);
   const weighed = reached.filter((piece) => piece.weightGrams !== null).length;
+
+  const paths = categoryPaths(categories);
+  const inside = descendantIds(categories, category.id);
+  const filed = products.map((product) => ({ ...product, categoryIds: product.categories.map((link) => link.categoryId) }));
+  const beneath = filed.filter(({ categoryIds }) => !categoryIds.includes(category.id) && categoryIds.some((id) => inside.has(id))).length;
 
   const initial: CategoryInput = {
     name: category.name,
@@ -53,6 +74,23 @@ export default async function EditCategoryPage({ params }: { params: Promise<{ i
       </div>
       <div className="mt-6">
         <EditCategoryForm id={category.id} category={initial} categories={categories} offShopWith={offShopWith} />
+      </div>
+      <div className={`mt-12 border-t pt-8 ${ui.ruleOnPage}`}>
+        <CategoryProducts
+          categoryName={category.name}
+          products={filed.map(({ id: productId, name, sku, status, images, categoryIds }) => ({
+            id: productId,
+            name,
+            sku,
+            status,
+            image: images[0] ?? null,
+            categories: pathsOf(categoryIds, paths),
+            inCategory: categoryIds.includes(category.id),
+          }))}
+          beneath={beneath}
+          listHref={filterHref("/admin/products", { q: "", status: "", category: category.slug })}
+          save={changeCategoryProducts.bind(null, category.id)}
+        />
       </div>
       <div className={`mt-12 border-t pt-8 ${ui.ruleOnPage}`}>
         <CategoryPostageForm

@@ -7,6 +7,8 @@ import type { CategoryCostsState } from "@/components/admin/category-costs-form"
 import type { CategoryFormState } from "@/components/admin/category-form";
 import type { CategoryPostageState } from "@/components/admin/category-postage-form";
 import { requireAdmin } from "@/lib/auth/dal";
+import { changeCategories } from "@/lib/categories/assign";
+import type { CategoryChangeResult } from "@/lib/categories/assignment";
 import { CATEGORY_ORDER, moveAmongSiblings } from "@/lib/categories/ordering";
 import { validateCategoryInput, wouldCreateCycle } from "@/lib/categories/validate";
 import { parseCostLines } from "@/lib/costing/validate";
@@ -144,6 +146,18 @@ export async function saveCategoryPostage(id: string, _state: CategoryPostageSta
 
   revalidatePath(`/admin/categories/${id}`);
   return { errors: {}, saved: true };
+}
+
+/**
+ * The products ticked in and out on a category's own page. Only what changed
+ * is sent, so a piece filed here from elsewhere since the page opened stays.
+ */
+export async function changeCategoryProducts(id: string, change: { add: string[]; remove: string[] }): Promise<CategoryChangeResult> {
+  await requireAdmin();
+  return changeCategories({
+    add: { productIds: change.add, categoryIds: [id] },
+    remove: { productIds: change.remove, categoryIds: [id] },
+  });
 }
 
 /**

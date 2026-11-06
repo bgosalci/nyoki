@@ -3,7 +3,14 @@ import { ui } from "@/lib/brand/ui";
 import { ProductFilterForm } from "@/components/admin/product-filter-form";
 import { PinnedHeight } from "@/components/admin/pinned-height";
 import { ProductTable } from "@/components/admin/product-table";
-import { deleteProducts, moveProduct, repriceProducts, setProductsStatus } from "@/app/admin/(protected)/products/actions";
+import {
+  addProductsToCategories,
+  deleteProducts,
+  moveProduct,
+  removeProductsFromCategories,
+  repriceProducts,
+  setProductsStatus,
+} from "@/app/admin/(protected)/products/actions";
 import { PINNED_BLOCK_CLASS } from "@/components/admin/th";
 import Link from "next/link";
 
@@ -122,11 +129,15 @@ export default async function ProductsPage({
             oneOfAKind: product.oneOfAKind,
             image: product.images[0] ?? null,
             categories: pathsOf(product.categories.map((link) => link.categoryId), paths),
+            categoryIds: product.categories.map((link) => link.categoryId),
           }))}
           setStatus={setProductsStatus}
           remove={deleteProducts}
           reprice={repriceProducts}
           move={moveProduct}
+          categories={categories}
+          addToCategories={addProductsToCategories}
+          removeFromCategories={removeProductsFromCategories}
         />
       )}
     </>

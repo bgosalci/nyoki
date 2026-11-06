@@ -14,13 +14,16 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import Link from "next/link";
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 
+import { BulkCategoryDialog, type BulkCategory } from "@/components/admin/bulk-category-dialog";
 import { BulkPriceDialog } from "@/components/admin/bulk-price-dialog";
+import { CATEGORY_CHANGE_FAILED, CategoryChangeNotice } from "@/components/admin/category-change-notice";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { PinnedHeight } from "@/components/admin/pinned-height";
 import { ProductThumbnail } from "@/components/admin/product-thumbnail";
 import { SortableRow } from "@/components/admin/sortable-row";
 import { PINNED_BLOCK_CLASS, Th } from "@/components/admin/th";
 import { ui } from "@/lib/brand/ui";
+import type { CategoryChangeResult } from "@/lib/categories/assignment";
 import { formatPence } from "@/lib/money";
 import { rememberProductList } from "@/lib/products/browse";
 import { moveInList, placeFor, type Place } from "@/lib/products/ordering";
@@ -39,6 +42,7 @@ export interface ProductRow {
   image: { url: string; alt: string | null } | null;
   /** Its categories by their places in the tree - "Cards › Christmas Cards" - as its Details tab shows them. */
   categories: string[];
+  categoryIds: string[];
 }
 
 const STATUS_LABEL: Record<ProductStatus, string> = {
@@ -68,6 +72,10 @@ const DRAG_INSTRUCTIONS =
  * this is where a price changes across many at once. That previews itself
  * first: the old prices are kept nowhere, so there is nothing to undo it with.
  *
+ * Pieces are filed in categories from here as well, many at once, and taken
+ * out again. Either touches only the categories ticked, and says what it did:
+ * a move can change how a piece sells, and a list has no form to show it.
+ *
  * Archiving and deleting are both offered because they are different things:
  * archiving takes a product off the shop and can be undone, deleting removes
  * it for good. Deleting is safe for order history - a line records the name
@@ -95,6 +103,9 @@ export function ProductTable({
   remove,
   reprice,
   move,
+  categories,
+  addToCategories,
+  removeFromCategories,
 }: {
   rows: ProductRow[];
   /** Rendered by the page, pinned here so the bulk bar can share the block. */
@@ -105,10 +116,16 @@ export function ProductTable({
   reprice: (ids: string[], fields: RepriceFields) => Promise<void>;
   /** Saves a piece dropped just before or after another. */
   move: (id: string, targetId: string, place: Place) => Promise<{ ok: boolean }>;
+  /** The whole tree, to file pieces in. */
+  categories: BulkCategory[];
+  addToCategories: (productIds: string[], categoryIds: string[]) => Promise<CategoryChangeResult>;
+  removeFromCategories: (productIds: string[], categoryIds: string[]) => Promise<CategoryChangeResult>;
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirming, setConfirming] = useState(false);
   const [pricing, setPricing] = useState(false);
+  const [filing, setFiling] = useState<"add" | "remove" | null>(null);
+  const [categorySaid, setCategorySaid] = useState<string[]>([]);
   const [unpriced, setUnpriced] = useState<string[]>([]);
   const [moveFailed, setMoveFailed] = useState(false);
 
@@ -153,8 +170,10 @@ export function ProductTable({
   // Kept in the table's order, so an action reads the same way the list does.
   const chosen = arranged.filter((row) => selected.has(row.id)).map((row) => row.id);
   const allChosen = rows.length > 0 && chosen.length === rows.length;
+  const chosenRows = arranged.filter((row) => selected.has(row.id));
 
   function toggle(id: string) {
+    setCategorySaid([]);
     setSelected((current) => {
       const next = new Set(current);
       if (next.has(id)) next.delete(id);
@@ -165,15 +184,31 @@ export function ProductTable({
 
   async function apply(action: () => Promise<unknown>) {
     setUnpriced([]);
+    setCategorySaid([]);
     await action();
     setSelected(new Set());
   }
 
   async function changeStatus(status: ProductStatus) {
     setUnpriced([]);
+    setCategorySaid([]);
     const result = await setStatus(chosen, status);
     setUnpriced(result?.unpriced ?? []);
     setSelected(new Set());
+  }
+
+  /** Files what is chosen in the categories ticked, or takes it out. The selection stays if that cannot be saved, to try again. */
+  async function changeCategories(categoryIds: string[]) {
+    const action = filing === "remove" ? removeFromCategories : addToCategories;
+    const result: CategoryChangeResult = await action(chosen, categoryIds).catch(() => ({ ok: false }));
+    setFiling(null);
+    setUnpriced([]);
+    if (result.ok) {
+      setSelected(new Set());
+      setCategorySaid(result.said);
+    } else {
+      setCategorySaid([CATEGORY_CHANGE_FAILED]);
+    }
   }
 
   /** Saves a move already shown; one that cannot be saved puts `undo` back. */
@@ -283,11 +318,16 @@ export function ProductTable({
   return (
     <>
       <PinnedHeight className={PINNED_BLOCK_CLASS}>
-        {header}
+        {/* A phone has no room for all of this and the bar: together they left
+            the rows 28px, so the next piece to tick could not be seen. Only
+            hidden, so the filters keep what was typed. */}
+        <div className={chosen.length > 0 ? "hidden md:block" : undefined}>
+          {header}
 
-        <p className={`mt-1 text-sm ${ui.mutedOnPage}`}>
-          Drag a row to change its place on the shop. Drafts, active and archived pieces each keep to their own group.
-        </p>
+          <p className={`mt-1 text-sm ${ui.mutedOnPage}`}>
+            Drag a row to change its place on the shop. Drafts, active and archived pieces each keep to their own group.
+          </p>
+        </div>
 
         {chosen.length > 0 ? (
           <div className={`mt-4 flex flex-wrap items-center gap-3 rounded-md border p-3 ${ui.card} ${ui.ruleOnPage}`}>
@@ -304,6 +344,14 @@ export function ProductTable({
               <button type="button" onClick={() => setPricing(true)} className={actionClass}>
                 Change price
               </button>
+              <button type="button" onClick={() => setFiling("add")} className={actionClass}>
+                Add to category
+              </button>
+              {chosenRows.some((row) => row.categoryIds.length > 0) ? (
+                <button type="button" onClick={() => setFiling("remove")} className={actionClass}>
+                  Remove from category
+                </button>
+              ) : null}
               <button type="button" onClick={() => changeStatus("ACTIVE")} className={actionClass}>
                 Make active
               </button>
@@ -330,6 +378,8 @@ export function ProductTable({
           </p>
         ) : null}
 
+        {categorySaid.length > 0 ? <CategoryChangeNotice lines={categorySaid} className="mt-4" /> : null}
+
         {unpriced.length > 0 ? (
           <p role="status" className={`mt-4 rounded-md border p-3 text-sm ${ui.card} ${ui.ruleOnPage}`}>
             Left as {unpriced.length === 1 ? "a draft" : "drafts"}, because {unpriced.length === 1 ? "it has" : "they have"} no
@@ -354,7 +404,10 @@ export function ProductTable({
                   type="checkbox"
                   aria-label="Select all"
                   checked={allChosen}
-                  onChange={() => setSelected(allChosen ? new Set() : new Set(rows.map((row) => row.id)))}
+                  onChange={() => {
+                    setCategorySaid([]);
+                    setSelected(allChosen ? new Set() : new Set(rows.map((row) => row.id)));
+                  }}
                   className={`size-4 align-middle ${ui.checkbox}`}
                 />
               </Th>
@@ -442,12 +495,21 @@ export function ProductTable({
 
       <BulkPriceDialog
         open={pricing}
-        rows={arranged.filter((row) => selected.has(row.id))}
+        rows={chosenRows}
         onCancel={() => setPricing(false)}
         onApply={(fields) => {
           setPricing(false);
           return apply(() => reprice(chosen, fields));
         }}
+      />
+
+      <BulkCategoryDialog
+        open={filing !== null}
+        mode={filing ?? "add"}
+        rows={chosenRows}
+        categories={categories}
+        onApply={changeCategories}
+        onCancel={() => setFiling(null)}
       />
 
       <ConfirmDialog

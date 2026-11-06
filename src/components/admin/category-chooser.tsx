@@ -4,9 +4,8 @@ import { useEffect, useId, useRef, useState } from "react";
 
 import { Checkbox } from "@/components/admin/checkbox";
 import { ui } from "@/lib/brand/ui";
-import { categoryPaths } from "@/lib/categories/path";
+import { categoriesMatching, categoryPaths } from "@/lib/categories/path";
 import { flattenTree } from "@/lib/categories/tree";
-import { matchesEveryWord } from "@/lib/search";
 
 export interface ChooserCategory {
   id: string;
@@ -54,7 +53,6 @@ export function CategoryChooser({
   const legendId = useId();
 
   const tree = flattenTree(categories);
-  const byId = new Map(categories.map((category) => [category.id, category]));
 
   /** "Cards › Christmas Cards": a name is not always enough on its own. */
   const paths = categoryPaths(categories);
@@ -71,12 +69,8 @@ export function CategoryChooser({
   // In the tree's own order, so the summary reads as the list does.
   const picked = tree.filter(({ row }) => chosen.has(row.id));
 
-  const matching = tree.filter(({ row }) => matchesEveryWord(path(row.id), query));
   // Each match keeps its group - and that group's group - beside it.
-  const shown = new Set(matching.map(({ row }) => row.id));
-  for (const { row } of matching) {
-    for (let parent = row.parentId; parent && !shown.has(parent); parent = byId.get(parent)?.parentId ?? null) shown.add(parent);
-  }
+  const shown = categoriesMatching(categories, query, paths);
 
   return (
     <fieldset aria-labelledby={legendId} className="flex flex-col gap-3">

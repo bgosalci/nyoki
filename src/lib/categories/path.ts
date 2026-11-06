@@ -1,3 +1,5 @@
+import { matchesEveryWord } from "@/lib/search";
+
 export interface PathCategory {
   id: string;
   name: string;
@@ -31,4 +33,19 @@ export function pathsOf(categoryIds: readonly string[], paths: ReadonlyMap<strin
     .map((id) => paths.get(id))
     .filter((path): path is string => path !== undefined)
     .sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * Which categories a search shows: those whose place in the tree has every
+ * word typed - so "cards" finds a group's types - and, so a match is not left
+ * without its group, whatever each sits inside.
+ */
+export function categoriesMatching(categories: readonly PathCategory[], query: string, paths: ReadonlyMap<string, string>): Set<string> {
+  const byId = new Map(categories.map((category) => [category.id, category]));
+  const matching = categories.filter((category) => matchesEveryWord(paths.get(category.id) ?? "", query));
+  const shown = new Set(matching.map((category) => category.id));
+  for (const category of matching) {
+    for (let parent = category.parentId; parent && !shown.has(parent); parent = byId.get(parent)?.parentId ?? null) shown.add(parent);
+  }
+  return shown;
 }
