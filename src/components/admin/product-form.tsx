@@ -286,6 +286,21 @@ export function ProductForm({
           {(props) => <RichTextField {...props} defaultValue={product?.materials ?? ""} />}
         </Field>
 
+        <Field
+          label="Care instructions"
+          name="careInstructions"
+          error={errors.careInstructions}
+        >
+          {(props) => (
+            <textarea
+              {...props}
+              rows={3}
+              defaultValue={product?.careInstructions ?? ""}
+              className={inputClass}
+            />
+          )}
+        </Field>
+
         {/* Clothing has colours and sizes instead. Both stay in the form
             while out of sight, so neither is lost by saving the other. */}
         <div hidden={clothes}>
@@ -303,21 +318,6 @@ export function ProductForm({
         </div>
 
         <ClothingFields editor={shown} onChange={edit} errors={errors} sizes={clothes} />
-
-        <Field
-          label="Care instructions"
-          name="careInstructions"
-          error={errors.careInstructions}
-        >
-          {(props) => (
-            <textarea
-              {...props}
-              rows={3}
-              defaultValue={product?.careInstructions ?? ""}
-              className={inputClass}
-            />
-          )}
-        </Field>
 
         <label className="flex items-center gap-2.5 text-sm">
           <input
