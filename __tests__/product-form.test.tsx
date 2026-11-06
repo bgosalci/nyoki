@@ -123,6 +123,17 @@ describe("ProductForm", () => {
     expect(screen.getByLabelText(/made to order/i)).toBeInTheDocument();
   });
 
+  it("asks for care instructions straight after the materials, before the dimensions", () => {
+    render(<ProductForm action={noopAction} />);
+
+    const materials = screen.getByLabelText(/materials/i);
+    const care = screen.getByLabelText(/care/i);
+    const dimensions = screen.getByLabelText(/dimensions/i);
+
+    expect(materials.compareDocumentPosition(care) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(care.compareDocumentPosition(dimensions) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it("lets the description and the materials be formatted", async () => {
     render(<ProductForm action={noopAction} />);
 
